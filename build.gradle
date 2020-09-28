@@ -1,0 +1,112 @@
+buildscript {
+    ext {
+        grailsVersion = project.grailsVersion
+    }
+    repositories {
+        mavenLocal()
+        maven { url "https://repo.grails.org/grails/core" }
+        maven { url  "http://idcapture.bintray.com/plugins" }
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.grails:grails-gradle-plugin:$grailsVersion"
+        classpath "gradle.plugin.com.github.erdi.webdriver-binaries:webdriver-binaries-gradle-plugin:2.0"
+        classpath "org.grails.plugins:hibernate5:7.0.2"
+        classpath "com.bertramlabs.plugins:asset-pipeline-gradle:3.0.10"
+    }
+}
+
+version "0.1"
+group "tm.binding.registry"
+
+apply plugin:"idea"
+apply plugin:"war"
+apply plugin:"com.github.erdi.webdriver-binaries"
+apply plugin:"org.grails.grails-web"
+apply plugin:"com.bertramlabs.asset-pipeline"
+apply plugin:"org.grails.grails-gsp"
+
+repositories {
+    mavenLocal()
+    maven { url "https://repo.grails.org/grails/core" }
+    mavenCentral()
+    maven { url  "http://idcapture.bintray.com/plugins" }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.grails:grails-bom:$grailsVersion"
+    }
+    applyMavenExclusions false
+}
+
+configurations {
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
+}
+
+dependencies {
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    compile "org.springframework.boot:spring-boot-starter-logging"
+    compile "org.springframework.boot:spring-boot-autoconfigure"
+    compile "org.springframework.boot:spring-boot-starter-actuator"
+    compile "org.springframework.boot:spring-boot-starter-tomcat"
+
+    compile "org.grails:grails-core"
+    compile "org.grails:grails-dependencies"
+    compile "org.grails:grails-web-boot"
+    compile "org.grails:grails-logging"
+    console "org.grails:grails-console"
+
+    compile "org.grails.plugins:cache"
+    compile "org.grails.plugins:gsp:4.0.0"
+    compile "org.grails.plugins:scaffolding"
+    compile "org.grails.plugins:hibernate5:7.0.2"
+    compile 'org.grails.plugins:spring-security-core:4.0.0.RC3'
+    compile "org.hibernate:hibernate-core:5.4.10.Final"
+
+    compile "org.hibernate:hibernate-ehcache:5.4.10.Final"
+
+    compile "edu.gatech.gtri.trustmark:tf-api:1.4.1"
+    compile "edu.gatech.gtri.trustmark:tf-api-impl:1.4.1"
+
+    profile "org.grails.profiles:web"
+
+    runtime "com.h2database:h2"
+    runtime "org.apache.tomcat:tomcat-jdbc"
+
+    runtimeOnly 'jaxen:jaxen:1.1.6'
+    runtimeOnly 'mysql:mysql-connector-java:8.0.20'
+    runtimeOnly "com.bertramlabs.plugins:asset-pipeline-grails:3.0.10"
+
+    testCompile "org.grails.plugins:geb"
+    testCompile "org.grails:grails-gorm-testing-support"
+    testCompile "org.grails:grails-web-testing-support"
+    testCompile "org.mockito:mockito-core"
+
+    testCompile "org.seleniumhq.selenium:selenium-remote-driver:3.14.0"
+    testCompile "org.seleniumhq.selenium:selenium-api:3.14.0"
+    testCompile "org.seleniumhq.selenium:selenium-support:3.14.0"
+
+    testRuntime "org.seleniumhq.selenium:selenium-chrome-driver:3.14.0"
+    testRuntime "org.seleniumhq.selenium:selenium-firefox-driver:3.14.0"
+}
+
+bootRun {
+    jvmArgs(
+        '-Dspring.output.ansi.enabled=always', 
+        '-Xmx1024m')
+    sourceResources sourceSets.main
+}
+
+// copied from: http://nimavat.me/blog/grails3-add-custom-build-info-to-war
+buildProperties {
+    inputs.property("info.app.buildDate", new Date().format('yyyy-MM-dd HH:mm:ss'))
+}
+
+assets {
+    minifyJs = false
+    minifyCss = false
+}
