@@ -1,0 +1,18 @@
+package tm.binding.registry
+
+import grails.testing.web.controllers.ControllerUnitTest
+import spock.lang.Specification
+
+class TagControllerSpec extends Specification implements ControllerUnitTest<TagController> {
+
+    def setup() {
+    }
+
+    def cleanup() {
+    }
+
+    void "test something"() {
+        expect:"fixed"
+            true == true
+    }
+}

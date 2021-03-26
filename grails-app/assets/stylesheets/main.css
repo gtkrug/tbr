@@ -161,9 +161,24 @@ table th {
     color: #fff;
 }
 
+.tm-margin {
+    margin: 6px;
+}
 
+.tm-left {
+    float: left;
+}
 
+.tm-right {
+    float: right;
+}
 
+.tm-form {
+    width: 500px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 6px;
+}
 
 /* ================================================================================================================== */
 /* Layout of Printable Pages */

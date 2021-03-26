@@ -34,33 +34,9 @@
                             Manage <b class="caret"></b>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="#">Assessments</a></li>
-                            <li><a href="#" title="Manage Contacts">Contacts</a></li>
-                            <li><a href="#" title="Manage Organizations">Organizations</a></li>
-                            <li><a href="#" title="Manage Documents">Documents</a></li>
-                            <li><a href="#" title="Resolve undefined substeps">Substep Resolution</a></li>
-                            <li><a href="#">Trust Interoperability Profiles</a></li>
-                            <li><a href="#">Trustmarks</a></li>
-                            <li><a href="#">Trustmark Definitions</a></li>
-                            <li><a href="#">Trustmark Metadata</a></li>
-                            <sec:ifAllGranted roles="ROLE_ADMIN">
-                                <li><a href="#" title="Manage User Accounts">Users</a></li>
-                            </sec:ifAllGranted>
+                            <li><a href="${createLink(controller: 'provider', action: 'upload')}">Providers</a></li>
+                            <li><a href="${createLink(controller: 'registrant', action: 'manage')}">Profile</a></li>
                         </ul>
-                    </li>
-                </sec:ifAllGranted>
-                <li>
-                    <a href="#" title="Manage Your User Profile">
-                        <span class="glyphicon glyphicon-user"></span>
-                        Profile
-                    </a>
-                </li>
-                <sec:ifAllGranted roles="ROLE_USER">
-                    <li>
-                        <a href="${createLink(controller:'reports', action:'index')}" title="Generate Assessment Reports">
-                            <span class="glyphicon glyphicon-stats"></span>
-                            Reports
-                        </a>
                     </li>
                 </sec:ifAllGranted>
             </sec:ifLoggedIn>
@@ -71,9 +47,11 @@
                         Administration <b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="${createLink(controller: 'admin', action: 'importExportView')}">Import/Export</a></li>
-                        <li><a href="${createLink(controller: 'error')}">Error Tests</a></li>
-                        <li><a href="${createLink(controller: 'tdAndTipUpdate')}">TD & TIP Update</a></li>
+                        <li><a href="${createLink(controller: 'organization', action: 'administer')}">Organizations</a></li>
+                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}">Registrants</a></li>
+                        <li><a href="${createLink(controller: 'contact', action: 'administer')}">Contacts</a></li>
+                        <li><a href="${createLink(controller: 'email', action: 'settings')}">Email</a></li>
+                        <li><a href="${createLink(controller: 'signingCertificates', action: 'administer')}">Signing Certificates</a></li>
                     </ul>
                 </li>
             </sec:ifAllGranted>
@@ -83,6 +61,12 @@
             <sec:ifNotLoggedIn>
                 <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
                     <li><a href="${createLink(controller: 'login')}">Login</a></li>
+                    <li>
+                        <a href="${createLink(controller: 'registrant', action: 'insert')}">
+                            <span class="glyphicon glyphicon-user"></span>
+                            Sign Up
+                        </a>
+                    </li>
                 </g:if>
             </sec:ifNotLoggedIn>
         </ul>
