@@ -23,7 +23,7 @@ class User {
     }
 
     static mapping = {
-        table name: 'tbr_user'
+        table name: 'user'
         password column: '`pass_hash`'
     }
 
@@ -48,16 +48,25 @@ class User {
     }
 
 
-    Boolean isReportOnly() {
+    Boolean isOrgAdmin() {
         Set<UserRole> roles = UserRole.findAllByUser(this)
         boolean hasRole = false
         roles.each { UserRole role ->
-            if( role.role.authority == Role.ROLE_REPORTS_ONLY )
+            if( role.role.authority == Role.ROLE_ORG_ADMIN )
                 hasRole = true
         }
         return hasRole
     }
 
+    Boolean isReviewer() {
+        Set<UserRole> roles = UserRole.findAllByUser(this)
+        boolean hasRole = false
+        roles.each { UserRole role ->
+            if( role.role.authority == Role.ROLE_REVIEWER )
+                hasRole = true
+        }
+        return hasRole
+    }
 
     Set<Role> getAuthorities() {
         UserRole.findAllByUser(this).collect { it.role } as Set<Role>
@@ -74,12 +83,8 @@ class User {
                 enabled: this.enabled,
                 admin: this.isAdmin(),
                 orgAdmin: this.isOrgAdmin(),
-                reviewer: this.isReviewer(),
-                developer: this.isDeveloper()
+                reviewer: this.isReviewer()
         ]
-        if( !shallow ){
-            // TODO Create rest of data model...
-        }
         return json;
     }//end toJsonMap
 

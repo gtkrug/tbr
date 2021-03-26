@@ -1,4 +1,3 @@
-
 // Added by the Spring Security Core plugin:
 grails.plugin.springsecurity.securityConfigType = "Annotation"
 grails.plugin.springsecurity.userLookup.userDomainClassName = 'tm.binding.registry.User'

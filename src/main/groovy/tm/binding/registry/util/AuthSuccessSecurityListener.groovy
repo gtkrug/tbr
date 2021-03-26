@@ -11,7 +11,7 @@ class AuthSuccessSecurityListener implements ApplicationListener<AuthenticationS
 
     @Override
     void onApplicationEvent(AuthenticationSuccessEvent event) {
-        log.error("AUTHENTICATION SUCCESS: "+event);
+        log.info("AUTHENTICATION SUCCESS: ")
     }
 
 }

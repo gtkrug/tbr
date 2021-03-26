@@ -7,5 +7,61 @@
 //
 //= require jquery-2.2.0.min
 //= require bootstrap
+//= require pagination
+//= require tbr
+//= require utils
 //= require_self
 
+let get = function(url, doSuccess, args)  {
+    $.ajax({
+        url: url,
+        method: 'GET',
+        data: args,
+        dataType: 'json'
+    }).done(function (data){
+        doSuccess(data);
+    }).fail(function (jqxhr, err){
+        console.log('An unexpected error occurred '+err);
+    });
+}
+
+let list = get;
+
+let add = function(url, doSuccess, args)  {
+    $.ajax({
+        url: url,
+        method: 'PUT',
+        data: args,
+        dataType: 'json'
+    }).done(function (data){
+        doSuccess(data);
+    }).fail(function (jqxhr, err){
+        console.log('An unexpected error occurred '+err);
+    });
+}
+
+let remove = function(url, doSuccess, args)  {
+    $.ajax({
+        url: url,
+        method: 'DELETE',
+        data: args,
+        dataType: 'json'
+    }).done(function (data){
+        doSuccess(data);
+    }).fail(function (jqxhr, err){
+        console.log('An unexpected error occurred '+err);
+    });
+}
+
+let update = function(url, doSuccess, args)  {
+    $.ajax({
+        url: url,
+        method: 'POST',
+        data: args,
+        dataType: 'json'
+    }).done(function (data){
+        doSuccess(data);
+    }).fail(function (jqxhr, err){
+        console.log('An unexpected error occurred '+err);
+    });
+}

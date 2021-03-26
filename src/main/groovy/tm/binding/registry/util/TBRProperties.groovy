@@ -34,6 +34,32 @@ static Properties getProperties(){return RESOURCES;}
         return getString("registry.tool.filesdir", "/tmp/tfam")
     }
 
+    private static String getString(String property){
+        return getString(property, null);
+    }
+
+    private static String getString(String property, String defaultValue){
+        Properties props = getProperties();
+        if( props != null ){
+            try{
+                String val = props.getProperty(property);
+                if( val != null && val.trim().length() > 0 ){
+                    return val.trim();
+                }else{
+                    return defaultValue;
+                }
+            }catch(Throwable t){
+                return defaultValue;
+            }
+        }else{
+            return defaultValue;
+        }
+    }
+
+    static String getBaseUrl(){
+        return getString("tf.base.url", "http://localhost:8082/tbr")
+    }
+
     static URL getRegistryUrl(){
         if (getString("registry.url") == null)  {
             return null;

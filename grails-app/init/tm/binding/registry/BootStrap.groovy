@@ -47,7 +47,7 @@ class BootStrap {
 |
 |    TMF API Information
 |
-|    Configuration Information (@see /WEB-INF/config/tat_config.properties)
+|    Configuration Information (@see /WEB-INF/config/tbr_config.properties)
 |
 --------------------------------------------------------------------------------------------------------------------
 
@@ -96,7 +96,7 @@ class BootStrap {
         )
         user.save(failOnError: true)
 
-        String rolesForThisUser = "ROLE_ADMIN, ROLE_ORG_ADMIN, ROLE_USER, ROLE_REVIEWER"
+        String rolesForThisUser = "ROLE_ADMIN, ROLE_ORG_ADMIN, ROLE_REVIEWER"
 
         for (String roleName : rolesForThisUser.split(Pattern.quote(","))) {
             roleName = roleName.trim()
