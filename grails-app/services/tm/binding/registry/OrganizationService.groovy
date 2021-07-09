@@ -91,6 +91,20 @@ class OrganizationService {
         return repos
     }
 
+    def getRepo(String... args) {
+        log.info("repos -> ${args[0]}")
+
+        Organization organization = Organization.get(Integer.parseInt(args[0]))
+
+        Integer repoId = Integer.parseInt(args[1])
+
+        AssessmentRepository repo = organization.assessmentRepos.find { element ->
+            element.id == repoId
+        }
+
+        return repo
+    }
+
     def addRepos(String... args) {
         log.info("add repos -> ${args[0]} ${args[1]}")
 
@@ -102,19 +116,78 @@ class OrganizationService {
         return assessmentRepository
     }
 
+    /**
+     * update the repo
+     * @param args
+     * @return
+     */
+    def updateRepo(String... args) {
+        log.info("update -> ${args[0]}")
+
+        AssessmentRepository repo = null
+
+        repo = AssessmentRepository.get(Integer.parseInt(args[0]))
+        repo.repoUrl = args[1]
+        repo.save(true)
+
+        return repo
+    }
+
     def deleteRepos(String... args) {
-        log.info("delete repos -> ${args[0]} ${args[1]}")
+        log.info("delete -> ${args[0]}")
 
-        Organization organization = Organization.get(Integer.parseInt(args[0]))
+        List<String> ids = args[0].split(":")
 
-        AssessmentRepository assessmentRepository = AssessmentRepository.get(Integer.parseInt(args[1]))
+        Organization organization = new Organization()
+        AssessmentRepository repo = new AssessmentRepository()
 
-        organization.assessmentRepos.remove(assessmentRepository)
-        assessmentRepository.delete()
+        // if origanization id is provided
+        if (args[1]) {
+            organization = Organization.get(Integer.parseInt(args[1]))
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        repo = AssessmentRepository.get(Integer.parseInt(s))
+                        organization.removeFromAssessmentRepos(repo)
+                        repo.delete()
+                    }
+                })
+                organization.save(true)
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid Repo Id!")
+            }
+        } else {
 
-        organization.save(true)
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        repo = AssessmentRepository.get(Integer.parseInt(s))
+
+                        // get all organizations that share this repo
+                        def organizations = Organization.withCriteria(uniqueResult: false) {
+                            repos {
+                                inList("id", [repo.id])
+                            }
+                        }
+
+                        // remove the repo from all organizations found in previous search
+                        organizations.each { org ->
+                            org.removeFromAssessmentRepos(repo)
+                            org.save(true)
+                        }
+
+                        // now delete repo
+                        repo.delete()
+                    }
+                })
+
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid repo Id!")
+            }
+        }
         return organization
     }
+
 
     def trustmarkRecipientIdentifiers(String... args) {
         log.info("trustmarkRecipientIdentifiers -> ${args[0]}")
@@ -138,17 +211,85 @@ class OrganizationService {
         return trustmarkRecipientIdentifier
     }
 
-    def deleteTrustmarkRecipientIdentifier(String... args) {
-        log.info("delete trustmarkRecipientIdentifier -> ${args[0]} ${args[1]}")
+    def getTrustmarkRecipientIdentifier(String... args) {
+        log.info("repos -> ${args[0]}")
 
         Organization organization = Organization.get(Integer.parseInt(args[0]))
 
-        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = TrustmarkRecipientIdentifier.get(Integer.parseInt(args[1]))
+        Integer trustmarkRecipientIdentifierId = Integer.parseInt(args[1])
 
-        organization.trustmarkRecipientIdentifier.remove(trustmarkRecipientIdentifier)
-        trustmarkRecipientIdentifier.delete()
+        TrustmarkRecipientIdentifier trid = organization.trustmarkRecipientIdentifier.find { element ->
+            element.id == trustmarkRecipientIdentifierId
+        }
 
-        organization.save(true)
+        return trid
+    }
+
+    def updateTrustmarkRecipientIdentifier(String... args) {
+        log.info("update -> ${args[0]}")
+
+        TrustmarkRecipientIdentifier trid = null
+
+        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(args[0]))
+        trid.trustmarkRecipientIdentifierUrl = args[1]
+        trid.save(true)
+
+        return trid
+    }
+
+    def deleteTrustmarkRecipientIdentifiers(String... args) {
+
+        log.info("delete -> ${args[0]}")
+
+        List<String> ids = args[0].split(":")
+
+        Organization organization = new Organization()
+        TrustmarkRecipientIdentifier trid = new TrustmarkRecipientIdentifier()
+
+        // if organization is provided
+        if (args[1]) {
+            organization = Organization.get(Integer.parseInt(args[1]))
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(s))
+                        organization.removeFromTrustmarkRecipientIdentifier(trid)
+                        trid.delete()
+                    }
+                })
+                organization.save(true)
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid trustmark recipient identifier Id!")
+            }
+        } else {
+
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(s))
+
+                        // get all organizations that share this trustmark recipient identifier
+                        def organizations = Organization.withCriteria(uniqueResult: false) {
+                            trustmarkRecipientIdentifiers {
+                                inList("id", [trid.id])
+                            }
+                        }
+
+                        // remove the trustmark recipient identifier from all organizations found in previous search
+                        organizations.each { org ->
+                            org.removeFromTrustmarkRecipientIdentifier(trid)
+                            org.save(true)
+                        }
+
+                        // now delete trustmark recipient identifier
+                        trid.delete()
+                    }
+                })
+
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid trustmark recipient identifier Id!")
+            }
+        }
         return organization
     }
 }

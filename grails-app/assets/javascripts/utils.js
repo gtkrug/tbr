@@ -20,7 +20,7 @@ let getCheckedIds = function(str, fn) {
  *  render organizations in a select control
  */
 let renderSelectOrganizations = function(target, id, data)  {
-    let html = "<select class='form-control' id='orgs'>";
+    let html = "<select class='form-control col-sm-8' id='orgs' style='width: 70%;'>";
     html += "<option value='0'>-- Select an Organization --</option>";
     data.forEach(o => {
         html += "<option value='"+o.id+"'>"+o.name+"</option>";
@@ -34,7 +34,7 @@ let renderSelectOrganizations = function(target, id, data)  {
  *  render all contact types in a select control
  */
 let renderContactTypes = function(target, id, data)  {
-    let html = "<select id='ctypes' class='form-control'>";
+    let html = "<select id='ctypes' class='form-control col-sm-8' style='width: 70%;'>";
     html += "<option value='0'> -- Select a Contact Type -- </option>";
     data.forEach(o => {
         html += "<option value='"+o.name+"'>"+o.name+"</option>";
@@ -48,13 +48,35 @@ let renderContactTypes = function(target, id, data)  {
  *  render all contact types in a select control
  */
 let renderProviderTypes = function(target, data)  {
-    let html = "<select id='pType' class='form-control'>";
-    html += "<option value='0'> -- Select a Provider Type -- </option>";
+    let html = "<select id='pType' class='form-control col-sm-8' style='width: 70%;'>";
+    html += "<option value='0'> -- Select a System Type -- </option>";
     data.forEach(o => {
-        html += "<option value='"+o.name+"'>"+o.name+"</option>";
+        html += "<option value='"+o+"'>"+o+"</option>";
     });
-    html += "</select><span style='color:red;'>&nbsp;&nbsp;*</span>";
+    html += "</select><span style='color:#ff0000;'>&nbsp;&nbsp;*</span>";
     document.getElementById(target).innerHTML = html;
+}
+
+/**
+ * checks the form contents for completeness
+ * @param filename
+ * @param description
+ * @param type
+ * @returns {boolean}
+ */
+let checkDocument = function(id, filename, description)  {
+
+    if(filename == null || filename.length === 0) {
+        setDangerStatus("<b>Filename cannot be blank.</b>");
+        document.getElementById('filename').focus();
+        return false;
+    }
+    if(description == null || description.length === 0) {
+        setDangerStatus("<b>Description cannot be blank.</b>");
+        document.getElementById('description').focus();
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -96,6 +118,38 @@ let checkContact = function(lname, fname, email, phone, type, orgId)  {
     return true;
 }
 
+/**
+ * checks the form contents for completeness
+ * @param repo
+ * @returns {boolean}
+ */
+let checkRepo = function(repo)  {
+
+    if(repo == null || repo.length === 0) {
+        setDangerStatus("<b>URL cannot be blank.</b>");
+        document.getElementById('assessmentToolUrlRepo').focus();
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * checks the form contents for completeness
+ * @param trustmarkRecipientIdentifier
+ * @returns {boolean}
+ */
+let checkTrustmarkRecipientIdentifier = function(trustmarkRecipientIdentifier)  {
+
+    if(trustmarkRecipientIdentifier == null || trustmarkRecipientIdentifier.length === 0) {
+        setDangerStatus("<b>Trustmark recipient identifier cannot be blank.</b>");
+        document.getElementById('trustmarkRecipientIdentifier').focus();
+        return false;
+    }
+
+    return true;
+}
+
 //  we can write a single curry function to take an undetermined number of functions TODO
 /**
  * transforms the function into 2 separate argument functions
@@ -128,7 +182,7 @@ let curryThree = function(f)  {
 /**
  * transforms the passed in function to 4 separate argument functions
  * @param f
- * @returns {function(*=): function(*=): function(*=): *}
+ * @returns {function(*=): function(*=): function(*=): function(*=): *}
  */
 let curryFour = function(f)  {
     return function(a)  {
@@ -136,6 +190,25 @@ let curryFour = function(f)  {
             return function(c) {
                 return function(d) {
                     return f(a, b, c, d);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * transforms the passed in function to 5 separate argument functions
+ * @param f
+ * @returns {function(*=): function(*=): function(*=): function(*=): function(*=):*}
+ */
+let curryFive = function(f)  {
+    return function(a)  {
+        return function(b) {
+            return function(c) {
+                return function(d) {
+                    return function(e) {
+                        return f(a, b, c, d, e);
+                    }
                 }
             }
         }
@@ -152,6 +225,12 @@ let setWarningStatus = renderStatus(STATUS_HEADER)(function(msg){return '<div cl
 
 let setSuccessStatus = renderStatus(STATUS_HEADER)(function(msg){return '<div class=\'alert alert-success\'>'+msg+'</div>'});
 
+let resetStatus = renderStatus(STATUS_HEADER)(function(){return ''});
+
+let curriedDocument = curryFour(renderDocuments);
+
+let documentDetail = curryFive(renderDocumentForm);
+
 let curriedContact = curryFour(renderContacts);
 
 let contactDetail = curryFour(renderContactForm);
@@ -166,15 +245,23 @@ let curriedTrustmark = curryThree(renderTrustmarks);
 
 let curriedAttribute = curryFour(renderAttributes);
 
+let curriedIdpAttribute = curryFour(renderIdpAttributes);
+
+let curriedProtocolDetails = curryFour(renderProtocolDetails);
+
 let curriedProvider = curryFour(renderProviders);
 
 let curriedTag = curryFour(renderTags);
 
 let curriedConformanceTargetTip = curryFour(renderConformanceTargetTips);
 
-let curriedRepos = curryThree(renderRepos);
+let curriedRepos = curryFour(renderRepos);
 
-let curriedTrustmarkRecipientIdentifier = curryThree(renderTrustmarkRecipientIdentifiers);
+let repoDetail = curryFour(renderAssessmentToolReposForm);
+
+let curriedTrustmarkRecipientIdentifier = curryFour(renderTrustmarkRecipientIdentifiers);
+
+let trustmarkRecipientIdentifierDetail = curryFour(renderTrustmarkRecipientIdentifiersForm);
 
 let curriedContactTypes = curryThree(renderContactTypes);
 

@@ -1,6 +1,12 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.v1_0.FactoryLoader
+import edu.gatech.gtri.trustmark.v1_0.io.ParseException
+import edu.gatech.gtri.trustmark.v1_0.io.TrustInteroperabilityProfileResolver
+import edu.gatech.gtri.trustmark.v1_0.model.TrustInteroperabilityProfile
 import grails.gorm.transactions.Transactional
+
+import javax.servlet.ServletException
 
 @Transactional
 class AdministrationService {
@@ -44,17 +50,40 @@ class AdministrationService {
     }
 
     def addConformanceTargetTip(String... args) {
-        log.info("addTag -> ${args[0]}")
+        log.info("addConformanceTargetTip -> ${args[1]}")
 
         Provider provider = Provider.get(Integer.parseInt(args[0]))
         ConformanceTargetTip tip = new ConformanceTargetTip()
         tip.conformanceTargetTipIdentifier = args[1]
+
+        String tipName = tipNameFromUri(tip.conformanceTargetTipIdentifier)
+
+        tip.name = tipName
         tip.provider = provider
 
         provider.conformanceTargetTips.add(tip)
         provider.save(true)
 
         return args[0]
+    }
+
+    private String tipNameFromUri(String tipUri) {
+        URL url = new URL(tipUri + "?format=xml");
+
+        TrustInteroperabilityProfileResolver resolver = FactoryLoader.getInstance(TrustInteroperabilityProfileResolver.class)
+
+        try {
+            TrustInteroperabilityProfile tip = resolver.resolve(url);
+
+            if (tip) {
+                // found tip
+                return tip.name
+            }
+        } catch(Throwable t) {
+            log.error("Error encountered processing TIP ${tipUri}: ${t.message}");
+        }
+
+        throw new ServletException("Unable to resolve TIP: ${tipUri}")
     }
 
     def get(String... args) {
@@ -112,6 +141,7 @@ class AdministrationService {
     def deleteConformanceTargetTips(String... args) {
         log.info("delete -> ${args[0]}")
 
+        // conformance target tips IDs
         List<String> ids = args[0].split(":")
 
         Provider provider = Provider.get(Integer.parseInt(args[1]))
@@ -120,6 +150,14 @@ class AdministrationService {
                 if(s.length() > 0)  {
                     Integer tipId = Integer.parseInt(s)
                     ConformanceTargetTip tip = ConformanceTargetTip.findById(tipId)
+
+                    // first, delete any bound trustmarks associated to this tip
+                    def boundTrustmarks = Trustmark.findAllByConformanceTargetTipId(tip.id)
+
+                    if (boundTrustmarks && boundTrustmarks.size() > 0) {
+                        boundTrustmarks*.delete()
+                    }
+
                     provider.conformanceTargetTips.remove(tip)
                     tip.delete();
                 }
@@ -127,6 +165,8 @@ class AdministrationService {
             provider.save(true)
         } catch (NumberFormatException nfe)  {
             log.error("Invalid ConformanceTargetTip Id!")
+        } catch(Exception e) {
+            log.error("Error deleting conformance target tip, error: ${e.message}")
         }
         return provider
     }

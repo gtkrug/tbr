@@ -1,6 +1,7 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.annotation.Secured
 
 import java.nio.charset.StandardCharsets
 
@@ -37,8 +38,8 @@ class EndPointController {
      * list of endpoints related to a specific organization
      * @return
      */
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list()  {
-        User user = springSecurityService.currentUser
 
         def endpoints = endpointService.list(params.id)
 

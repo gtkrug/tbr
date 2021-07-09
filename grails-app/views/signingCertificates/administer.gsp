@@ -11,19 +11,49 @@
         });
 
         let renderSigningCertificatesForm = function(target, fn, org)  {
-            let html  = "<input type='text' class='tm-margin' size='60' id='commonName' placeholder='Enter Signing Certificate Organization Id'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='localityName' placeholder='Enter Signing Certificate Locality Name'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='stateName' placeholder='Enter Signing Certificate State Name'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='countryName' placeholder='Enter Signing Certificate Country Name'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='emailAddress' placeholder='Enter Signing Certificate Email Address'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='organizationName' placeholder='Enter Signing Certificate Organization Name'><span style='color:red;'>*</span><br>";
-            html += "<input type='text' class='tm-margin' size='60' id='organizationUnitName' placeholder='Enter Signing Certificate Organization Unit Name'><span style='color:red;'>*</span><br>";
+            let html  = "";
+
+            html += "<div class='form-group'>";
+            html += "<label for='commonName' class='col-sm-2 control-label tm-margin'>Common Name</label>";
+            html += "<input id='commonName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Organization Id'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='localityName' class='col-sm-2 control-label tm-margin'>Locality Name</label>";
+            html += "<input id='localityName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Locality Name'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='stateName' class='col-sm-2 control-label tm-margin'>State Or Province Name</label>";
+            html += "<input id='stateName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate State Name'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='countryName' class='col-sm-2 control-label tm-margin'>Country Name</label>";
+            html += "<input id='countryName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Country Name'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='emailAddress' class='col-sm-2 control-label tm-margin'>Email Address</label>";
+            html += "<input id='emailAddress' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Email Address'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='organizationName' class='col-sm-2 control-label tm-margin'>Organization Name</label>";
+            html += "<input id='organizationName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Organization Name'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
+            html += "<div class='form-group'>";
+            html += "<label for='organizationUnitName' class='col-sm-2 control-label tm-margin'>Organizational Unit Name</label>";
+            html += "<input id='organizationUnitName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Signing Certificate Organization Unit Name'/><span style='color:red;'>*</span><br>";
+            html += "</div>";
+
 
             // Valid Period drop-down
             html += "<input type='hidden' id='validPeriod' name='validPeriod' value='${certificateValidPeriodIntervalList[0] ?: ''}' />";
             html += "<div class='form-group'>";
-            html += "<label for='validPeriod' class='col-sm-6 control-label'>Period of Validity (years)</label>";
-            html += "<div class='col-sm-6'>";
+            html += "<label for='validPeriod' class='col-sm-2 control-label'>Period of Validity (years)</label>";
+            html += "<div class='col-sm-10'>";
             html += "<div class='btn-group' style='margin: 0;'>";
             html += "<button type='button' class='btn btn-default dropdown-toggle' data-toggle='dropdown' aria-expanded='false'>";
             html += "<span id='selectedValidPeriodTitle'><em>Select Period of Validity...</em></span> <span class='caret'></span>";
@@ -44,8 +74,8 @@
             // Key length drop-down
             html += "<input type='hidden' id='keyLength' name='keyLength' value='${keyLengthList[0] ?: ''}' />";
             html += "<div class='form-group'>";
-            html += "<label for='keyLength' class='col-sm-6 control-label'>Key Length (bits)</label>";
-            html += "<div class='col-sm-6'>";
+            html += "<label for='keyLength' class='col-sm-2 control-label'>Key Length (bits)</label>";
+            html += "<div class='col-sm-10'>";
             html += "<div class='btn-group' style='margin: 0;'>";
             html += "<button type='button' class='btn btn-default dropdown-toggle' data-toggle='dropdown' aria-expanded='false'>";
             html += "<span id='selectedKeyLengthTitle'><em>Select Key Length...</em></span> <span class='caret'></span>";
@@ -63,7 +93,12 @@
             html += "</div>";
             html += "</div>";
 
-            html += "<button id='certOk' type='button' class='btn btn-info tm-margin'>Save</button>";
+            html += "<div class='form-group'>";
+            html += "<div class='col-sm-offset-2 col-sm-10'>";
+            html += "<button id='certOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+            html += "</div>";
+            html += "</div>";
+
             renderDialogForm(target, html);
 
             document.getElementById('commonName').focus();
@@ -139,9 +174,9 @@
 
             if (entry.status == "ACTIVE") {
                 if (entry.defaultCertificate === true) {
-                    html += "<td><input type='radio' name='activeCertificateRadioGroup' onclick='setDefaultCertificate(" + entry.id + ");' checked value='" + entry.id + "'></td>";
+                    html += "<td><input type='radio' name='activeCertificateRadioGroup' onclick='setDefaultCertificate(" + entry.id + "," + entry.defaultCertificate + ");' checked value='" + entry.id + "'></td>";
                 } else {
-                    html += "<td><input type='radio' name='activeCertificateRadioGroup' onclick='setDefaultCertificate(" + entry.id + ");' value='" + entry.id + "'></td>";
+                    html += "<td><input type='radio' name='activeCertificateRadioGroup' onclick='setDefaultCertificate(" + entry.id + "," + entry.defaultCertificate + ");' value='" + entry.id + "'></td>";
                 }
             } else {
                 html += "<td></td>";
@@ -173,16 +208,25 @@
             }
 
             html += "</tr>";
+
             return html;
         }
 
-        let setDefaultCertificate = function(id) {
+        let setDefaultCertificate = function(id, defaultCertificate) {
 
-            add("${createLink(controller:'signingCertificates', action: 'setDefaultCertificate')}"
-                , listSigningCertificates
-                , { id: id
-                }
-            );
+            if (!defaultCertificate) {
+
+                add("${createLink(controller:'signingCertificates', action: 'setDefaultCertificate')}"
+                    , listSigningCertificates
+                    , {
+                        id: id
+                    }
+                );
+
+                setSuccessStatus("<b>The active signing certificate has been changed.</b>");
+            } else {
+                resetStatus();
+            }
         }
 
         let curriedSigningCertificate = curryFour(renderSigningCertificates);
@@ -354,7 +398,6 @@
 <body>
 <div id="status-header"></div>
 <div id="signingCertificates-table"></div>
-<p><span style="color:red;">&nbsp;&nbsp;*</span> - Indicates required field.</p>
 <div id="signingCertificate"></div>
 </body>
 </html>

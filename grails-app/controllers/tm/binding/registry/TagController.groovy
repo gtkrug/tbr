@@ -1,6 +1,7 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.annotation.Secured
 
 class TagController {
 
@@ -37,15 +38,23 @@ class TagController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
 
         def tags = administrationService.listTags(params.id)
 
+        results.put("records", tags)
+
         withFormat  {
             json {
-                render tags as JSON
+                render results as JSON
             }
         }
     }

@@ -16,19 +16,47 @@ class ConformanceTargetTipController {
         User user = springSecurityService.currentUser
         log.info("user -> ${user.name}")
 
+        log.info("add conformance target tip id -> ${params.identifier}")
+
+        def results = [:]
+
+        def messageMap = [:]
+
         def conformanceTargetTips = []
-        conformanceTargetTips.add(administrationService.addConformanceTargetTip(params.pId, params.identifier))
+
+        Provider provider = Provider.get(Integer.parseInt(params.pId))
+
+        ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(params.identifier)
+
+        if (tip != null && provider.conformanceTargetTips.contains(tip)) {
+            messageMap.put("WARNING", "WARNING: Conformance target tip ${tip.name} already exists." )
+        } else {
+            try {
+                conformanceTargetTips.add(administrationService.addConformanceTargetTip(params.pId, params.identifier))
+
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added conformance target tip.")
+
+            } catch (Throwable t) {
+                log.error("Unable to add TIP: ${params.identifier}")
+                messageMap.put("ERROR", "ERROR: Failed to find conformance target TIP at URL: ${params.identifier}.")
+            }
+        }
+
+        results.put("status", messageMap)
+        results.put("conformanceTargetTips", conformanceTargetTips)
 
         withFormat  {
             json {
-                render conformanceTargetTips as JSON
+                render results as JSON
             }
         }
     }
 
     def delete() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
 
         Provider provider = administrationService.deleteConformanceTargetTips(params.ids, params.pid)
 
@@ -39,15 +67,23 @@ class ConformanceTargetTipController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
 
         def conformanceTargetTips = administrationService.listConformanceTargetTips(params.id)
 
+        results.put("records", conformanceTargetTips)
+
         withFormat  {
             json {
-                render conformanceTargetTips as JSON
+                render results as JSON
             }
         }
     }

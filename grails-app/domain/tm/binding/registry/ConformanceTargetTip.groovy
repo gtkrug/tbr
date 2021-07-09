@@ -3,6 +3,7 @@ package tm.binding.registry
 class ConformanceTargetTip {
 
     String conformanceTargetTipIdentifier
+    String name
 
     static belongsTo = [
         provider: Provider
@@ -10,6 +11,7 @@ class ConformanceTargetTip {
 
     static constraints = {
         conformanceTargetTipIdentifier nullable: false
+        name nullable: false
     }
 
     static mapping = {

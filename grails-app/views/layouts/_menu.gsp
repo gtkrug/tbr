@@ -47,17 +47,32 @@
                         Administration <b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu" role="menu">
-                        <li><a href="${createLink(controller: 'organization', action: 'administer')}">Organizations</a></li>
-                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}">Registrants</a></li>
-                        <li><a href="${createLink(controller: 'contact', action: 'administer')}">Contacts</a></li>
-                        <li><a href="${createLink(controller: 'email', action: 'settings')}">Email</a></li>
-                        <li><a href="${createLink(controller: 'signingCertificates', action: 'administer')}">Signing Certificates</a></li>
+                        <li><a href="${createLink(controller: 'index', action: 'index')}" title="Manage Organizations">Organizations</a></li>
+%{--                        Disabled temporarily--}%
+%{--                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>--}%
+                        <li><a href="${createLink(controller: 'contact', action: 'administer')}" title="Manage Contacts">Contacts</a></li>
+                        <li><a href="${createLink(controller: 'email', action: 'settings')}" title="Manage Email">Email</a></li>
+                        <li><a href="${createLink(controller: 'document', action: 'administer')}" title="Manage Documents">Documents</a></li>
+                        <li><a href="${createLink(controller: 'signingCertificates', action: 'administer')}" title="Manage Signing Certificates">Signing Certificates</a></li>
                     </ul>
                 </li>
             </sec:ifAllGranted>
             <sec:ifLoggedIn>
                 <li><a href="${createLink(controller: 'logout')}">Logout</a></li>
             </sec:ifLoggedIn>
+            <sec:ifNotLoggedIn>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <span class="glyphicon glyphicon-list"></span>
+                        View <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li><a href="${createLink(controller: 'index', action: 'index')}">Organizations</a></li>
+                        <li><a href="${createLink(controller: 'publicApi', action: 'documents')}">Documents</a></li>
+                        <li><a href="${createLink(controller: 'publicApi', action: 'signingCertificates')}">Signing Certificates</a></li>
+                    </ul>
+                </li>
+            </sec:ifNotLoggedIn>
             <sec:ifNotLoggedIn>
                 <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
                     <li><a href="${createLink(controller: 'login')}">Login</a></li>

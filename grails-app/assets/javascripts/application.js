@@ -6,7 +6,10 @@
 // to create separate JavaScript files as needed.
 //
 //= require jquery-2.2.0.min
+//= require jquery-ui-1.12.1.min
 //= require bootstrap
+//= require plupload-2.1.1/js/plupload.full.min.js
+//= require plupload-2.1.1/js/moxie.min.js
 //= require pagination
 //= require tbr
 //= require utils

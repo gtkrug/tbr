@@ -87,9 +87,15 @@ class ContactController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
 
         def contacts = []
 
@@ -101,9 +107,11 @@ class ContactController {
             contacts = administrationService.listContacts(params.pid)
         }
 
+        results.put("records", contacts)
+
         withFormat  {
             json {
-                render contacts as JSON
+                render results as JSON
             }
         }
     }

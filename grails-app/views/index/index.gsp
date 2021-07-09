@@ -31,50 +31,205 @@
         }
     </style>
     <script type="text/javascript">
+
+        var LOGGED_IN = false;
+        var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
+
+
         let orgOffset = function (){};
 
-        let listOrganizations = function(orgname)  {
+        let organizationDetail = curryThree(renderOrganizationForm);
+
+        let listOrganizations = function(data)  {
             list("${createLink(controller:'organization', action: 'list')}"
                 , renderResults
-                , {name: orgname});
+                , {name: 'ALL'});
         }
-
-        let showOrganizations = function(target, data, offset)  {
-            let html = renderPagination(offset, data.length, 'orgOffset');
-            html += "<table class='table table-condensed table-striped table-bordered'>";
-            html += "<thead><tr><th style='width: auto;'>Name</th>";
-            html += "<th style='width: auto;'>URL</th>";
-            html += "<th style='width: auto;'>Endpoint Count</th></tr></thead>";
-            html += "<tbody>";
-            if (data.length === 0)  {
-                html += '<tr><td colspan="3"><em>There are no organizations.</em></td></tr>';
-            }  else {
-                let idx = 0;
-                data.forEach(o => {
-                    if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                        html += "<tr>";
-                        html += "<td><a href='${createLink(controller:'organization', action: 'view')}/"+o.id+"'>" + o.name + "</a></td>";
-                        html += "<td>" + o.siteUrl + "</td>";
-                        html += "<td>"+o.providers.length+"</td>";
-                        html += "</tr>";
-                    }
-                    ++idx;
-                });
-            }
-            html += "</tbody></table>";
-            document.getElementById(target).innerHTML = html;
-        }
-
-        let curriedIndex = curryThree(showOrganizations);
 
         let renderResults = function(results)  {
-            orgOffset = curriedIndex('organization-table')(results)
-            orgOffset(0);
+            renderOrganizationOffset = curriedOrganization('organization-table')
+            ({
+                editable: true
+                , fnAdd: function(){renderOrganizationForm('organization'
+                    , function(){addOrganization(document.getElementById('org_name').value
+                        , document.getElementById('org_display').value
+                        , document.getElementById('org_url').value
+                        , document.getElementById('org_desc').value)}
+                    , {id:0})}
+                , fnRemove: removeOrganization
+                , fnDraw: drawOrganizations
+                , title: 'Organizations'
+                , hRef: 'javascript:getDetails'
+            })
+            (results);
+            renderOrganizationOffset(0);
         }
+
+        let getDetails = function(id)  {
+            get("${createLink(controller:'organization', action: 'get')}"
+                , organizationDetail('organization')(function(){updateOrganization(id, document.getElementById('org_name').value, document.getElementById('org_display').value, document.getElementById('org_url').value, document.getElementById('org_desc').value);})
+                , {id: id});
+        }
+
+        let checkOrganization = function(name, display, siteUrl, desc) {
+
+            if (name == null || name.length === 0) {
+                setDangerStatus("<b>Organization name cannot be blank.</b>");
+                document.getElementById('org_name').focus();
+                return false;
+            }
+            if (display == null || display.length === 0) {
+                setDangerStatus("<b>Display name cannot be blank.</b>");
+                document.getElementById('org_display').focus();
+                return false;
+            }
+            if (siteUrl == null || siteUrl.length === 0) {
+                setDangerStatus("<b>URL cannot be blank.</b>");
+                document.getElementById('org_url').focus();
+                return false;
+            }
+            if (!isValidUrl(siteUrl)) {
+                setDangerStatus("<b>URL is not valid.</b>");
+                document.getElementById('org_url').focus();
+                return false;
+            }
+            if (desc == null || desc.length === 0) {
+                setDangerStatus("<b>Description cannot be blank.</b>");
+                document.getElementById('org_desc').focus();
+                return false;
+            }
+            return true;
+        }
+
+        function isValidUrl(string) {
+            let url;
+            let validUrl = false;
+            try {
+                url = new URL(string);
+            } catch (_) {
+                return false;
+            }
+            validUrl = url.protocol === "http:" || url.protocol === "https:";
+
+            return validUrl;
+        }
+
+
+        let addOrganization =  function(name, display, siteUrl, desc)  {
+            if(checkOrganization(name, display, siteUrl, desc))  {
+                add("${createLink(controller:'organization', action: 'add')}"
+                    , listOrganizations
+                    , { name: name
+                        , displayName: display
+                        , siteUrl: siteUrl
+                        , description: desc
+                    }
+                );
+                clearForm();
+            } else {
+                scroll(0,0);
+            }
+        }
+
+        let updateOrganization =  function(id, name, display, siteUrl, desc)  {
+            if(checkOrganization(name, display, siteUrl, desc))  {
+                update("${createLink(controller:'organization', action: 'update')}"
+                    , listOrganizations
+                    , {
+                        id: id
+                        , display: display
+                        , url: siteUrl
+                        , desc: desc
+                    }
+                );
+                clearForm();
+            } else {
+                scroll(0,0);
+            }
+        }
+
+        let removeOrganization = function()  {
+            if (confirm("This operation will delete all data for the selected organizations including all systems that have been added to each organization. Do you want to continue?")) {
+                getCheckedIds('edit-organizations', function (list) {
+                    update("${createLink(controller:'organization', action: 'delete')}"
+                        , listOrganizations
+                        , {ids: list}
+                    );
+                });
+            }
+        }
+
+        let clearForm = function()  {
+            setSuccessStatus("<b>Successfully saved organization.</b>");
+            hideIt('organization');
+            scroll(0,0);
+        }
+
     </script>
 </head>
 <body>
+
+<sec:ifLoggedIn>
+    <div id="isLoogedIn">
+    </div>
+</sec:ifLoggedIn>
+
 <div id="status-header"></div>
+
+<script type="text/javascript">
+
+    $(document).ready(function()  {
+        console.log("$(document).ready(function()");
+
+        var isLoggedIn = $('#isLoogedIn').val();
+
+        if(!(isLoggedIn === undefined)) {
+
+            // Need a global variable to share with external javascript libraries
+            LOGGED_IN = true;
+        }
+
+        listOrganizations('${orgname}');
+    });
+</script>
+
+<div id="organization-table"></div>
+
+<div id="organization"></div>
+
+<sec:ifLoggedIn>
+    <sec:ifNotGranted roles="ROLE_USER,ROLE_ADMIN">
+        <h3 style="margin-top: 2em;">Report Only Account</h3>
+        <div class="text-muted">
+            On this page, you can view the organization report for ${user?.organization?.name},
+            or share it with another user.
+        </div>
+
+        <div style="margin-top: 2em;" class="row">
+            <div class="col-md-4">
+                <div class="reportContainer">
+                    <a href="${createLink(controller:'reports', action: 'organizationReport')}" class="reportLink">
+                        <div class="row">
+                            <div class="col-md-2 reportIcon">
+                                <span class="glyphicon glyphicon-home"></span>
+                            </div>
+                            <div class="col-md-10 reportTextContainer">
+                                <h4 class="reportTitle">Organization Details</h4>
+                                <div class="reportDescription">
+                                    Given a single organization, this report will provide a look into what the status
+                                    of each trustmark assessment is.
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="col-md-8">
+            </div>
+        </div>
+    </sec:ifNotGranted>
+</sec:ifLoggedIn>
+
 <g:if test='${flash.message}'>
     setDangerStatus("<b>Authentication Failed!</b> ${flash.message}");
 </g:if>
@@ -246,71 +401,7 @@
                 </div>
             </form>
         </div>
-    </g:if><g:else>
-    <div class="row">
-        <div class="col-md-offset-4 col-md-4">
-            <div class="mustLoginDetails alert alert-warning">
-                <div class="mustLoginText">
-                    This page requires authentication.  Please click below to start the process.
-                </div>
-                <a href="${createLink(controller:'login')}" class="btn btn-primary">Login &raquo;</a>
-            </div>
-        </div>
-    </div>
-
-    <div style="height: 600px;">&nbsp;</div>
-</g:else>
+    </g:if>
 </sec:ifNotLoggedIn>
-
-<sec:ifLoggedIn>
-    <script type="text/javascript">
-        $(document).ready(function()  {
-            listOrganizations('${orgname}');
-        });
-    </script>
-    <sec:ifAnyGranted roles="ROLE_ADMIN, ROLE_USER">
-        <h3>Organizations</h3>
-        <div id="organization-table"></div>
-        <sec:ifAnyGranted roles="ROLE_ADMIN">
-            <div style="float:right;" id="uploadForm">
-                <form method="post" enctype="multipart/form-data" class="form-inline">
-                    <input name="filename" type="file" class="form-control" accept=".xml"/>
-                    <button type="submit" class="btn btn-default">Upload</button>
-                </form>
-            </div>
-        </sec:ifAnyGranted>
-    </sec:ifAnyGranted>
-
-    <sec:ifNotGranted roles="ROLE_USER,ROLE_ADMIN">
-        <h3 style="margin-top: 2em;">Report Only Account</h3>
-        <div class="text-muted">
-            On this page, you can view the organization report for ${user?.organization?.name},
-            or share it with another user.
-        </div>
-
-        <div style="margin-top: 2em;" class="row">
-            <div class="col-md-4">
-                <div class="reportContainer">
-                    <a href="${createLink(controller:'reports', action: 'organizationReport')}" class="reportLink">
-                        <div class="row">
-                            <div class="col-md-2 reportIcon">
-                                <span class="glyphicon glyphicon-home"></span>
-                            </div>
-                            <div class="col-md-10 reportTextContainer">
-                                <h4 class="reportTitle">Organization Details</h4>
-                                <div class="reportDescription">
-                                    Given a single organization, this report will provide a look into what the status
-                                    of each trustmark assessment is.
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-8">
-            </div>
-        </div>
-    </sec:ifNotGranted>
-</sec:ifLoggedIn>
 </body>
 </html>
