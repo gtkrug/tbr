@@ -42,7 +42,7 @@
                 document.getElementById('emailAddr').value = contact.email;
                 document.getElementById('phoneNbr').value = contact.phone;
             }
-            document.getElementById('ctypes').focus();
+            document.getElementById('lastName').focus();
         }
 
         let getContactDetails = function(id)  {
@@ -73,6 +73,7 @@
                 , fnDraw: drawContacts
                 , hRef: 'javascript:getContactDetails'
                 , title: 'Points of Contact'
+                , includeOrganizationColumn: false
             })
             (results);
             renderContactOffset(0);
@@ -119,6 +120,12 @@
                     , { ids: list, id: oid }
                 );
             });
+        }
+
+        let selectContactTypes = function(id)  {
+            list("${createLink(controller:'contact', action: 'types')}"
+                , curriedContactTypes('select-contact-types')(id)
+                , {name: 'ALL'});
         }
 
 
@@ -394,7 +401,7 @@
 <table class='table table-condensed table-striped table-bordered'>
     <tr>
         <td colspan='2' style='text-align: center'>
-            Basic Organization Information
+            <b>Basic Organization Information</b>
         </td>
     </tr>
 

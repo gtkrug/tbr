@@ -193,19 +193,50 @@ let renderContacts = function(target, obj, data, offset)  {
     html += "<table class='table table-condensed table-striped table-bordered'>";
 
     if(obj.editable)  {
-        html += "<tr><td colspan='6' style='text-align: center'>";
+        if (obj.includeOrganizationColumn) {
+            html += "<tr><td colspan='6' style='text-align: center'>";
+        } else {
+            html += "<tr><td colspan='5' style='text-align: center'>";
+        }
         html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Contact'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Contacts'><span class='glyphicon glyphicon-minus'></span></a></div>";
     } else {
-        html += "<tr><td colspan='5' style='text-align: center'>";
+        if (obj.includeOrganizationColumn) {
+            html += "<tr><td colspan='5' style='text-align: center'>";
+        } else {
+            html += "<tr><td colspan='4' style='text-align: center'>";
+        }
     }
     html += "<b>"+obj.title+"</b></td></tr>"
     if (data.records.length === 0)  {
         if(obj.editable) {
-            html += '<tr><td colspan="6"><em>There are no contacts.</em></td></tr>';
+            if (obj.includeOrganizationColumn) {
+                html += '<tr><td colspan="6"><em>There are no contacts.</em></td></tr>';
+            } else {
+                html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
+            }
         } else {
-            html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
+            if (obj.includeOrganizationColumn) {
+                html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
+            } else {
+                html += '<tr><td colspan="4"><em>There are no contacts.</em></td></tr>';
+            }
         }
     }  else {
+        // table header
+        if(obj.editable) {
+            html += "<tr><th style='width: auto;'></th>";
+        }
+        html += "<th style='width: auto;'>Last Name</th>";
+        html += "<th style='width: auto;'>First Name</th>";
+        html += "<th style='width: auto;'>Email</th>";
+        html += "<th style='width: auto;'>Phone</th>";
+
+        if (obj.includeOrganizationColumn) {
+            html += "<th style='width: auto;'>Organization</th>";
+        }
+
+        html += "</tr>";
+
         let idx = 0;
         data.records.forEach(c => {
             if(idx >= offset && idx < offset+MAX_DISPLAY)  {
@@ -232,7 +263,11 @@ let drawContacts = function(obj, entry)  {
     html += "<td>" + entry.firstName + "</td>";
     html += "<td>" + entry.email + "</td>";
     html += "<td>" + (entry.phone != null ? entry.phone : "") + "</td>";
-    html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id+">" + entry.organization.name + "</a></td>"
+
+    if (obj.includeOrganizationColumn) {
+        html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id + ">" + entry.organization.name + "</a></td>";
+    }
+
     html += "</tr>";
     return html;
 }

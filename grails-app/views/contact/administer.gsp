@@ -71,8 +71,9 @@
                         , {id:0});}
                 , fnRemove: removeContact
                 , fnDraw: drawContacts
-                , title: 'Contacts'
+                , title: 'Points of Contact'
                 , hRef: 'javascript:getDetails'
+                , includeOrganizationColumn: true
             })
             (results);
             renderContactOffset(0);

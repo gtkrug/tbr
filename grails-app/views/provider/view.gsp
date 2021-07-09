@@ -121,7 +121,7 @@
                 document.getElementById('emailAddr').value = contact.email;
                 document.getElementById('phoneNbr').value = contact.phone;
             }
-            document.getElementById('ctypes').focus();
+            document.getElementById('lastName').focus();
         }
 
         let getContactDetails = function(id)  {
@@ -152,6 +152,7 @@
                 , fnDraw: drawContacts
                 , hRef: 'javascript:getContactDetails'
                 , title: 'Points of Contact'
+                , includeOrganizationColumn: false
             })
             (results);
             renderContactOffset(0);

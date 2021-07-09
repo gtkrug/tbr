@@ -50,7 +50,7 @@
                         <li><a href="${createLink(controller: 'index', action: 'index')}" title="Manage Organizations">Organizations</a></li>
 %{--                        Disabled temporarily--}%
 %{--                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>--}%
-                        <li><a href="${createLink(controller: 'contact', action: 'administer')}" title="Manage Contacts">Contacts</a></li>
+                        <li><a href="${createLink(controller: 'contact', action: 'administer')}" title="Manage Contacts">Points of Contact</a></li>
                         <li><a href="${createLink(controller: 'email', action: 'settings')}" title="Manage Email">Email</a></li>
                         <li><a href="${createLink(controller: 'document', action: 'administer')}" title="Manage Documents">Documents</a></li>
                         <li><a href="${createLink(controller: 'signingCertificates', action: 'administer')}" title="Manage Signing Certificates">Signing Certificates</a></li>
