@@ -4,9 +4,11 @@ class Trustmark {
 
     String name
     String url
+    String trustmarkDefinitionURL
     String status
     boolean provisional
     String assessorComments
+    Integer conformanceTargetTipId
 
     static belongsTo = [
         provider: Provider
@@ -15,6 +17,7 @@ class Trustmark {
     static constraints = {
         name nullable: false
         url nullable: false
+        trustmarkDefinitionURL nullable: false
         status nullable: false
         provisional nullable: false
         assessorComments nullable: true

@@ -1,5 +1,7 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.v1_0.model.ContactKindCode
+
 class Organization {
 
     String name
@@ -9,6 +11,7 @@ class Organization {
 
     static hasMany = [
         registrants: Registrant
+      , contacts: Contact
       , providers: Provider
       , assessmentRepos: AssessmentRepository
       , trustmarkRecipientIdentifier: TrustmarkRecipientIdentifier
@@ -21,6 +24,11 @@ class Organization {
         description nullable: true
         registrants nullable: true
         providers nullable: true
+        registrants cascade: "all-delete-orphan"
+        contacts cascade: "all-delete-orphan"
+        providers cascade: "all-delete-orphan"
+        assessmentRepos cascade: "all-delete-orphan"
+        trustmarkRecipientIdentifier cascade: "all-delete-orphan"
     }
 
     static mapping = {

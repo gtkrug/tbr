@@ -36,7 +36,7 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-6">
-                <span class="text-muted">&copy;2020 Georgia Tech Research Institute</span>
+                <span class="text-muted">&copy;2021 Georgia Tech Research Institute</span>
             </div>
             <div>
                 v.<g:meta name="info.app.version"/>,

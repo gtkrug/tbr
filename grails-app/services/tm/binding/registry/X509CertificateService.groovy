@@ -122,7 +122,9 @@ class X509CertificateService {
         byte[] derCert = cert.getEncoded();
         String pemCertPre = new String(Base64.getEncoder().encode(derCert));
         pemCertPre = insert(pemCertPre, "\n", 64)
-        String pemCert = cert_begin + pemCertPre + end_cert;
+
+        // trim the bare certificate before enclosing with the certificate markers
+        String pemCert = cert_begin + pemCertPre.trim() + end_cert;
         return pemCert;
     }
 
@@ -134,7 +136,8 @@ class X509CertificateService {
         String pemKeyPre = new String(Base64.getEncoder().encode(derCert))
         pemKeyPre = insert(pemKeyPre, "\n", 64)
 
-        String pemKey = key_begin + pemKeyPre + key_end;
+        // trim the bare private key before enclosing with the private key markers
+        String pemKey = key_begin + pemKeyPre.trim() + key_end;
 
         return pemKey
     }

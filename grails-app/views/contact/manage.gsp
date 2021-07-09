@@ -43,12 +43,14 @@
         }
 
         let removeContact = function()  {
-            getCheckedIds('edit-contacts', function(list)  {
-                update("${createLink(controller:'contact', action: 'delete')}"
-                    , listContacts
-                    , { ids: list }
-                );
-            });
+            if (confirm("The selected contact(s) may be in use by current systems. Do you wish to proceed?")) {
+                getCheckedIds('edit-contacts', function (list) {
+                    update("${createLink(controller:'contact', action: 'delete')}"
+                        , listContacts
+                        , {ids: list}
+                    );
+                });
+            }
         }
 
         let checkContact = function(lname, fname, email, phone, type)  {

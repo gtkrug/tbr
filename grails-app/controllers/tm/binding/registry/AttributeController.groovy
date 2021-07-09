@@ -39,15 +39,23 @@ class AttributeController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
 
         def attributes = administrationService.listAttributes(params.id)
 
+        results.put("records", attributes)
+
         withFormat  {
             json {
-                render attributes as JSON
+                render results as JSON
             }
         }
     }

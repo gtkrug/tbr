@@ -7,7 +7,7 @@ class Attribute {
 
     static constraints = {
         name nullable: false
-        value nullable: false
+        value blank:true, nullable: false
     }
 
     static mapping = {

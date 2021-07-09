@@ -5,6 +5,8 @@
     <meta name="layout" content="main"/>
     <title>Contacts</title>
     <script type="text/javascript">
+        var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
+
         $(document).ready(function(){
             listContacts([]);
         });
@@ -69,20 +71,23 @@
                         , {id:0});}
                 , fnRemove: removeContact
                 , fnDraw: drawContacts
-                , title: 'Contacts'
+                , title: 'Points of Contact'
                 , hRef: 'javascript:getDetails'
+                , includeOrganizationColumn: true
             })
             (results);
             renderContactOffset(0);
         }
 
         let removeContact = function()  {
-            getCheckedIds('edit-contacts', function(list)  {
-                update("${createLink(controller:'contact', action: 'delete')}"
-                    , listContacts
-                    , { ids: list }
-                );
-            });
+            if (confirm("The selected contact(s) may be in use by current systems. Do you wish to proceed?")) {
+                getCheckedIds('edit-contacts', function (list) {
+                    update("${createLink(controller:'contact', action: 'delete')}"
+                        , listContacts
+                        , {ids: list}
+                    );
+                });
+            }
         }
 
         let updateContact = function(id, lname, fname, email, phone, type, orgId)  {
@@ -127,7 +132,6 @@
 <body>
 <div id="status-header"></div>
 <div id="contacts-table"></div>
-<p><span style="color:red;">&nbsp;&nbsp;*</span> - Indicates required field.</p>
 <div id="contact-details"></div>
 </body>
 </html>

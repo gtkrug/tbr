@@ -10,6 +10,8 @@ private static final Logger log = LoggerFactory.getLogger(TBRProperties.class)
 
 public static final String BUNDLE_NAME = "tbr_config.properties"
 
+final static String BASE_URL = "tf.base.url"
+
 private static Properties RESOURCES = new Properties()
 static {
     try {
@@ -57,7 +59,7 @@ static Properties getProperties(){return RESOURCES;}
     }
 
     static String getBaseUrl(){
-        return getString("tf.base.url", "http://localhost:8082/tbr")
+        return getString(BASE_URL, "http://localhost:8082/tbr")
     }
 
     static URL getRegistryUrl(){
@@ -76,5 +78,20 @@ static Properties getProperties(){return RESOURCES;}
         }
     }
 
+    static Integer getSaml2MetadataValidUntilPeriod() {
+        return Integer.parseInt(getString("saml2.metadata.valid.until", "7"))
+    }
+
+    static Integer getSaml2MetadataCacheDurationPeriod() {
+        return Integer.parseInt(getString("saml2.metadata.cache.duration", "24"))
+    }
+
+    static String getAdminEmail() {
+        return getString("org.contact.1.email", "help@trustmarkinitiative.org")
+    }
+
+    static String getPublicDocumentApi()  {
+        return getProperties().getProperty(BASE_URL)+"/public/documents"
+    }
 }
 

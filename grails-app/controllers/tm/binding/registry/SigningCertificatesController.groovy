@@ -35,6 +35,7 @@ class SigningCertificatesController {
         redirect(action:'list')
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list(){
         log.debug("list -> ${params.name}")
 
@@ -47,6 +48,7 @@ class SigningCertificatesController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def administer() {
         log.debug("SigningCertificatesController::administer...")
 
@@ -87,6 +89,7 @@ class SigningCertificatesController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def view() {
         log.info("Viewing certificate: [${params.id}]...")
 
@@ -213,6 +216,7 @@ class SigningCertificatesController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def download() {
 
         if( StringUtils.isBlank(params.id) ){

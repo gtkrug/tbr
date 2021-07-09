@@ -152,7 +152,6 @@
     </form>
 </div>
 <br><br>
-<p><span style="color:red;">&nbsp;&nbsp;*</span> - Indicates a required field.</p>
 <div id="registrant-detail"></div>
 </body>
 </html>

@@ -1,48 +1,165 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.gorm.transactions.Transactional
 import grails.plugin.springsecurity.annotation.Secured
-
+import org.apache.commons.lang.StringUtils
+import org.dom4j.DocumentException
+import org.grails.web.json.JSONArray
+import grails.web.mapping.LinkGenerator
+import javax.xml.bind.DatatypeConverter
 import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Transactional
 class ProviderController {
+
+    LinkGenerator grailsLinkGenerator
 
     def springSecurityService
 
-    ProviderService providerService
+    def deserializeService
+
+    def providerService
 
     def index() { }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def view()  {
+        log.info("** ProviderController::view id -> ${params.id}")
         log.info(params.id)
         Provider provider = providerService.get(params.id)
-        [provider: provider]
+
+        Map messageMap = [:]
+
+        if(params.filename != null)  {
+
+            try {
+                Organization organization = provider.organization
+                byte[] buffer = new byte[params.filename.size]
+                params.filename.getInputStream().read(buffer)
+                String xmlString = new String(buffer, StandardCharsets.UTF_8)
+                log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
+                messageMap = deserializeService.deserialize(xmlString, provider)
+            } catch (DocumentException de) {
+                log.info("Error parsing metadata, error: ${de.message}")
+                messageMap["ERROR"] = "Error parsing metadata."
+                if(!provider.isAttached()) {
+                    provider.attach()
+                }
+            } catch (Exception e) {
+                log.info("Error parsing metadata, error: ${e.message}")
+                messageMap["ERROR"] = "Error parsing metadata."
+                if(!provider.isAttached()) {
+                    provider.attach()
+                }
+            }
+        }
+
+        [provider: provider, successMessage: messageMap["SUCCESS"],
+         warningMessage: messageMap["WARNING"], errorMessage: messageMap["ERROR"]]
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def signCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
         [provider: provider]
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def encryptCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
         [provider: provider]
     }
 
+    // view metadata xml
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def saml2Metadata()  {
+        log.info(params.id)
+        Provider provider = providerService.get(params.id)
+        String text = ""
+        String contentType = ""
+
+        if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
+            text = provider.saml2MetadataXml
+            contentType = 'text/xml'
+        } else {
+            text = "SAML 2 Metadata has not been generated!"
+            contentType = 'text/html'
+        }
+
+        return render(contentType: contentType, text: text)
+    }
+
+    def generateSaml2Metadata() {
+        log.info("generateSaml2Metadata for ${params.id}")
+
+        Provider provider = providerService.get(params.id)
+
+        deserializeService.serialize(provider)
+
+        String message = "Successfully serialized SAML 2 metadata."
+
+        String metadataGeneratedDateString = ""
+        if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
+            LocalDateTime metadataGeneratedDate =
+                    provider.lastTimeSAMLMetadataGeneratedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+            metadataGeneratedDateString = metadataGeneratedDate.format(fmt)
+        }
+
+        def model = [
+                message: message,
+                dateSAMLMetadataGenerated: metadataGeneratedDateString
+        ]
+
+        render model as JSON
+    }
+
     def upload() {
         User user = springSecurityService.currentUser
         log.info("upload user -> ${user.name}")
-        if(params.filename != null)  {
-            byte[] buffer = new byte[params.filename.size]
-            params.filename.getInputStream().read(buffer)
-            String xmlString = new String(buffer, StandardCharsets.UTF_8)
-            log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
-            deserializeService.deserialize(xmlString)
+
+        Provider provider = providerService.get(params.providerId)
+
+        Map messageMap = [:]
+
+        try {
+            if (params.filename != null) {
+
+                byte[] buffer = new byte[params.filename.size]
+                params.filename.getInputStream().read(buffer)
+                String xmlString = new String(buffer, StandardCharsets.UTF_8)
+                log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
+
+                messageMap = deserializeService.deserialize(xmlString, provider)
+            }
+        } catch (DocumentException de) {
+            log.info("Error parsing ${params.filename.originalFilename}, error: ${de.message}")
+            messageMap["ERROR"] = de.message
+        } catch (Exception e) {
+            log.info("Error parsing ${params.filename.originalFilename}, error: ${e.message}")
+            messageMap["ERROR"] = "Error parsing ${params.filename.originalFilename}"
         }
-        [user: user]
+
+        // prefix warning and error messages
+        if (StringUtils.isNotEmpty(messageMap["WARNING"])) {
+            messageMap["WARNING"] = "WARNING: " + messageMap["WARNING"]
+        }
+
+        if (StringUtils.isNotEmpty(messageMap["ERROR"])) {
+            messageMap["ERROR"] = "ERROR: " + messageMap["ERROR"]
+        }
+
+        Map jsonResponse = [messageMap: messageMap, providerId: provider.id]
+
+        render jsonResponse as JSON
     }
 
     def add()  {
@@ -61,30 +178,191 @@ class ProviderController {
         render organization as JSON
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        def providerBaseUrl = grailsLinkGenerator.link(controller: 'provider', action: 'view')
+        results.put("providerBaseUrl", providerBaseUrl)
 
         def providers = providerService.list(params.orgid)
-        render providers as JSON
+        results.put("records", providers)
+
+        render results as JSON
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def listIdpAttributes() {
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Provider provider = Provider.get(params.id)
+
+        def idpAttributes = provider.idpAttributes
+
+        render idpAttributes as JSON
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def protocolDetails() {
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(params.id)
+
+        def signingCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'signCertificate', id: provider.id)
+        def encryptionCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'encryptCertificate', id: provider.id)
+        def viewMetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'saml2Metadata', id: provider.id)
+
+        String metadataGeneratedDateString = ""
+        if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
+            LocalDateTime metadataGeneratedDate =
+                    provider.lastTimeSAMLMetadataGeneratedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+            metadataGeneratedDateString = metadataGeneratedDate.format(fmt)
+        }
+
+        def protocolDetails = [
+                entityId: provider.entityId,
+                systemType: provider.providerType.name,
+                nameIdFormats: provider.nameFormats,
+                signingCertificateLink: signingCertificateUrl,
+                encryptionCertificateLink: encryptionCertificateUrl,
+                providerId: provider.id,
+                hasSamlMetadataGenerated: StringUtils.isNotEmpty(provider.saml2MetadataXml),
+                viewSamlMetadataLink: viewMetadataUrl,
+                lastTimeSAMLMetadataGeneratedDate: metadataGeneratedDateString
+        ]
+
+        results.put("records", protocolDetails)
+
+        render results as JSON
     }
 
     def types()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
 
         def providerTypes = providerService.types()
 
-        render providerTypes as JSON
+        JSONArray jsonArray = new JSONArray()
+        for (String s : providerTypes) {
+            jsonArray.put(s)
+        }
+
+        render jsonArray as JSON
     }
 
     def bindTrustmarks() {
         User user = springSecurityService.currentUser
-        log.debug("Starting the scan host job...")
+        log.info("** bindTrustmarks...")
 
-        BindTrustmarksToProviderJob.triggerNow([id:params.id])
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "About to start the trustmark binding process...")
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "RUNNING")
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_PERCENT_VAR, "0")
 
-        Map jsonResponse = [status: 'SUCCESS', message: 'Started the trustmark binding process; trustmarks should be available once bound.'];
-        render jsonResponse as JSON;
+        final Integer providerId = Integer.parseInt(params.id)
+
+        // Do not start the bind trustmarks processing if it is already running
+        if (!providerService.isExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)) {
+
+            // initialize status
+            providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "Binding trustmarks")
+            providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_PERCENT_VAR, "0")
+            providerService.setExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)
+
+            providerService.bindTrustmarks(providerId)
+        }
+
+        Provider provider = Provider.get(providerId)
+
+        Map jsonResponse = [status: 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+                            numberOfTrustmarksBound: provider.trustmarks.size(),
+                            numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
+
+        render jsonResponse as JSON
+    }
+
+    def initTrustmarkBindingState() {
+        User user = springSecurityService.currentUser
+
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "About to start the trustmark binding process...")
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "RUNNING")
+        providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_PERCENT_VAR, "0")
+
+        providerService.stopExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)
+
+        Map jsonResponse = [status: 'SUCCESS', message: 'Successfully initialized trustmark binding process.']
+
+        render jsonResponse as JSON
+    }
+
+    def cancelTrustmarkBindings() {
+        User user = springSecurityService.currentUser
+
+        // Check if operation is active, interrupt operation and wait for the thread to finish
+        if (providerService.isExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)) {
+            providerService.stopExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)
+
+            providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "CANCELLING")
+            providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "Cancelling the trustmark binding process...")
+        }
+
+        Integer providerId = Integer.parseInt(params.id)
+        Provider provider = Provider.get(providerId)
+
+
+        Map jsonResponse = [status: 'SUCCESS', message: 'Successfully canceled trustmark binding process.',
+                            numberOfTrustmarksBound: provider.trustmarks.size(),
+                            numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
+
+        render jsonResponse as JSON
+    }
+
+    def updateTrustmarkBindingDetails() {
+        User user = springSecurityService.currentUser
+
+        Integer providerId = Integer.parseInt(params.id)
+
+        Provider provider = Provider.get(providerId)
+
+        Map jsonResponse = [numberOfTrustmarksBound: provider.trustmarks.size(),
+                            numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
+
+        render jsonResponse as JSON
+    }
+
+    def trustmarkBindingStatusUpdate() {
+
+        Map jsonResponse = [:]
+
+        jsonResponse.put("status", providerService.getAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR))
+
+        String percentString = providerService.getAttribute(ProviderService.BIND_TRUSTMARKS_PERCENT_VAR)
+
+        int percentInt = 0
+        if( StringUtils.isNotEmpty(percentString) ){
+            percentInt = Integer.parseInt(percentString.trim())
+        }
+        jsonResponse.put("percent", percentInt)
+        jsonResponse.put("message", providerService.getAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR))
+
+        render jsonResponse as JSON
     }
 }

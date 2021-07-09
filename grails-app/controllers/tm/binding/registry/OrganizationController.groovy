@@ -12,6 +12,8 @@ class OrganizationController {
 
     DeserializeService deserializeService
 
+    def springSecurityService
+
     def index() { }
     
     def insert() { }
@@ -20,6 +22,7 @@ class OrganizationController {
 
     def manage() { }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def view() {
         log.info(params.id)
         Organization organization = organizationService.get(params.id)
@@ -30,7 +33,7 @@ class OrganizationController {
             log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
             deserializeService.deserialize(xmlString, organization)
         }
-        [organization: organization]
+        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn()]
     }
 
     def add()  {
@@ -85,6 +88,7 @@ class OrganizationController {
         }
     }
 
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list()  {
         log.debug("list -> ${params.name}")
 
@@ -100,11 +104,15 @@ class OrganizationController {
     def repos()  {
         log.debug("repos -> ${params.oid}")
 
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
         def repos = organizationService.repos(params.oid)
+        results.put("records", repos)
 
         withFormat  {
             json {
-                render repos as JSON
+                render results as JSON
             }
         }
     }
@@ -121,10 +129,35 @@ class OrganizationController {
         }
     }
 
-    def deleteRepo()  {
+    def getRepo()  {
+        log.debug("repos -> ${params.orgid}")
+
+        AssessmentRepository assessmentRepository = organizationService.getRepo(params.orgid, params.rid)
+
+        withFormat  {
+            json {
+                render assessmentRepository as JSON
+            }
+        }
+    }
+
+    def updateRepo()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        AssessmentRepository assessmentRepository = organizationService.updateRepo(params.id, params.repoUrl, params.organizationId)
+
+        withFormat  {
+            json {
+                render assessmentRepository as JSON
+            }
+        }
+    }
+
+    def deleteRepos()  {
         log.debug("repos -> ${params.orgid} ${params.rid}")
 
-        Organization organization = organizationService.deleteRepos(params.orgid, params.rid)
+        Organization organization = organizationService.deleteRepos(params.ids, params.orgid)
 
         withFormat  {
             json {
@@ -136,11 +169,15 @@ class OrganizationController {
     def trustmarkRecipientIdentifiers()  {
         log.debug("trustmarkRecipientIdentifiers -> ${params.oid}")
 
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
         def trustmarkRecipientIdentifiers = organizationService.trustmarkRecipientIdentifiers(params.oid)
+        results.put("records", trustmarkRecipientIdentifiers)
 
         withFormat  {
             json {
-                render trustmarkRecipientIdentifiers as JSON
+                render results as JSON
             }
         }
     }
@@ -157,14 +194,38 @@ class OrganizationController {
         }
     }
 
-    def deleteTrustmarkRecipientIdentifier()  {
-        log.debug("repos -> ${params.orgid} ${params.tmrid}")
+    def deleteTrustmarkRecipientIdentifiers()  {
 
-        Organization organization = organizationService.deleteTrustmarkRecipientIdentifier(params.orgid, params.tmrid)
+        Organization organization = organizationService.deleteTrustmarkRecipientIdentifiers(params.ids, params.orgid)
 
         withFormat  {
             json {
                 render organization as JSON
+            }
+        }
+    }
+
+    def getTrustmarkRecipientIdentifier()  {
+        log.debug("repos -> ${params.orgid}")
+
+        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = organizationService.getTrustmarkRecipientIdentifier(params.orgid, params.rid)
+
+        withFormat  {
+            json {
+                render trustmarkRecipientIdentifier as JSON
+            }
+        }
+    }
+
+    def updateTrustmarkRecipientIdentifier()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        TrustmarkRecipientIdentifier trid = organizationService.updateTrustmarkRecipientIdentifier(params.id, params.trustmarkRecipientIdentifier, params.organizationId)
+
+        withFormat  {
+            json {
+                render trid as JSON
             }
         }
     }

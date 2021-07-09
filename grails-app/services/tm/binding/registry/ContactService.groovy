@@ -87,18 +87,49 @@ class ContactService {
         List<String> ids = args[0].split(":")
         Contact contact = new Contact()
 
-        Provider provider = Provider.get(Integer.parseInt(args[1]))
-        try  {
-            ids.forEach({s ->
-                if(s.length() > 0)  {
-                    contact = Contact.get(Integer.parseInt(s))
-                    provider.contacts.remove(contact)
-                    contact.delete()
-                }
-            })
-            provider.save(true)
-        } catch (NumberFormatException nfe)  {
-            log.error("Invalid Contact Id!")
+        // if provider is provided
+        if (args[1]) {
+            Provider provider = Provider.get(Integer.parseInt(args[1]))
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        contact = Contact.get(Integer.parseInt(s))
+                        provider.removeFromContacts(contact)
+                        contact.delete()
+                    }
+                })
+                provider.save(true)
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid Contact Id!")
+            }
+        } else {
+
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        contact = Contact.get(Integer.parseInt(s))
+
+                        // get all providers that share this contact
+                        def providers = Provider.withCriteria(uniqueResult: false) {
+                            contacts {
+                                inList("id", [contact.id])
+                            }
+                        }
+
+                        // remove the contact from all providers found in previous search
+                        providers.each { provider ->
+                            provider.removeFromContacts(contact)
+                            provider.save(true)
+                        }
+
+                        // now delete contact
+                        contact.delete()
+                    }
+                })
+
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid Contact Id!")
+            }
         }
         return contact
     }
