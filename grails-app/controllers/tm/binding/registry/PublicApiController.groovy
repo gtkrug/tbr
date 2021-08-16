@@ -139,4 +139,22 @@ class PublicApiController {
     private String generateDocumentUrl(String docName)  {
         return TBRProperties.getPublicDocumentApi()+'/'+docName
     }
+
+    /**
+     * TBR Status
+     * @return
+     */
+    def status() {
+        log.info("TBR status ...")
+
+        def tbrStatus = [
+                status : "OK"
+        ]
+
+        withFormat {
+            json {
+                render tbrStatus as JSON
+            }
+        }
+    }
 }

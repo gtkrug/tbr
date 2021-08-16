@@ -10,6 +10,7 @@ class Provider {
     String       signingCertificate
     String       encryptionCertificate
     String       saml2MetadataXml
+    String       saml2MetadataUrl
     Instant      validUntilDate
     ProviderType providerType
     Date         lastTimeSAMLMetadataGeneratedDate
@@ -26,6 +27,7 @@ class Provider {
         signingCertificate nullable: true
         encryptionCertificate nullable: true
         saml2MetadataXml nullable: true
+        saml2MetadataUrl nullable: true
         validUntilDate nullable: true
         attributes nullable: true
         idpAttributes nullable: true
@@ -48,6 +50,7 @@ class Provider {
         , trustmarks: Trustmark
         , tags: String
         , conformanceTargetTips: ConformanceTargetTip
+        , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
     ]
 
     static mapping = {
@@ -57,11 +60,13 @@ class Provider {
         signingCertificate column: 'sign_cert', type: 'text'
         encryptionCertificate column: 'encrypt_cert', type: 'text'
         saml2MetadataXml column: 'saml2_metadata_xml', type: 'text'
+        saml2MetadataUrl column: 'saml2_metadata_url', type: 'text'
         endpoints cascade: "all-delete-orphan"
         attributes cascade: "all-delete-orphan"
         idpAttributes cascade: "all-delete-orphan"
         trustmarks cascade: "all-delete-orphan"
         conformanceTargetTips cascade: "all-delete-orphan"
+        trustmarkRecipientIdentifiers cascade: "all-delete-orphan"
     }
 
     def findAttribute(String name)  {
@@ -88,7 +93,8 @@ class Provider {
                 nameFormats : this.nameFormats,
                 attributes : this.attributes,
                 conformanceTargetTips : this.conformanceTargetTips,
-                lastTimeSAMLMetadataGeneratedDate: lastTimeSAMLMetadataGeneratedDate.toString()
+                lastTimeSAMLMetadataGeneratedDate: lastTimeSAMLMetadataGeneratedDate.toString(),
+                saml2MetadataUrl: this.saml2MetadataUrl
         ]
         return json
     }

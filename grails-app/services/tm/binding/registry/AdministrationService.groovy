@@ -37,6 +37,18 @@ class AdministrationService {
         return args[0]
     }
 
+    def removeContactFromProvider(Contact contact, String... args) {
+        log.info("removeContactFromProvider -> ${args[0]}")
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        if(contact != null)  {
+            provider.contacts.remove(contact)
+            provider.save(true)
+        }
+
+        return args[0]
+    }
+
     def addAttribute(String... args) {
         log.info("addAttribute -> ${args[0]}")
 

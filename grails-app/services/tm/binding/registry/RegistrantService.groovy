@@ -64,21 +64,26 @@ class RegistrantService {
     /**
      * add a registant
      * @param args
+     * args[0]: params.lname
+     * args[1]: params.fname
+     * args[2]: params.email
+     * args[3]: params.phone
+     * args[4]: params.pswd
+     * args[5]: params.organizationId
      * @return
      */
     def add(String... args) {
         log.info("add -> ${args[0]}")
 
-        User user = userService.add(args[1] + ", " + args[0], args[4], args[2])
+        Contact contact = contactService.add(args[0], args[1], args[2], args[3], args[5], "ADMINISTRATIVE")
+
+        User user = userService.add(args[1] + ", " + args[0], args[4], args[2], contact)
 
         Organization organization = Organization.get(Integer.parseInt(args[5]))
-
-        Contact contact = contactService.add(args[0], args[1], args[2], args[3], args[5], "ADMINISTRATIVE")
 
         Registrant registrant = new Registrant(
                 user: user
                 , organization: organization
-                , contact: contact
         )
 
         registrant.save(true)

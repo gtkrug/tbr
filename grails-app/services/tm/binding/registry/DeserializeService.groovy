@@ -2,6 +2,7 @@ package tm.binding.registry
 
 import edu.gatech.gtri.trustmark.v1_0.impl.io.xml.XmlSignatureImpl
 import grails.gorm.transactions.Transactional
+import grails.web.mapping.LinkGenerator
 import org.dom4j.Document
 import org.dom4j.DocumentException
 import org.dom4j.Element
@@ -117,6 +118,8 @@ class DeserializeService {
     public static final String SAML2_ATTRIBUTE_NAME_FORMAT_URI = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
     ContactService contactService
+
+    LinkGenerator grailsLinkGenerator
 
     def resourceLocator
 
@@ -973,12 +976,12 @@ class DeserializeService {
                 .setText(provider.name)
 
         // add trustmark recipient identifier attributes
-        if (provider.organization.trustmarkRecipientIdentifier.size() > 0) {
+        if (provider.organization.trustmarkRecipientIdentifiers.size() > 0) {
             Element trustmarkRecipientIdentifiersAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
                     .addAttribute(NAME, "https://nief.org/attribute-registry/attributes/entity/trustmark/TrustmarkRecipientIdentifiers/1.0/")
                     .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
 
-            provider.organization.trustmarkRecipientIdentifier.each { tri ->
+            provider.organization.trustmarkRecipientIdentifiers.each { tri ->
                 trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
                         .setText(tri.trustmarkRecipientIdentifierUrl)
             }
@@ -1291,6 +1294,10 @@ class DeserializeService {
 
         provider.validUntilDate = instant
         provider.saml2MetadataXml = signedSamlMetadata
+
+        // save the metadata url
+        String saml2MetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'saml2Metadata', id: provider.id, absolute: true)
+        provider.saml2MetadataUrl = saml2MetadataUrl
 
         saveProvider(provider)
 

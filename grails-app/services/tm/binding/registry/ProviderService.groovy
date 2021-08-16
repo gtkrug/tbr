@@ -23,26 +23,26 @@ class ProviderService {
     public static final String TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT = "public/trustmarks/find-by-recipient/"
 
     // execution
-    public static final String BIND_TRUSTMARKS_EXECUTING_VAR = ProviderService.class.simpleName+".BIND_TRUSTMARKS_EXECUTING"
+    public static final String BIND_TRUSTMARKS_EXECUTING_VAR = ProviderService.class.simpleName + ".BIND_TRUSTMARKS_EXECUTING"
 
     // messaging
-    public static final String BIND_TRUSTMARKS_STATUS_VAR = ProviderService.class.getName()+".BIND_TRUSTMARKS_STATUS"
-    public static final String BIND_TRUSTMARKS_PERCENT_VAR = ProviderService.class.getName()+".BIND_TRUSTMARKS_PERCENT"
-    public static final String BIND_TRUSTMARKS_MESSAGE_VAR = ProviderService.class.getName()+".BIND_TRUSTMARKS_MESSAGE"
+    public static final String BIND_TRUSTMARKS_STATUS_VAR = ProviderService.class.getName() + ".BIND_TRUSTMARKS_STATUS"
+    public static final String BIND_TRUSTMARKS_PERCENT_VAR = ProviderService.class.getName() + ".BIND_TRUSTMARKS_PERCENT"
+    public static final String BIND_TRUSTMARKS_MESSAGE_VAR = ProviderService.class.getName() + ".BIND_TRUSTMARKS_MESSAGE"
 
     // progress execution monitoring attributes management
     void setAttribute(String key, Object value) {
         try {
             WebUtils.retrieveGrailsWebRequest().currentRequest.session.setAttribute(key, value)
-        } catch(IllegalStateException ise) {
-        // do nothing since we are outside of a web request
+        } catch (IllegalStateException ise) {
+            // do nothing since we are outside of a web request
         }
     }
 
     Object getAttribute(String key) {
         try {
             return WebUtils.retrieveGrailsWebRequest().currentRequest.session.getAttribute(key)
-        } catch(IllegalStateException ise) {
+        } catch (IllegalStateException ise) {
             // do nothing since we are outside of a web request
         }
 
@@ -52,7 +52,7 @@ class ProviderService {
     void removeAttribute(String key) {
         try {
             WebUtils.retrieveGrailsWebRequest().currentRequest.session.removeAttribute(key)
-        } catch(IllegalStateException ise) {
+        } catch (IllegalStateException ise) {
             // do nothing since we are outside of a web request
         }
     }
@@ -85,7 +85,7 @@ class ProviderService {
 //        args[3] -> organization id
 
         Provider provider = new Provider()
-        try  {
+        try {
             Organization org = Organization.get(Integer.parseInt(args[3]))
 
             provider.providerType = ProviderType.fromString(args[0])
@@ -98,10 +98,10 @@ class ProviderService {
             org.providers.add(provider)
             org.save(true)
 
-        }  catch (NumberFormatException nfe)  {
+        } catch (NumberFormatException nfe) {
             provider = new Provider(type: ProviderType.fromString(args[0])
-                                    , name: args[1]
-                                    , entityId: args[2])
+                    , name: args[1]
+                    , entityId: args[2])
             provider.save(true)
         }
 
@@ -112,9 +112,9 @@ class ProviderService {
         log.info("get -> ${args[0]}")
 
         Provider provider = null
-        try  {
+        try {
             provider = Provider.get(Integer.parseInt(args[0]))
-        } catch (NumberFormatException nfe)  {
+        } catch (NumberFormatException nfe) {
             provider = Provider.findByUrl(args[0])
         }
         return provider
@@ -134,22 +134,22 @@ class ProviderService {
         List<String> ids = args[0].split(":")
 
         Organization organization = Organization.get(Integer.parseInt(args[1]))
-        try  {
-            ids.forEach({s ->
-                if(s.length() > 0)  {
+        try {
+            ids.forEach({ s ->
+                if (s.length() > 0) {
                     Provider provider = Provider.get(Integer.parseInt(s))
                     organization.removeFromProviders(provider)
                     provider.delete()
                 }
             })
             organization.save(true)
-        } catch (NumberFormatException nfe)  {
+        } catch (NumberFormatException nfe) {
             log.error("Invalid Attribute Id!")
         }
         return organization
     }
 
-    def types()  {
+    def types() {
         log.info("list ...")
         def types = ProviderType.values()
         return types
@@ -160,15 +160,15 @@ class ProviderService {
 
         def providers = []
 
-        try  {
+        try {
             int organizationId = Integer.parseInt(args[0])
-            if(organizationId == 0)  {
-                Provider.findAll().forEach({e -> providers.add(e.toJsonMap())})
-            }  else {
-                Provider.findAllByOrganization(Organization.get(organizationId)).forEach({e -> providers.add(e.toJsonMap())})
+            if (organizationId == 0) {
+                Provider.findAll().forEach({ e -> providers.add(e.toJsonMap()) })
+            } else {
+                Provider.findAllByOrganization(Organization.get(organizationId)).forEach({ e -> providers.add(e.toJsonMap()) })
             }
-        } catch (NumberFormatException nfe)  {
-            Provider.findAll().forEach({e -> providers.add(e.toJsonMap())})
+        } catch (NumberFormatException nfe) {
+            Provider.findAll().forEach({ e -> providers.add(e.toJsonMap()) })
         }
         return providers
     }
@@ -180,7 +180,7 @@ class ProviderService {
 
         String type = args[0]
 
-        switch(args[0])  {
+        switch (args[0]) {
             case 'SAML_SP':
                 type = ProviderType.SAML_SP.toString()
                 break;
@@ -190,11 +190,111 @@ class ProviderService {
         }
 
         ProviderType providerType = ProviderType.fromString(type)
-        if(providerType)  {
-            Provider.findAllByProviderType(providerType).forEach({e -> providers.add(e.toJsonMap())})
+        if (providerType) {
+            Provider.findAllByProviderType(providerType).forEach({ e -> providers.add(e.toJsonMap()) })
         }
 
         return providers
+    }
+
+    def trustmarkRecipientIdentifiers(String... args) {
+        log.info("trustmarkRecipientIdentifiers -> ${args[0]}")
+        def trustmarkRecipientIdentifiers = []
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        provider.trustmarkRecipientIdentifiers.forEach({ o -> trustmarkRecipientIdentifiers.add(o) })
+
+        return trustmarkRecipientIdentifiers
+    }
+
+    def addTrustmarkRecipientIdentifier(String... args) {
+        log.info("add trustmarkRecipientIdentifier -> ${args[0]} ${args[1]}")
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
+                trustmarkRecipientIdentifierUrl: args[1], organization: provider.organization)
+
+        Provider.withTransaction {
+            provider.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
+            trustmarkRecipientIdentifier.save(true)
+
+            provider.save(true)
+        }
+
+        return trustmarkRecipientIdentifier
+    }
+
+    def getTrustmarkRecipientIdentifier(String... args) {
+        log.info("repos -> ${args[0]}")
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+
+        Integer trustmarkRecipientIdentifierId = Integer.parseInt(args[1])
+
+        TrustmarkRecipientIdentifier trid = provider.trustmarkRecipientIdentifiers.find { element ->
+            element.id == trustmarkRecipientIdentifierId
+        }
+
+        return trid
+    }
+
+    def updateTrustmarkRecipientIdentifier(String... args) {
+        log.info("update -> ${args[0]}")
+
+        TrustmarkRecipientIdentifier trid = null
+
+        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(args[0]))
+        trid.trustmarkRecipientIdentifierUrl = args[1]
+        trid.save(true)
+
+        return trid
+    }
+
+    def deleteTrustmarkRecipientIdentifiers(String... args) {
+        log.info("delete -> ${args[0]}")
+        List<String> ids = args[0].split(":")
+        Provider provider = new Provider()
+        TrustmarkRecipientIdentifier trid = new TrustmarkRecipientIdentifier()
+        // if system is provided
+        if (args[1]) {
+            provider = Provider.get(Integer.parseInt(args[1]))
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(s))
+                        provider.trustmarkRecipientIdentifiers.remove(trid)
+                        trid.delete()
+                    }
+                })
+                provider.save(true)
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid trustmark recipient identifier Id!")
+            }
+        } else {
+            try {
+                ids.forEach({ s ->
+                    if (s.length() > 0) {
+                        trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(s))
+                        // get all providers that share this trustmark recipient identifier
+                        def providers = Provider.withCriteria(uniqueResult: false) {
+                            trustmarkRecipientIdentifiers {
+                                inList("id", [trid.id])
+                            }
+                        }
+                        // remove the trustmark recipient identifier from all providers found in previous search
+                        providers.each { p ->
+                            p.trustmarkRecipientIdentifiers.remove(trid)
+                            p.save(true)
+                        }
+                        // now delete trustmark recipient identifier
+                        trid.delete()
+                    }
+                })
+            } catch (NumberFormatException nfe) {
+                log.error("Invalid trustmark recipient identifier Id!")
+            }
+        }
+        return provider
     }
 
     def bindTrustmarksForAllProviders() {
@@ -214,7 +314,7 @@ class ProviderService {
                 }
             }
         }
-        catch(Throwable t) {
+        catch (Throwable t) {
             log.error("Error encountered during the trustmark bind all process: ${t.message}");
         }
 
@@ -234,7 +334,7 @@ class ProviderService {
             // remove previously bound trustmarks for this provider system
             provider.trustmarks.clear()
 
-            Organization org = provider.organization
+            Organization org = Organization.get(provider.organization.id)
 
             // Get the conformance targe tips
             def conformanceTargetTips = provider.conformanceTargetTips
@@ -287,8 +387,14 @@ class ProviderService {
                 // Get assessment tool URLs
                 def assessmentToolUrls = org.assessmentRepos
 
-                // Get Trustmark Recipient Identifiers
-                def recipientIdentifiers = org.trustmarkRecipientIdentifier
+                // Collect Trustmark Recipient Identifiers
+                Set<TrustmarkRecipientIdentifier> recipientIdentifiers = new HashSet<TrustmarkRecipientIdentifier>()
+
+                // Get Trustmark Recipient Identifiers from parent organization
+                recipientIdentifiers.addAll(org.trustmarkRecipientIdentifiers)
+
+                // Add Trustmark Recipient Identifiers from this system provider
+                recipientIdentifiers.addAll(provider.trustmarkRecipientIdentifiers)
 
                 if (monitoringProgress) {
                     setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Querying trustmarks for all registered trustmark recipients against all assessment tools registered for the organization: ${org.name}")
@@ -323,10 +429,10 @@ class ProviderService {
                         String encodedRecipientId = encodeURIComponent(recipientIdBase64)
 
                         // append the recipient id encoded url
-                        tatUrl += encodedRecipientId
+                        String recipientIdentifierQueryUrl = tatUrl + encodedRecipientId
 
                         // get the trustmarks from the TAT
-                        JSONObject trustmarksJson = IOUtils.fetchJSON(tatUrl);
+                        JSONObject trustmarksJson = IOUtils.fetchJSON(recipientIdentifierQueryUrl);
                         JSONArray trustmarksJsonArray = trustmarksJson.getJSONArray("trustmarks");
 
                         totalNumberOfTrustmarksQueried += trustmarksJsonArray.size()
@@ -425,7 +531,7 @@ class ProviderService {
                 log.info("Successfully bound " + bindingTrustmarks.size() + " trustmarks to provider: " + provider.name)
             }
         }
-        catch(Throwable t) {
+        catch (Throwable t) {
             log.error("Error encountered during the trustmark binding process: ${t.message}");
         }
 
@@ -479,7 +585,7 @@ class ProviderService {
                     // recurse over contained TIPs
                     resolveTip(resolver, tipRefIdentifierUrl.toString(), conformanceTargetTipUri, tdSet, processedTipsSet, monitoringProgress);
 
-                // Collect TDs
+                    // Collect TDs
                 } else if (abstractRef.isTrustmarkDefinitionRequirement()) {
 
                     TrustmarkDefinitionRequirementImpl tfReqImpl = (TrustmarkDefinitionRequirementImpl) abstractRef;
@@ -496,12 +602,10 @@ class ProviderService {
         return url.endsWith("/") ? url : url + "/";
     }
 
-    private String encodeURIComponent(String s)
-    {
+    private String encodeURIComponent(String s) {
         String result = null;
 
-        try
-        {
+        try {
             result = URLEncoder.encode(s, "UTF-8")
                     .replaceAll("\\+", "%20")
                     .replaceAll("\\%21", "!")
@@ -511,8 +615,7 @@ class ProviderService {
                     .replaceAll("\\%7E", "~");
         }
         // This exception should never occur.
-        catch (UnsupportedEncodingException e)
-        {
+        catch (UnsupportedEncodingException e) {
             result = s;
         }
 

@@ -14,7 +14,7 @@ class Organization {
       , contacts: Contact
       , providers: Provider
       , assessmentRepos: AssessmentRepository
-      , trustmarkRecipientIdentifier: TrustmarkRecipientIdentifier
+      , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
     ]
 
     static constraints = {
@@ -28,7 +28,7 @@ class Organization {
         contacts cascade: "all-delete-orphan"
         providers cascade: "all-delete-orphan"
         assessmentRepos cascade: "all-delete-orphan"
-        trustmarkRecipientIdentifier cascade: "all-delete-orphan"
+        trustmarkRecipientIdentifiers cascade: "all-delete-orphan"
     }
 
     static mapping = {
@@ -48,7 +48,7 @@ class Organization {
                 siteUrl: this.siteUrl,
                 providers: this.providers,
                 assessmentRepos: this.assessmentRepos,
-                trustmarkRecipientIdentifier: this.trustmarkRecipientIdentifier,
+                trustmarkRecipientIdentifiers: this.trustmarkRecipientIdentifiers,
                 registrants: this.registrants
         ]
         return json;

@@ -204,6 +204,9 @@
             if(checkRepo(repoNm)) {
                 add("${createLink(controller:'organization', action: 'addRepo')}"
                     , function (data) {
+                        if (data.statusMessage && data.statusMessage.length > 0) {
+                            repoStatus(data.statusMessage)
+                        }
                         getRepos(${organization.id});
                     }
                     , {
@@ -282,6 +285,11 @@
             }
         }
 
+        let repoStatus = function(status) {
+            $('#assessment-tool-urls-status').text(status);
+            $('#assessment-tool-urls-status').fadeTo(200, 1);
+            $('#assessment-tool-urls-status').delay(3000).fadeTo(300, 0);
+        }
 
         // Trustmark Recipient Identifiers
 
@@ -464,8 +472,7 @@
 
 <sec:ifLoggedIn>
 
-
-<br>
+<div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
 <div id="assessment-tool-url-list"></div>
 <br>
 <div id="assessment-tool-url-details"></div>

@@ -25,6 +25,10 @@ class ProviderController {
 
     def providerService
 
+    def contactService
+
+    def administrationService
+
     def index() { }
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -60,7 +64,8 @@ class ProviderController {
         }
 
         [provider: provider, successMessage: messageMap["SUCCESS"],
-         warningMessage: messageMap["WARNING"], errorMessage: messageMap["ERROR"]]
+         warningMessage: messageMap["WARNING"], errorMessage: messageMap["ERROR"],
+         isLoggedIn: springSecurityService.isLoggedIn()]
     }
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -188,7 +193,7 @@ class ProviderController {
         Map results = [:]
         results.put("editable", springSecurityService.isLoggedIn())
 
-        def providerBaseUrl = grailsLinkGenerator.link(controller: 'provider', action: 'view')
+        def providerBaseUrl = grailsLinkGenerator.link(controller: 'system', action: 'view')
         results.put("providerBaseUrl", providerBaseUrl)
 
         def providers = providerService.list(params.orgid)
@@ -225,7 +230,7 @@ class ProviderController {
 
         def signingCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'signCertificate', id: provider.id)
         def encryptionCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'encryptCertificate', id: provider.id)
-        def viewMetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'saml2Metadata', id: provider.id)
+        def viewMetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'saml2Metadata', id: provider.id, absolute: true)
 
         String metadataGeneratedDateString = ""
         if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
@@ -234,17 +239,18 @@ class ProviderController {
 
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
             metadataGeneratedDateString = metadataGeneratedDate.format(fmt)
+            viewMetadataUrl = provider.saml2MetadataUrl
         }
 
         def protocolDetails = [
-                entityId: provider.entityId,
-                systemType: provider.providerType.name,
-                nameIdFormats: provider.nameFormats,
-                signingCertificateLink: signingCertificateUrl,
-                encryptionCertificateLink: encryptionCertificateUrl,
-                providerId: provider.id,
-                hasSamlMetadataGenerated: StringUtils.isNotEmpty(provider.saml2MetadataXml),
-                viewSamlMetadataLink: viewMetadataUrl,
+                entityId                         : provider.entityId,
+                systemType                       : provider.providerType.name,
+                nameIdFormats                    : provider.nameFormats,
+                signingCertificateLink           : signingCertificateUrl,
+                encryptionCertificateLink        : encryptionCertificateUrl,
+                providerId                       : provider.id,
+                hasSamlMetadataGenerated         : StringUtils.isNotEmpty(provider.saml2MetadataXml),
+                viewSamlMetadataLink             : viewMetadataUrl,
                 lastTimeSAMLMetadataGeneratedDate: metadataGeneratedDateString
         ]
 
@@ -267,6 +273,150 @@ class ProviderController {
         }
 
         render jsonArray as JSON
+    }
+
+    def trustmarkRecipientIdentifiers() {
+        log.debug("trustmarkRecipientIdentifiers -> ${params.pid}")
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        def trustmarkRecipientIdentifiers = providerService.trustmarkRecipientIdentifiers(params.pid)
+        results.put("records", trustmarkRecipientIdentifiers)
+
+        withFormat {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addTrustmarkRecipientIdentifier() {
+        log.debug("system -> ${params.pid}")
+
+        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = providerService.addTrustmarkRecipientIdentifier(params.pid, params.identifier)
+
+        withFormat {
+            json {
+                render trustmarkRecipientIdentifier as JSON
+            }
+        }
+    }
+
+    def deleteTrustmarkRecipientIdentifiers() {
+
+        Provider provider = providerService.deleteTrustmarkRecipientIdentifiers(params.ids, params.pid)
+
+        withFormat {
+            json {
+                render provider as JSON
+            }
+        }
+    }
+
+    def getTrustmarkRecipientIdentifier() {
+        log.debug("provider -> ${params.pid}")
+
+        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = providerService.getTrustmarkRecipientIdentifier(params.pid, params.rid)
+
+        withFormat {
+            json {
+                render trustmarkRecipientIdentifier as JSON
+            }
+        }
+    }
+
+    def updateTrustmarkRecipientIdentifier() {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        TrustmarkRecipientIdentifier trid = providerService.updateTrustmarkRecipientIdentifier(params.id, params.trustmarkRecipientIdentifier, params.providerId)
+
+        withFormat {
+            json {
+                render trid as JSON
+            }
+        }
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def listContacts()  {
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        def orgContacts = []
+
+        if(params.id != null)  {
+            orgContacts = contactService.list(params.id)
+        }
+
+        def systemContacts = []
+        if(params.pid != null)  {
+            systemContacts = administrationService.listContacts(params.pid)
+        }
+
+        def contacts = []
+
+        // cross-reference to set inSystem flag
+        orgContacts.forEach({oc ->
+
+            Map contact = [:]
+            contact.put("contact", oc)
+
+            def inSystem = false
+            def c = systemContacts.find({cs ->
+                oc.id == cs.id
+            })
+
+            if (c) {
+                inSystem = true
+            }
+
+            contact.put("inSystem", inSystem)
+
+            contacts.add(contact)
+        })
+
+        results.put("records", contacts)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addContactToSystem() {
+        log.info("addContactToSystem -> ${params.contactId}, ${params.providerId}")
+
+        Contact contact = Contact.get(Integer.parseInt(params.contactId))
+
+        administrationService.addContactToProvider(contact, params.providerId)
+
+        withFormat {
+            json {
+                render contact as JSON
+            }
+        }
+    }
+
+    def removeContactFromSystem() {
+        log.info("removeContactFromSystem -> ${params.contactId}, ${params.providerId}")
+
+        Contact contact = Contact.get(Integer.parseInt(params.contactId))
+
+        administrationService.removeContactFromProvider(contact, params.providerId)
+
+        withFormat {
+            json {
+                render contact as JSON
+            }
+        }
     }
 
     def bindTrustmarks() {
@@ -292,8 +442,8 @@ class ProviderController {
 
         Provider provider = Provider.get(providerId)
 
-        Map jsonResponse = [status: 'SUCCESS', message: 'Successfully finished trustmark binding process.',
-                            numberOfTrustmarksBound: provider.trustmarks.size(),
+        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+                            numberOfTrustmarksBound      : provider.trustmarks.size(),
                             numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
 
         render jsonResponse as JSON
@@ -328,8 +478,8 @@ class ProviderController {
         Provider provider = Provider.get(providerId)
 
 
-        Map jsonResponse = [status: 'SUCCESS', message: 'Successfully canceled trustmark binding process.',
-                            numberOfTrustmarksBound: provider.trustmarks.size(),
+        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully canceled trustmark binding process.',
+                            numberOfTrustmarksBound      : provider.trustmarks.size(),
                             numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
 
         render jsonResponse as JSON
@@ -342,7 +492,7 @@ class ProviderController {
 
         Provider provider = Provider.get(providerId)
 
-        Map jsonResponse = [numberOfTrustmarksBound: provider.trustmarks.size(),
+        Map jsonResponse = [numberOfTrustmarksBound      : provider.trustmarks.size(),
                             numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
 
         render jsonResponse as JSON

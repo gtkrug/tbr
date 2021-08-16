@@ -120,11 +120,15 @@ class OrganizationController {
     def addRepo()  {
         log.debug("repos -> ${params.orgid}")
 
-        AssessmentRepository assessmentRepository = organizationService.addRepos(params.orgid, params.name)
+        Map results = [:]
+
+        String statusMessage = organizationService.addRepos(params.orgid, params.name)
+
+        results.put("statusMessage", statusMessage)
 
         withFormat  {
             json {
-                render assessmentRepository as JSON
+                render results as JSON
             }
         }
     }
