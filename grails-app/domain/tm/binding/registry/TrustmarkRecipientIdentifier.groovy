@@ -4,10 +4,6 @@ class TrustmarkRecipientIdentifier {
 
     String trustmarkRecipientIdentifierUrl
 
-    static belongsTo = [
-        organization: Organization
-    ]
-
     static constraints = {
         trustmarkRecipientIdentifierUrl nullable: false
     }

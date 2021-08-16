@@ -16,12 +16,19 @@ class UrlMappings {
 
         "/provider/generate-metadata/$id"(controller: "provider", action: "generateSaml2Metadata")
 
+        "/system/view/$id"(controller: "provider", action: "view")
+        "/system/signCertificate/$id"(controller: "provider", action: "signCertificate")
+        "/system/encryptCertificate/$id"(controller: "provider", action: "encryptCertificate")
+        "/system/saml2Metadata/$id"(controller: "provider", action: "saml2Metadata")
+
         "/documents/$id"(controller:'document', action: 'pdf')
 
         "/public/documents/$id"(controller: 'publicApi', action: 'findDocs')
         "/public/documents/$name"(controller:'publicApi', action: 'pdfByName')
 
         "/public/signingcertificates/$id"(controller: 'publicApi', action: 'findSigningCertificates')
+
+        "/public/status"(controller: 'publicApi', action: 'status')
 
         "500" (view:'/error')
         "404" (view:'/notFound')

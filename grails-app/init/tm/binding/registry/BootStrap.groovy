@@ -96,13 +96,35 @@ class BootStrap {
 
 
     private void createSingleUser() {
+        // organization
+        Organization organization =  new Organization(
+                name: grailsApplication.config.org.name,
+                displayName: grailsApplication.config.org.abbreviation,
+                siteUrl: grailsApplication.config.org.identifier
+        )
+        organization.save(true)
+
+        // contact
+        Contact contact = new Contact(
+                firstName: grailsApplication.config.org.contact.'1'.firstname,
+                lastName: grailsApplication.config.org.contact.'1'.lastname,
+                email: grailsApplication.config.org.contact.'1'.email,
+                phone: grailsApplication.config.org.contact.'1'.phone,
+                type: ContactType.ADMINISTRATIVE,
+                organization: organization
+        )
+        contact.save(true)
+
+        // user
         User user = new User(
+                // user
                 username: grailsApplication.config.tbr.org.user,
                 password: grailsApplication.config.tbr.org.pswd,
                 name: grailsApplication.config.tbr.org.username,
                 accountExpired: false,
                 accountLocked: false,
-                passwordExpired: false
+                passwordExpired: false,
+                contact: contact
         )
         user.save(failOnError: true)
 

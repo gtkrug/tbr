@@ -112,34 +112,26 @@ let renderTagOffset = function(){};
 let renderTags = function(target, obj, data, offset)  {
     let html = renderPagination(offset, data.records.length, 'renderTagOffset');
     html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='6' style='text-align: center'>";
+    html += "<tr><td colspan='1' style='text-align: center'>";
     if(obj.editable)  {
         html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Tag'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Removed Checked Tags'><span class='glyphicon glyphicon-minus'></span></a></div>";
     }
     html += "<b>"+obj.title+"</b></td></tr>";
     if (data.records.length === 0)  {
-        html += "<tr><td colspan='6'><em>There are no tags.</em></td></tr>";
+        html += "<tr><td colspan='1'><em>There are no tags.</em></td></tr>";
     }  else {
         let idx = 0;
-        html += "<tr>";
         data.records.forEach(o => {
-            if(idx%6 > 0) {
-                if(obj.editable) {
-                    html += "<td><input type='checkbox' class='edit-tags' value='" + o + "'>&nbsp;" + o + "</td>";
-                } else {
-                    html += "<td><span>&nbsp;" + o + "</span></td>";
-                }
+
+            html += "<tr>";
+            if(obj.editable) {
+                html += "<td><input type='checkbox' class='edit-tags' value='" + o + "'>&nbsp;" + o + "</td>";
             } else {
-                html += "</tr><tr>";
-                if(obj.editable) {
-                    html += "<td><input type='checkbox' class='edit-tags' value='" + o + "'>&nbsp;" + o + "</td>";
-                } else {
-                    html += "<td><span>&nbsp;" + o + "</span></td>";
-                }
+                html += "<td><span>&nbsp;" + o + "</span></td>";
             }
+            html += "</tr>";
             ++idx;
         });
-        html += "</tr>";
     }
     html += "</table>";
     document.getElementById(target).innerHTML = html;
@@ -267,6 +259,80 @@ let drawContacts = function(obj, entry)  {
     if (obj.includeOrganizationColumn) {
         html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id + ">" + entry.organization.name + "</a></td>";
     }
+
+    html += "</tr>";
+    return html;
+}
+
+
+let renderSystemContactsOffset = function(){};
+/**
+ * renders a table of contacts
+ * @param target
+ * @param obj
+ * @param data
+ * @param offset
+ */
+let renderSystemContacts = function(target, obj, data, offset)  {
+    let html = renderPagination(offset, data.records.length, 'renderSystemContactsOffset');
+    html += "<table class='table table-condensed table-striped table-bordered'>";
+
+    if (obj.editable) {
+        html += "<tr><td colspan='5' style='text-align: center'><b>" + obj.title + "</b></td></tr>";
+    } else {
+        html += "<tr><td colspan='4' style='text-align: center'><b>" + obj.title + "</b></td></tr>";
+    }
+
+    if (data.records.length === 0)  {
+        if (obj.editable) {
+            html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
+        } else {
+            html += '<tr><td colspan="4"><em>There are no contacts.</em></td></tr>';
+        }
+    }  else {
+        // table header
+        html += "<tr>";
+        if (obj.editable) {
+            html += "<th style='width: auto;'>Link to System</th>";
+        }
+
+        html += "<th style='width: auto;'>Last Name</th>";
+        html += "<th style='width: auto;'>First Name</th>";
+        html += "<th style='width: auto;'>Email</th>";
+        html += "<th style='width: auto;'>Phone</th>";
+
+        html += "</tr>";
+
+        let idx = 0;
+        data.records.forEach(c => {
+            if(idx >= offset && idx < offset+MAX_DISPLAY)  {
+                if(obj.editable || c.inSystem) {
+                    html += obj.fnDraw(obj, c);
+                }
+            }
+            ++idx;
+        });
+    }
+    html += "</table>";
+    document.getElementById(target).innerHTML = html;
+}
+
+let drawSystemContact = function(obj, entry)  {
+
+    let html = "<tr>";
+
+    if(obj.editable) {
+        if (entry.inSystem) {
+            html += "<td><input class='add-remove-system-contact' type='checkbox' checked onclick='addOrRemoveSystemContact(this)' value='" + entry.contact.id + "' providerId='" + obj.providerId + "'></td>";
+        } else {
+            html += "<td><input class='add-remove-system-contact' type='checkbox' onclick='addOrRemoveSystemContact(this)' value='" + entry.contact.id + "' providerId='" + obj.providerId + "'></td>";
+        }
+    }
+
+    html += "<td>"+ entry.contact.lastName + "</td>";
+    html += "<td>" + entry.contact.firstName + "</td>";
+    html += "<td>" + entry.contact.email + "</td>";
+    html += "<td>" + (entry.contact.phone != null ? entry.contact.phone : "") + "</td>";
 
     html += "</tr>";
     return html;
@@ -443,15 +509,17 @@ let renderRegistrants = function(target, obj, data, offset)  {
 }
 
 let drawRegistrants = function(obj, entry)  {
+
     let html = "<tr>";
     if (entry.user.enabled === true) {
         html += "<td style='width:auto;'><input type='checkbox' class='deactivate' value='" + entry.id + "'>&nbsp;ACTIVE</td>";
     } else {
         html += "<td style='width:auto;'><input type='checkbox' class='activate' value='" + entry.id + "'>&nbsp;INACTIVE</td>";
     }
-    html += "<td>" + entry.contact.lastName + ", " + entry.contact.firstName + "&nbsp;<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    html += "<td>" + entry.contact.email + "</td>";
-    html += "<td>" + (entry.contact.phone != null ? entry.contact.phone : "") + "</td>";
+    html += "<td>" + entry.user.contact.lastName + ", " + entry.user.contact.firstName + "&nbsp;<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
+    html += "<td>" + entry.user.contact.email + "</td>";
+    html += "<td>" + (entry.user.contact.phone != null ? entry.user.contact.phone : "") + "</td>";
+
     html += "<td>" + entry.organization.name + "</td>";
     html += "</tr>";
 

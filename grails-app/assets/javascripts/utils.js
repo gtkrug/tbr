@@ -233,6 +233,8 @@ let documentDetail = curryFive(renderDocumentForm);
 
 let curriedContact = curryFour(renderContacts);
 
+let curriedSystemContacts = curryFour(renderSystemContacts);
+
 let contactDetail = curryFour(renderContactForm);
 
 let curriedRegistrant = curryFour(renderRegistrants);

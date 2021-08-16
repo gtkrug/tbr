@@ -11,15 +11,26 @@ class UserService {
 
     }
 
-    def add(String... args)  {
+    /**
+     * add a user
+     * @param args
+     * name
+     * pswd
+     * email
+     * contact
+     * @return
+     */
+    def add(String name, String pswd, String email, Contact contact)  {
+
         User user = new User(
-                username: args[2],
-                password: args[1],
-                name: args[0],
+                username: email,
+                password: pswd,
+                name: name,
                 enabled: false,
                 accountExpired: false,
                 accountLocked: true,
-                passwordExpired: false
+                passwordExpired: false,
+                contact: contact
         )
         user.save(true)
 

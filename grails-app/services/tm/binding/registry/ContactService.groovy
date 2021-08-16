@@ -8,6 +8,18 @@ class ContactService {
     def serviceMethod() {
 
     }
+
+    /**
+     * add a registant
+     * @param args
+     * args[0]: lname
+     * args[1]: fname
+     * args[2]: email
+     * args[3]: phone
+     * args[4]: organizationId
+     * args[5]: ContactType
+     * @return
+     */
     def add(String... args) {
         log.info("add -> ${args[0]}")
 

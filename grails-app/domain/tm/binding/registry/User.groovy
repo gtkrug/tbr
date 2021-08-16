@@ -13,6 +13,7 @@ class User {
     boolean accountExpired
     boolean accountLocked
     boolean passwordExpired
+    Contact contact
 
     static transients = ['springSecurityService']
 
@@ -20,11 +21,13 @@ class User {
         username blank: false, unique: true
         name blank: false
         password blank: false, password: true
+        contact nullable: false
     }
 
     static mapping = {
         table name: 'user'
         password column: '`pass_hash`'
+        contact column: 'contact_ref', fetch: 'join'
     }
 
     Boolean isAdmin() {
@@ -81,6 +84,7 @@ class User {
                 id: this.id,
                 username: this.username,
                 enabled: this.enabled,
+                contact: this.contact?.toJsonMap(true),
                 admin: this.isAdmin(),
                 orgAdmin: this.isOrgAdmin(),
                 reviewer: this.isReviewer()

@@ -1,6 +1,8 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import grails.gorm.transactions.Transactional
+import org.json.JSONObject
 
 @Transactional
 class OrganizationService {
@@ -108,12 +110,20 @@ class OrganizationService {
     def addRepos(String... args) {
         log.info("add repos -> ${args[0]} ${args[1]}")
 
-        Organization organization = Organization.get(Integer.parseInt(args[0]))
-        AssessmentRepository assessmentRepository = new AssessmentRepository(repoUrl: args[1], organization: organization)
+        String statusMessage = ""
 
-        assessmentRepository.save(true)
+        // check the status of the repo url
+        if (checkTATStatusUrl(args[1])) {
 
-        return assessmentRepository
+            Organization organization = Organization.get(Integer.parseInt(args[0]))
+            AssessmentRepository assessmentRepository = new AssessmentRepository(repoUrl: args[1], organization: organization)
+
+            assessmentRepository.save(true)
+        } else {
+            statusMessage = "Trustmark Assessment Tool not found at URL: ${args[1]}"
+        }
+
+        return statusMessage
     }
 
     /**
@@ -194,7 +204,7 @@ class OrganizationService {
         def trustmarkRecipientIdentifiers = []
 
         Organization organization = Organization.get(Integer.parseInt(args[0]))
-        organization.trustmarkRecipientIdentifier.forEach({o -> trustmarkRecipientIdentifiers.add(o)})
+        organization.trustmarkRecipientIdentifiers.forEach({o -> trustmarkRecipientIdentifiers.add(o)})
 
         return trustmarkRecipientIdentifiers
     }
@@ -206,7 +216,12 @@ class OrganizationService {
         TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
                 trustmarkRecipientIdentifierUrl: args[1], organization: organization)
 
-        trustmarkRecipientIdentifier.save(true)
+        Organization.withTransaction {
+            organization.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
+            trustmarkRecipientIdentifier.save(true)
+
+            organization.save(true)
+        }
 
         return trustmarkRecipientIdentifier
     }
@@ -218,7 +233,7 @@ class OrganizationService {
 
         Integer trustmarkRecipientIdentifierId = Integer.parseInt(args[1])
 
-        TrustmarkRecipientIdentifier trid = organization.trustmarkRecipientIdentifier.find { element ->
+        TrustmarkRecipientIdentifier trid = organization.trustmarkRecipientIdentifiers.find { element ->
             element.id == trustmarkRecipientIdentifierId
         }
 
@@ -253,7 +268,7 @@ class OrganizationService {
                 ids.forEach({ s ->
                     if (s.length() > 0) {
                         trid = TrustmarkRecipientIdentifier.get(Integer.parseInt(s))
-                        organization.removeFromTrustmarkRecipientIdentifier(trid)
+                        organization.trustmarkRecipientIdentifiers.remove(trid)
                         trid.delete()
                     }
                 })
@@ -277,7 +292,7 @@ class OrganizationService {
 
                         // remove the trustmark recipient identifier from all organizations found in previous search
                         organizations.each { org ->
-                            org.removeFromTrustmarkRecipientIdentifier(trid)
+                            org.trustmarkRecipientIdentifiers.remove(trid)
                             org.save(true)
                         }
 
@@ -291,5 +306,26 @@ class OrganizationService {
             }
         }
         return organization
+    }
+
+
+    private boolean checkTATStatusUrl(String tatStatusUrl) {
+        try{
+
+            JSONObject json = IOUtils.fetchJSON(ensureTrailingSlash(tatStatusUrl) + "public/status")
+
+            if (json && json.getString("status") == "OK") {
+                return true
+            }
+
+            return false
+        }catch(Throwable t){
+            log.error("Error contacting TAT status url: " + tatStatusUrl, t)
+            return false;
+        }
+    }
+
+    private String ensureTrailingSlash(String url) {
+        return url.endsWith("/") ? url : url + "/";
     }
 }
