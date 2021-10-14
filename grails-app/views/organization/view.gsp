@@ -1,6 +1,31 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <html>
 <head>
+    <style type="text/css">
+    .clickable {
+        cursor: pointer;
+    }
+
+    .clickable .glyphicon {
+        background: rgba(0, 0, 0, 0.15);
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 4px
+    }
+
+    .panel-heading span {
+        font-size: 15px;
+    }
+
+    .panel-heading button {
+        margin-top: -25px;
+    }
+
+    a.disabledLink {
+        pointer-events: none;
+        color: #ccc;
+    }
+    </style>
     <script type="text/javascript">
         var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
 
@@ -15,8 +40,25 @@
             if (isLoggedIn) {
                 getRepos(${organization.id});
                 getTrustmarkRecipientIdentifiers(${organization.id})
+                getBoundTrustmarks(${organization.id});
             }
+
+            hideIt('trustmarks-list');
         });
+
+        let getBoundTrustmarks = function (oid) {
+            list("${createLink(controller:'organization', action: 'trustmarks')}"
+                , trustmarkResults(oid)
+                , {id: oid}
+            );
+        }
+
+        let trustmarkResults = function (pId) {
+            return function (results) {
+                renderTrustmarkOffset = curriedTrustmark('trustmarks-list')(results);
+                renderTrustmarkOffset(0);
+            }
+        }
 
         /**
          * contacts functionality for editing contacts
@@ -381,7 +423,6 @@
             }
         }
 
-
         let updateOrganization = function(orgId, url, desc, display)  {
             update("${createLink(controller:'organization', action: 'update')}"
                 , function(data){}
@@ -391,6 +432,75 @@
                   , display: display
                 }
             );
+        }
+
+        let bindTrustmarks = function (organizationId) {
+            $('#bindTrustmarkStatusMessage').html('Started the trustmark binding process; trustmarks should be available once bound. ${raw(asset.image(src: 'spinner.gif'))}');
+
+            // reset the state variables
+            // initTrustmarkBindingState(organizationId);
+
+            STOP_LOOP = false;
+            // trustmarkBindingStatusLoop(organizationId);
+
+            var url = '${createLink(controller: 'organization',  action: 'bindTrustmarks')}';
+            $.ajax({
+                url: url,
+                dataType: 'json',
+                data: {
+                    id: organizationId,
+                    format: 'json'
+                },
+                beforeSend: function () {
+                },
+                success: function (data, statusText, jqXHR) {
+                    updateTrustmarkBindingDetails(organizationId);
+                },
+                error: function (jqXHR, statusText, errorThrown) {
+                    console.log("Error: " + errorThrown);
+
+                    $('#bindTrustmarkStatusMessage').html(errorThrown);
+                },
+                timeout: 120000 // 2 minutes
+            });
+        }
+
+        let updateTrustmarkBindingDetails = function (organizationId) {
+
+            $('#bindTrustmarkStatusMessage').html('');
+
+            var url = '${createLink(controller: 'organization',  action: 'updateTrustmarkBindingDetails')}';
+            $.ajax({
+                url: url,
+                dataType: 'json',
+                async: false,
+                data: {
+                    id: organizationId,
+                    format: 'json'
+                },
+                beforeSend: function () {
+                },
+                success: function (data, statusText, jqXHR) {
+
+                    // reload trustmarks
+                    getBoundTrustmarks(organizationId);
+
+                    $('#numberOfTrustmarksBound').html(data['numberOfTrustmarksBound']);
+
+                    // update binding button
+                    if (data['numberOfTrustmarksBound'] > 0) {
+                        $('.bind-trustmark-button').text("Refresh Trustmark Bindings");
+                    } else {
+                        $('.bind-trustmark-button').text("Bind Trustmarks");
+                    }
+
+                },
+                error: function (jqXHR, statusText, errorThrown) {
+                    console.log("Error: " + errorThrown);
+
+                    $('#bindTrustmarkStatusMessage').html(errorThrown);
+                }
+            });
         }
 
         let clearForm = function()  {
@@ -490,6 +600,65 @@
 <br>
 <div id="new-provider"></div>
 <br>
+<br>
+
+<script>
+    $(document).on('click', '.panel-heading button', function (e) {
+        var $this = $(this);
+        var icon = $this.find('i');
+        if (icon.hasClass('glyphicon-plus')) {
+            $this.find('i').removeClass('glyphicon-plus').addClass('glyphicon-minus');
+        } else {
+            $this.find('i').removeClass('glyphicon-minus').addClass('glyphicon-plus');
+        }
+    });
+</script>
+
+%{--    Bind Trustmarks section--}%
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h4 class="panel-title">Trustmark Binding Details</h4>
+        <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
+                data-target="#collapseTrustmarks" aria-expanded="false" aria-controls="collapseTrustmarks">
+            <i class="glyphicon glyphicon-plus"></i>
+        </button>
+    </div>
+
+    <div class="collapse" id="collapseTrustmarks">
+        <div class="panel-body">
+
+            <table class='table table-condensed table-striped table-bordered'>
+                <tr>
+                    <td style='width: auto;'><b>Number of Trustmarks Bound</b></td>
+                    <td id="numberOfTrustmarksBound" style='width: auto;'>${organization.trustmarks.size()}</td>
+                </tr>
+            </table>
+            <br>
+
+            <sec:ifLoggedIn>
+                <g:if test="${organization.trustmarks.size() == 0}">
+                    <button class="btn btn-info bind-trustmark-button"
+                            onclick="bindTrustmarks(${organization.id});">Bind Trustmarks</button>
+                </g:if>
+                <g:else>
+                    <button class="btn btn-info bind-trustmark-button"
+                            onclick="bindTrustmarks(${organization.id});">Refresh Trustmark Bindings</button>
+                </g:else>
+
+                <div id="cancelTrusmarkBindings"></div>
+
+                <div id="bindTrustmarkStatusMessage"></div>
+            </sec:ifLoggedIn>
+            <br>
+
+            <a class="tm-right" href="#" onclick="toggleIt('trustmarks-list');
+            return false;"><< Trustmarks</a><br>
+
+            <div id="trustmarks-list"></div>
+
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

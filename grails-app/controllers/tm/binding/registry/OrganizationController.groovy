@@ -12,6 +12,8 @@ class OrganizationController {
 
     DeserializeService deserializeService
 
+    AdministrationService administrationService
+
     def springSecurityService
 
     def index() { }
@@ -232,5 +234,56 @@ class OrganizationController {
                 render trid as JSON
             }
         }
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def trustmarks() {
+        log.info("listbyOrganization for organization id: " + params.id)
+
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        def trustmarks = administrationService.listTrustmarksByOrganization(params.id)
+
+        // sort ascending by name
+        trustmarks.sort( { a, b ->
+            a.name <=> b.name
+        })
+
+        withFormat  {
+            json {
+                render trustmarks as JSON
+            }
+        }
+    }
+
+    def bindTrustmarks() {
+        User user = springSecurityService.currentUser
+        log.info("bindTrustmarks...")
+
+        final Integer organizationId = Integer.parseInt(params.id)
+
+        organizationService.bindTrustmarksToOrganization(organizationId)
+
+        Organization organization = Organization.get(organizationId)
+
+        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+                            numberOfTrustmarksBound      : organization.trustmarks.size()]
+
+        render jsonResponse as JSON
+    }
+
+    def updateTrustmarkBindingDetails() {
+        User user = springSecurityService.currentUser
+
+        Integer organizationId = Integer.parseInt(params.id)
+
+        Organization organization = Organization.get(organizationId)
+
+        Map jsonResponse = [numberOfTrustmarksBound: organization.trustmarks.size()]
+
+        render jsonResponse as JSON
     }
 }

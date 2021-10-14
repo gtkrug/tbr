@@ -13,6 +13,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import tm.binding.registry.ProviderType
 import org.grails.web.util.WebUtils
+import tm.binding.registry.util.UrlEncodingUtil
 
 
 @Transactional
@@ -426,7 +427,7 @@ class ProviderService {
                         // encode the recipient id url
                         String recipientId = recipientIdentifier.trustmarkRecipientIdentifierUrl
                         String recipientIdBase64 = Base64.getEncoder().encodeToString(recipientId.getBytes())
-                        String encodedRecipientId = encodeURIComponent(recipientIdBase64)
+                        String encodedRecipientId = UrlEncodingUtil.encodeURIComponent(recipientIdBase64)
 
                         // append the recipient id encoded url
                         String recipientIdentifierQueryUrl = tatUrl + encodedRecipientId
@@ -500,28 +501,30 @@ class ProviderService {
                         Map.Entry pair = (Map.Entry) i.next()
                         JSONObject trustmark = pair.getKey()
 
-                        // save to db
-                        Trustmark tm = new Trustmark()
-                        tm.name = trustmark.get("name")
-                        tm.provider = provider
+                        // only bind trustmarks with the "ACTIVE" status
+                        if ("ACTIVE" == trustmark.get("trustmarkStatus")) {
+                            // save to db
+                            Trustmark tm = new Trustmark()
+                            tm.name = trustmark.get("name")
 
-                        ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(pair.getValue())
-                        tm.conformanceTargetTipId = tip.id
-                        tm.status = trustmark.get("trustmarkStatus")
-                        tm.url = trustmark.get("identifierURL")
-                        tm.trustmarkDefinitionURL = trustmark.getString("trustmarkDefinitionURL")
-                        tm.provisional = trustmark.get("hasExceptions")
-                        tm.assessorComments = trustmark.get("assessorComments")
+                            ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(pair.getValue())
+                            tm.conformanceTargetTipId = tip.id
+                            tm.status = trustmark.get("trustmarkStatus")
+                            tm.url = trustmark.get("identifierURL")
+                            tm.trustmarkDefinitionURL = trustmark.getString("trustmarkDefinitionURL")
+                            tm.provisional = trustmark.get("hasExceptions")
+                            tm.assessorComments = trustmark.get("assessorComments")
 
-                        tm.save(failOnError: true, flush: true)
+                            tm.save(failOnError: true, flush: true)
 
-                        provider.trustmarks.add(tm)
+                            provider.trustmarks.add(tm)
 
-                        // update progress percentage
-                        int percent = (int) Math.floor(((double) currentTrustmarkIndex++ / (double) totalToBeBoundTrustmarks) * 100.0d)
+                            // update progress percentage
+                            int percent = (int) Math.floor(((double) currentTrustmarkIndex++ / (double) totalToBeBoundTrustmarks) * 100.0d)
 
-                        if (monitoringProgress) {
-                            setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "" + percent)
+                            if (monitoringProgress) {
+                                setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "" + percent)
+                            }
                         }
                     }
 
@@ -600,26 +603,6 @@ class ProviderService {
 
     private String ensureTrailingSlash(String url) {
         return url.endsWith("/") ? url : url + "/";
-    }
-
-    private String encodeURIComponent(String s) {
-        String result = null;
-
-        try {
-            result = URLEncoder.encode(s, "UTF-8")
-                    .replaceAll("\\+", "%20")
-                    .replaceAll("\\%21", "!")
-                    .replaceAll("\\%27", "'")
-                    .replaceAll("\\%28", "(")
-                    .replaceAll("\\%29", ")")
-                    .replaceAll("\\%7E", "~");
-        }
-        // This exception should never occur.
-        catch (UnsupportedEncodingException e) {
-            result = s;
-        }
-
-        return result;
     }
 
 }

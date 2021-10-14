@@ -15,6 +15,7 @@ class Organization {
       , providers: Provider
       , assessmentRepos: AssessmentRepository
       , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
+      , trustmarks: Trustmark
     ]
 
     static constraints = {
@@ -37,6 +38,7 @@ class Organization {
         siteUrl column: 'site_url'
         displayName column: 'display_name'
         description column: 'description', type: 'text'
+        trustmarks cascade: "all-delete-orphan"
     }
 
     Map toJsonMap(boolean shallow = true) {

@@ -2,10 +2,17 @@ package tm.binding.registry
 
 import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import grails.gorm.transactions.Transactional
+import org.apache.commons.lang.StringUtils
+import org.json.JSONArray
 import org.json.JSONObject
+import tm.binding.registry.util.UrlEncodingUtil
 
 @Transactional
 class OrganizationService {
+
+    public static final String TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT = "public/trustmarks/find-by-recipient/"
+
+    def deserializeService
 
     def serviceMethod(String... args) {
         log.info("service -> ${args[0]}")
@@ -198,7 +205,6 @@ class OrganizationService {
         return organization
     }
 
-
     def trustmarkRecipientIdentifiers(String... args) {
         log.info("trustmarkRecipientIdentifiers -> ${args[0]}")
         def trustmarkRecipientIdentifiers = []
@@ -308,6 +314,142 @@ class OrganizationService {
         return organization
     }
 
+    // binding to organizations
+    def bindTrustmarksToAllOrganizations() {
+        log.info("Starting ${this.getClass().getSimpleName()}...")
+        long overallStartTime = System.currentTimeMillis()
+
+        try {
+
+            List<Organization> organizations = Organization.findAll()
+
+            organizations.each { organization ->
+                bindTrustmarksToOrganization(organization.id, false)
+            }
+        }
+        catch (Throwable t) {
+            log.error("Error encountered during the trustmark bind all process: ${t.message}");
+        }
+
+        long overallStopTime = System.currentTimeMillis()
+        log.info("Successfully Executed ${this.getClass().getSimpleName()} in ${(overallStopTime - overallStartTime)}ms.")
+
+    }//end bindTrustmarksToAllOrganizations()
+
+    def bindTrustmarksToOrganization(Long id, boolean monitoringProgress = true) {
+        log.info("** Starting bindTrustmarks: class: ${this.getClass().getSimpleName()}...")
+        long overallStartTime = System.currentTimeMillis()
+
+        try {
+            Organization organization = Organization.get(id)
+
+            // remove previously bound trustmarks for this provider system
+            organization.trustmarks.clear()
+
+
+
+
+            // For each Assessment tool url,
+            //      for each recipient identifier,
+            //           get all trustmarks
+
+            // Get assessment tool URLs
+            def assessmentToolUrls = organization.assessmentRepos
+
+            // Collect Trustmark Recipient Identifiers
+            Set<TrustmarkRecipientIdentifier> recipientIdentifiers = new HashSet<TrustmarkRecipientIdentifier>()
+
+            // Get Trustmark Recipient Identifiers from parent organization
+            recipientIdentifiers.addAll(organization.trustmarkRecipientIdentifiers)
+
+            ArrayList<JSONArray> trustmarks = new ArrayList<JSONArray>()
+
+            Integer totalTrustmarkQueries = assessmentToolUrls.size() + recipientIdentifiers.size()
+            Integer currentTrustmarkQueryIndex = 0
+
+            // collect total number of trustmarks
+            Integer totalNumberOfTrustmarksQueried = 0
+
+            assessmentToolUrls.each { assessmentToolUrl ->
+                String tatUrl = ensureTrailingSlash(assessmentToolUrl.repoUrl)
+                tatUrl += TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT
+
+                recipientIdentifiers.each { recipientIdentifier ->
+
+                    // encode the recipient id url
+                    String recipientId = recipientIdentifier.trustmarkRecipientIdentifierUrl
+                    String recipientIdBase64 = Base64.getEncoder().encodeToString(recipientId.getBytes())
+                    String encodedRecipientId = UrlEncodingUtil.encodeURIComponent(recipientIdBase64)
+
+                    // append the recipient id encoded url
+                    String recipientIdentifierQueryUrl = tatUrl + encodedRecipientId
+
+                    // get the trustmarks from the TAT
+                    JSONObject trustmarksJson = IOUtils.fetchJSON(recipientIdentifierQueryUrl);
+                    JSONArray trustmarksJsonArray = trustmarksJson.getJSONArray("trustmarks");
+
+                    totalNumberOfTrustmarksQueried += trustmarksJsonArray.size()
+
+                    trustmarks.add(trustmarksJsonArray)
+                }
+            }
+
+            // cross map the Conformance target TIP TDs to the collection of trustmarks
+            Map<JSONObject, String> bindingTrustmarks = new HashMap<JSONObject, String>();
+
+            Integer currentTrustmarkIndex = 0
+
+            // iterate through each TAT's json response
+            for (int i = 0; i < trustmarks.size(); i++) {
+                JSONArray trustmarksJsonArray = trustmarks.get(i)
+                for (int j = 0; j < trustmarksJsonArray.length(); j++) {
+
+                    JSONObject trustmark = trustmarksJsonArray.getJSONObject(j);
+
+                    bindingTrustmarks.put(trustmark, trustmark.getString("trustmarkDefinitionURL"));
+                }
+            }
+
+            currentTrustmarkIndex = 0
+            Integer totalToBeBoundTrustmarks = bindingTrustmarks.size()
+
+            Organization.withTransaction {
+                Iterator i = bindingTrustmarks.entrySet().iterator()
+                while (i.hasNext()) {
+                    Map.Entry pair = (Map.Entry) i.next()
+                    JSONObject trustmark = pair.getKey()
+
+                    // only bind trustmarks with the "ACTIVE" status
+                    if ("ACTIVE" == trustmark.get("trustmarkStatus")) {
+                        // save to db
+                        Trustmark tm = new Trustmark()
+                        tm.name = trustmark.get("name")
+
+                        tm.status = trustmark.get("trustmarkStatus")
+                        tm.url = trustmark.get("identifierURL")
+                        tm.trustmarkDefinitionURL = trustmark.getString("trustmarkDefinitionURL")
+                        tm.provisional = trustmark.get("hasExceptions")
+                        tm.assessorComments = trustmark.get("assessorComments")
+
+                        tm.save(failOnError: true, flush: true)
+
+                        organization.trustmarks.add(tm)
+                    }
+                }
+
+                organization.save(failOnError: true, flush: true)
+            }
+
+            log.info("Successfully bound " + bindingTrustmarks.size() + " trustmarks to organization: " + organization.name)
+        }
+        catch (Throwable t) {
+            log.error("Error encountered during the trustmark binding process: ${t.message}");
+        }
+
+        long overallStopTime = System.currentTimeMillis()
+        log.info("** Successfully Executed ${this.getClass().getSimpleName()} in ${(overallStopTime - overallStartTime)}ms.")
+
+    }//end bindTrustmarks()
 
     private boolean checkTATStatusUrl(String tatStatusUrl) {
         try{

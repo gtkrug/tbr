@@ -222,6 +222,19 @@ class AdministrationService {
         return trustmarks
     }
 
+    def listTrustmarksByOrganization(String... args) {
+        log.info("listTrustmarksByOrganization -> ${args[0]}")
+
+        def trustmarks = []
+        try  {
+            Organization organization = Organization.get(Integer.parseInt(args[0]))
+            organization.trustmarks.forEach({t -> trustmarks.add(t)})
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace()
+        }
+        return trustmarks
+    }
+
     def listAttributes(String... args) {
         log.info("listAttributes -> ${args[0]}")
 

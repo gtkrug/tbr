@@ -13,6 +13,8 @@ class UrlMappings {
 
         "/public/systems/$type" (controller: 'public', action: 'listByType')
         "/public/certificates/$filename"(controller:'public', action: 'download', id: '$filename')
+        "/public/trustmarks/find-by-organization/$organizationUri"(controller: 'publicApi', action: 'findByOrganization')
+        "/public/organizations"(controller: 'publicApi', action: 'organizations')
 
         "/provider/generate-metadata/$id"(controller: "provider", action: "generateSaml2Metadata")
 

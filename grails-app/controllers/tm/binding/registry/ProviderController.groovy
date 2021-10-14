@@ -162,7 +162,7 @@ class ProviderController {
             messageMap["ERROR"] = "ERROR: " + messageMap["ERROR"]
         }
 
-        Map jsonResponse = [messageMap: messageMap, providerId: provider.id]
+        Map jsonResponse = [messageMap: messageMap, providerId: provider.id, organizationId: provider.organization.id]
 
         render jsonResponse as JSON
     }

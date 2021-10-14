@@ -10,10 +10,6 @@ class Trustmark {
     String assessorComments
     Integer conformanceTargetTipId
 
-    static belongsTo = [
-        provider: Provider
-    ]
-
     static constraints = {
         name nullable: false
         url nullable: false
@@ -21,6 +17,7 @@ class Trustmark {
         status nullable: false
         provisional nullable: false
         assessorComments nullable: true
+        conformanceTargetTipId nullable: true
     }
 
     static mapping = {

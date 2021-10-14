@@ -976,12 +976,26 @@ class DeserializeService {
                 .setText(provider.name)
 
         // add trustmark recipient identifier attributes
+
+        // organization's trustmark recipient identifier attributes
         if (provider.organization.trustmarkRecipientIdentifiers.size() > 0) {
             Element trustmarkRecipientIdentifiersAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
                     .addAttribute(NAME, "https://nief.org/attribute-registry/attributes/entity/trustmark/TrustmarkRecipientIdentifiers/1.0/")
                     .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
 
             provider.organization.trustmarkRecipientIdentifiers.each { tri ->
+                trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
+                        .setText(tri.trustmarkRecipientIdentifierUrl)
+            }
+        }
+
+        // system's trustmark recipient identifier attributes
+        if (provider.trustmarkRecipientIdentifiers.size() > 0) {
+            Element trustmarkRecipientIdentifiersAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
+                    .addAttribute(NAME, "https://nief.org/attribute-registry/attributes/entity/trustmark/TrustmarkRecipientIdentifiers/1.0/")
+                    .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
+
+            provider.trustmarkRecipientIdentifiers.each { tri ->
                 trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
                         .setText(tri.trustmarkRecipientIdentifierUrl)
             }

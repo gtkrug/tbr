@@ -240,7 +240,7 @@
             if (checkContact(lname, fname, email, phone, type, orgId)) {
                 update("${createLink(controller:'contact', action: 'update')}"
                     , function (data) {
-                        getContacts(${provider.id});
+                        getContacts(orgId, ${provider.id});
                     }
                     , {
                         id: id
@@ -968,7 +968,7 @@
                                     },
                                     success: function (data, statusText, jqXHR) {
 
-                                        showProvider(data.providerId, $("#isIdp").val());
+                                        showProvider(data.providerId, data.organizationId, $("#isIdp").val());
 
                                         $(document).ajaxStop(function () {
                                             // keep the protocols section open
