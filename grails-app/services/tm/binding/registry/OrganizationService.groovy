@@ -314,6 +314,38 @@ class OrganizationService {
         return organization
     }
 
+    // Partner systems Tips
+    def partnerSystemsTips(String... args) {
+        log.info("partnerSystemsTips -> ${args[0]}")
+        def partnerSystemsTips = []
+
+        Organization organization = Organization.get(Integer.parseInt(args[0]))
+        organization.partnerSystemsTips.forEach({o -> partnerSystemsTips.add(o)})
+
+        return partnerSystemsTips
+    }
+
+    def deletePartnerSystemsTips(String... args) {
+
+        List<String> ids = args[0].split(":")
+
+        Organization organization = Organization.get(Integer.parseInt(args[1]))
+
+        try {
+            ids.forEach({ s ->
+                if (s.length() > 0) {
+                    PartnerSystemsTip tip = PartnerSystemsTip.findById(Integer.parseInt(s))
+                    organization.partnerSystemsTips.remove(tip)
+                    tip.delete()
+                }
+            })
+            organization.save(true)
+        } catch (NumberFormatException nfe) {
+            log.error("Invalid partner systems tip Id!")
+        }
+    }
+
+
     // binding to organizations
     def bindTrustmarksToAllOrganizations() {
         log.info("Starting ${this.getClass().getSimpleName()}...")

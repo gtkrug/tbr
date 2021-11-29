@@ -28,7 +28,7 @@ class CheckForExpiredCertificatesEventsJob {
     //==================================================================================================================
     // Job Specifics
     //==================================================================================================================
-    def concurrent = false
+    static concurrent = false
     def description = "Scans all the certificates associated to each organization and checks the \n" +
             " certificate expiration. Then, for expired certificates, changes the status accordingly."
     def groovyPageRenderer

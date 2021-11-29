@@ -907,6 +907,106 @@ let drawConformanceTargetTips = function(obj, entry)  {
     return html;
 }
 
+
+
+
+//let curriedPartnerSystemsTip = curryFour(renderPartnerSystemsTips);
+let renderPartnerOrganizationTipOffset = function(){};
+/**
+ * renders a table of Conformance Target Tips
+ *
+ * @param target
+ * @param obj
+ * @param data
+ * @param offset
+ */
+let renderPartnerOrganizationTips = function(target, obj, data, offset)  {
+
+    let html = renderPagination(offset, data.records.length, 'renderPartnerOrganizationTipOffset');
+    html += "<table class='table table-condensed table-striped table-bordered'>";
+
+    if(obj.editable)  {
+        html += "<tr><td colspan='5' style='text-align: center'>";
+        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Partner Organization TIP Identifier'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Partner Organization TIP Identifiers'><span class='glyphicon glyphicon-minus'></span></a></div>";
+    } else {
+        html += "<tr><td colspan='4' style='text-align: center'>";
+    }
+    html += "<span data-toggle=‘tooltip’ data-placement=‘bottom’ title='" + obj.titleTooltip + "'><b>"+obj.title+"</b></span></td></tr>"
+
+    if (data.records.length === 0)  {
+        html += '<tr><td colspan="5"><em>There are no Partner Organization TIP Identifiers.</em></td></tr>';
+    }  else {
+        let idx = 0;
+        data.records.forEach(o => {
+            if(idx >= offset && idx < offset+MAX_DISPLAY) {
+                html += obj.fnDraw(obj, o);
+            }
+            ++idx;
+        });
+    }
+    html += "</table>";
+
+    document.getElementById(target).innerHTML = html;
+    if(obj.editable)  {
+        document.getElementById('plus-'+target).onclick = obj.fnAdd;
+        document.getElementById('minus-'+target).onclick = obj.fnRemove;
+    }
+}
+
+/**
+ * renders a table of Conformance Target Tips
+ *
+ * @param target
+ * @param obj
+ * @param data
+ * @param offset
+ */
+let renderPartnerSystemsTips = function(target, obj, data, offset)  {
+
+    let html = renderPagination(offset, data.records.length, 'renderPartnerSystemsTipOffset');
+    html += "<table class='table table-condensed table-striped table-bordered'>";
+
+    if(obj.editable)  {
+        html += "<tr><td colspan='5' style='text-align: center'>";
+        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Partner System TIP Identifier'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Partner System TIP Identifiers'><span class='glyphicon glyphicon-minus'></span></a></div>";
+    } else {
+        html += "<tr><td colspan='4' style='text-align: center'>";
+    }
+    html += "<span data-toggle=‘tooltip’ data-placement=‘bottom’ title='" + obj.titleTooltip + "'><b>"+obj.title+"</b></span></td></tr>"
+
+    if (data.records.length === 0)  {
+        html += '<tr><td colspan="5"><em>There are no Partner System TIP Identifiers.</em></td></tr>';
+    }  else {
+        let idx = 0;
+        data.records.forEach(o => {
+            if(idx >= offset && idx < offset+MAX_DISPLAY) {
+                html += obj.fnDraw(obj, o);
+            }
+            ++idx;
+        });
+    }
+    html += "</table>";
+
+    document.getElementById(target).innerHTML = html;
+    if(obj.editable)  {
+        document.getElementById('plus-'+target).onclick = obj.fnAdd;
+        document.getElementById('minus-'+target).onclick = obj.fnRemove;
+    }
+}
+
+let drawPartnerSystemsTips = function(obj, entry)  {
+    let html = "<tr>";
+    if(obj.editable) {
+        html += "<td><input type='checkbox' class='edit-partnerSystemsTips' value='" + entry.id + "'></td>";
+    }
+    html += "<td style='width:auto;'>";
+    html += "<a href='" + entry.partnerSystemsTipIdentifier + "' target='_blank'>" + entry.name + "</a>";
+    html += "</td>";
+    html += "</tr>";
+
+    return html;
+}
+
 /**
  * hide the passed in div
  * @param target
@@ -1040,6 +1140,52 @@ let renderConformanceTargetTipForm = function(target, fn)  {
     renderDialogForm(target, html);
     document.getElementById('conformanceTargetTipIdentifierOk').onclick = fn;
     document.getElementById('conformanceTargetTipIdentifier').focus();
+}
+
+/**
+ * render a form for adding a partner organization tip
+ */
+let renderPartnerOrganizationTipForm = function(target, fn)  {
+
+    let html = "";
+
+    html += "<div class='form-group'>";
+    html += "<label for='partnerSystemsTipIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
+    html += "<input id='partnerSystemsTipIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Partner Organization TIP Identifier'/><span style='color:red;'>*</span><br>";
+    html += "</div>";
+
+    html += "<div class='form-group'>";
+    html += "<div class='col-sm-offset-2 col-sm-10'>";
+    html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+    html += "</div>";
+    html += "</div>";
+
+    renderDialogForm(target, html);
+    document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
+    document.getElementById('partnerSystemsTipIdentifier').focus();
+}
+
+/**
+ * render a form for adding a partner systems tip
+ */
+let renderPartnerSystemTipForm = function(target, fn)  {
+
+    let html = "";
+
+    html += "<div class='form-group'>";
+    html += "<label for='partnerSystemsTipIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
+    html += "<input id='partnerSystemsTipIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Partner System TIP Identifier'/><span style='color:red;'>*</span><br>";
+    html += "</div>";
+
+    html += "<div class='form-group'>";
+    html += "<div class='col-sm-offset-2 col-sm-10'>";
+    html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+    html += "</div>";
+    html += "</div>";
+
+    renderDialogForm(target, html);
+    document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
+    document.getElementById('partnerSystemsTipIdentifier').focus();
 }
 
 /**

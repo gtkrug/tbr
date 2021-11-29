@@ -29,12 +29,12 @@ class ConformanceTargetTipController {
         ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(params.identifier)
 
         if (tip != null && provider.conformanceTargetTips.contains(tip)) {
-            messageMap.put("WARNING", "WARNING: Conformance target tip ${tip.name} already exists." )
+            messageMap.put("WARNING", "WARNING: Conformance target TIP \"${tip.name}\" already exists." )
         } else {
             try {
                 conformanceTargetTips.add(administrationService.addConformanceTargetTip(params.pId, params.identifier))
 
-                messageMap.put("SUCCESS", "SUCCESS: Successfully added conformance target tip.")
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added conformance target TIP.")
 
             } catch (Throwable t) {
                 log.error("Unable to add TIP: ${params.identifier}")

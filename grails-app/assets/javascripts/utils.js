@@ -257,6 +257,10 @@ let curriedTag = curryFour(renderTags);
 
 let curriedConformanceTargetTip = curryFour(renderConformanceTargetTips);
 
+let curriedPartnerOrganizationTip = curryFour(renderPartnerOrganizationTips);
+
+let curriedPartnerSystemsTip = curryFour(renderPartnerSystemsTips);
+
 let curriedRepos = curryFour(renderRepos);
 
 let repoDetail = curryFour(renderAssessmentToolReposForm);

@@ -26,7 +26,7 @@ class BindTrustmarksToOrganizationJob {
     //==================================================================================================================
     // Job Specifics
     //==================================================================================================================
-    def concurrent = false
+    static concurrent = false
     def description = "Binds trustmarks to registered orgnizations providers based on all trustmark" +
             "recipient identifiers from registered assessment tools."
 

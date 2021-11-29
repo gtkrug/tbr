@@ -298,6 +298,38 @@ class ProviderService {
         return provider
     }
 
+    // Partner systems tips
+    def partnerSystemsTips(String... args) {
+        log.info("partnerSystemsTips -> ${args[0]}")
+
+        def partnerSystemsTips = []
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        provider.partnerSystemsTips.forEach({o -> partnerSystemsTips.add(o)})
+
+        return partnerSystemsTips
+    }
+
+    def deletePartnerSystemsTips(String... args) {
+
+        List<String> ids = args[0].split(":")
+
+        Provider provider = Provider.get(Integer.parseInt(args[1]))
+
+        try {
+            ids.forEach({ s ->
+                if (s.length() > 0) {
+                    PartnerSystemsTip tip = PartnerSystemsTip.findById(Integer.parseInt(s))
+                    provider.partnerSystemsTips.remove(tip)
+                    tip.delete()
+                }
+            })
+            provider.save(true)
+        } catch (NumberFormatException nfe) {
+            log.error("Invalid partner systems tip Id!")
+        }
+    }
+
     def bindTrustmarksForAllProviders() {
         log.info("Starting ${this.getClass().getSimpleName()}...")
         long overallStartTime = System.currentTimeMillis()

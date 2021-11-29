@@ -79,8 +79,40 @@ class AdministrationService {
         return args[0]
     }
 
+    def addPartnerSystemsTipForOrganization(String... args) {
+        log.info("addPartnerSystemsTipForOrganization -> ${args[1]}")
+
+        Organization organization = Organization.get(Integer.parseInt(args[0]))
+        PartnerSystemsTip tip = new PartnerSystemsTip()
+        tip.partnerSystemsTipIdentifier = args[1]
+
+        tip.name = tipNameFromUri(tip.partnerSystemsTipIdentifier)
+
+        organization.partnerSystemsTips.add(tip)
+        organization.save(true)
+
+        return args[0]
+    }
+
+    def addPartnerSystemsTipForSystem(String... args) {
+        log.info("addPartnerSystemsTipForSystem -> ${args[1]}")
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        PartnerSystemsTip tip = new PartnerSystemsTip()
+        tip.partnerSystemsTipIdentifier = args[1]
+
+        String tipName = tipNameFromUri(tip.partnerSystemsTipIdentifier)
+
+        tip.name = tipName
+
+        provider.partnerSystemsTips.add(tip)
+        provider.save(true)
+
+        return args[0]
+    }
+
     private String tipNameFromUri(String tipUri) {
-        URL url = new URL(tipUri + "?format=xml");
+        URL url = new URL(tipUri)
 
         TrustInteroperabilityProfileResolver resolver = FactoryLoader.getInstance(TrustInteroperabilityProfileResolver.class)
 

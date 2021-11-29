@@ -40,6 +40,7 @@
             if (isLoggedIn) {
                 getRepos(${organization.id});
                 getTrustmarkRecipientIdentifiers(${organization.id})
+                getPartnerSystemsTips(${organization.id})
                 getBoundTrustmarks(${organization.id});
             }
 
@@ -423,6 +424,120 @@
             }
         }
 
+        // Partner Systems TIPs
+
+        /**
+         * Partner Systems TIPs editing functionality
+         * @param pid
+         */
+        let removePartnerSystemsTips = function (oid) {
+            getCheckedIds('edit-partnerSystemsTips', function (list) {
+                update("${createLink(controller:'organization', action: 'deletePartnerSystemsTips')}"
+                    , function (data) {
+                        $('#partnerSystemsTips-status').html('');
+                        getPartnerSystemsTips(oid);
+                    }
+                    , {ids: list, oid: oid}
+                );
+            });
+        }
+
+        let getPartnerSystemsTips = function (oid) {
+            list("${createLink(controller:'organization', action: 'partnerSystemsTips')}"
+                , partnerSystemsTipResults
+                , {oid: oid}
+            );
+            hideIt('partner-systems-tips-details');
+        }
+
+        // {function(*=): function(*=): function(*=): *}
+        let partnerSystemsTipResults = function (results) {
+            renderPartnerOrganizationTipOffset = curriedPartnerOrganizationTip('partner-systems-tips-list')
+            ({
+                editable: results.editable
+                ,
+                fnAdd: function () {
+                    $('#partner-systems-tips-status').html('');
+                    renderPartnerOrganizationTipForm('partner-systems-tips-details'
+                        , function () {
+                            insertPartnerSystemsTip(document.getElementById('partnerSystemsTipIdentifier').value
+                                , ${organization.id});
+                        });
+                }
+                ,
+                fnRemove: function () {
+                    removePartnerSystemsTips('${organization.id}');
+                }
+                ,
+                fnDraw: drawPartnerSystemsTips
+                ,
+                title: 'Partner Organization Trust Interoperability Profiles'
+                ,
+                titleTooltip: 'This list of trust interoperability profiles (TIPs) represents ' +
+                    'the requirements of this system for potential partner organizations that will engage in trusted information exchanges.'
+            })
+            (results);
+            renderPartnerOrganizationTipOffset(0);
+        }
+
+        let insertPartnerSystemsTip = function (identifier, oid) {
+            $('#partner-systems-tips-status').html('');
+            add("${createLink(controller:'organization', action: 'addPartnerSystemsTip')}"
+                , function (data) {
+
+                    let html = "<br>";
+                    if (!isEmtpy(data.status['SUCCESS'])) {
+                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['WARNING'])) {
+                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['ERROR'])) {
+                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
+                    }
+
+                    $('#partner-systems-tips-status').html(html);
+
+                    getPartnerSystemsTips(oid);
+                }
+                , {
+                    identifier: identifier
+                    , oid: oid
+                }
+            );
+        }
+
+        /**
+         * render a form for adding a conformance target tip
+         */
+        let renderInternalPartnerSystemsTipForm = function (target, fn) {
+            let html = "<input id='partnerSystemsTipIdentifier' size='80' type='text' class='form-control tm-margin' placeholder='Enter Partner Systems TIP Identifier' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
+            html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+            renderInternalDialogForm(target, html);
+            document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
+            document.getElementById('partnerSystemsTipIdentifier').focus();
+        }
+
+        /**
+         * renders content into a standard dialog with a close X
+         * @param target
+         * @param content
+         */
+        let renderInternalDialogForm = function (target, content) {
+            let html = "<form class='form-inline'>";
+            html += "<div class='full-width-form form-group'>";
+            html += "<a class='tm-margin tm-right' href=\"javascript:hideIt('" + target + "');\"><span class='glyphicon glyphicon-remove'></span></a><br>";
+            html += content;
+            html += "</div></form>";
+
+            html += "<p><span style='color:red;'>*</span> - Indicates required field.</p>"
+
+            document.getElementById(target).innerHTML = html;
+            showIt(target);
+        }
+
         let updateOrganization = function(orgId, url, desc, display)  {
             update("${createLink(controller:'organization', action: 'update')}"
                 , function(data){}
@@ -507,6 +622,10 @@
             setSuccessStatus("<b>Successfully saved system provider.</b>");
             hideIt('new-provider');
         }
+
+        function isEmtpy(str) {
+            return (!str || str.length === 0);
+        }
     </script>
     <meta charset="UTF-8">
     <meta name="layout" content="main"/>
@@ -582,17 +701,23 @@
 
 <sec:ifLoggedIn>
 
-<div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
-<div id="assessment-tool-url-list"></div>
-<br>
-<div id="assessment-tool-url-details"></div>
-<br>
-<br>
-<div id="trustmark-revipient-identifiers-list"></div>
-<br>
-<div id="trustmark-revipient-identifiers-details"></div>
-<br>
-<br>
+    <div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
+    <div id="assessment-tool-url-list"></div>
+    <br>
+    <div id="assessment-tool-url-details"></div>
+    <br>
+    <br>
+    <div id="trustmark-revipient-identifiers-list"></div>
+    <br>
+    <div id="trustmark-revipient-identifiers-details"></div>
+    <br>
+    <br>
+    <div id="partner-systems-tips-list"></div>
+    <br>
+    <div id="partner-systems-tips-status"></div>
+    <div id="partner-systems-tips-details"></div>
+    <br>
+    <br>
 </sec:ifLoggedIn>
 
 

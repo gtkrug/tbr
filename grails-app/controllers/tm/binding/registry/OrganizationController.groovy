@@ -236,6 +236,86 @@ class OrganizationController {
         }
     }
 
+    // Partner systems tips
+    def partnerSystemsTips()  {
+        log.debug("partnerSystemsTips -> ${params.oid}")
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        def partnerSystemsTips = organizationService.partnerSystemsTips(params.oid)
+        results.put("records", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addPartnerSystemsTip()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        log.info("add partner systems tip identifier -> ${params.identifier}")
+
+        def results = [:]
+
+        def messageMap = [:]
+
+        def partnerSystemsTips = []
+
+        Organization organization = Organization.get(Integer.parseInt(params.oid))
+
+        PartnerSystemsTip tip = PartnerSystemsTip.findByPartnerSystemsTipIdentifier(params.identifier)
+        boolean tipAlreadyExists = false
+
+        if (tip) {
+            PartnerSystemsTip tempTip = organization.partnerSystemsTips.stream()
+                .filter({ tempTip -> tip.partnerSystemsTipIdentifier.equals(tempTip.partnerSystemsTipIdentifier) })
+                .findAny()
+                .orElse(null)
+
+            if(tempTip) {
+                tipAlreadyExists = true
+            }
+        }
+
+        if (tipAlreadyExists) {
+            messageMap.put("WARNING", "WARNING: Partner organization TIP \"${tip.name}\" already exists." )
+        } else {
+            try {
+                partnerSystemsTips.add(administrationService.addPartnerSystemsTipForOrganization(params.oid, params.identifier))
+
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added partner organization TIP.")
+
+            } catch (Throwable t) {
+                log.error("Unable to add TIP: ${params.identifier}")
+                messageMap.put("ERROR", "ERROR: Failed to find partner organization TIP at URL: ${params.identifier}.")
+            }
+        }
+
+        results.put("status", messageMap)
+        results.put("partnerSystemsTips", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def deletePartnerSystemsTips()  {
+
+        Organization organization = organizationService.deletePartnerSystemsTips(params.ids, params.oid)
+
+        withFormat  {
+            json {
+                render organization as JSON
+            }
+        }
+    }
+
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def trustmarks() {
         log.info("listbyOrganization for organization id: " + params.id)

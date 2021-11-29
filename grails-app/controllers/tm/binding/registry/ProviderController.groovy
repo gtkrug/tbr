@@ -339,6 +339,86 @@ class ProviderController {
         }
     }
 
+    // partner systems tips
+    def partnerSystemsTips()  {
+        log.debug("partnerSystemsTips -> ${params.pid}")
+
+        Map results = [:]
+        results.put("editable", springSecurityService.isLoggedIn())
+
+        def partnerSystemsTips = providerService.partnerSystemsTips(params.pid)
+        results.put("records", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addPartnerSystemsTip() {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        log.info("add partner systems tip identifier -> ${params.identifier}")
+
+        def results = [:]
+
+        def messageMap = [:]
+
+        def partnerSystemsTips = []
+
+        Provider provider = Provider.get(Integer.parseInt(params.pId))
+
+        PartnerSystemsTip tip = PartnerSystemsTip.findByPartnerSystemsTipIdentifier(params.identifier)
+        boolean tipAlreadyExists = false
+
+        if (tip) {
+            PartnerSystemsTip tempTip = provider.partnerSystemsTips.stream()
+                    .filter({ tempTip -> tip.partnerSystemsTipIdentifier.equals(tempTip.partnerSystemsTipIdentifier) })
+                    .findAny()
+                    .orElse(null)
+
+            if(tempTip) {
+                tipAlreadyExists = true
+            }
+        }
+
+        if (tipAlreadyExists) {
+            messageMap.put("WARNING", "WARNING: Partner system TIP \"${tip.name}\" already exists." )
+        } else {
+            try {
+                partnerSystemsTips.add(administrationService.addPartnerSystemsTipForSystem(params.pId, params.identifier))
+
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added partner system TIP.")
+
+            } catch (Throwable t) {
+                log.error("Unable to add TIP: ${params.identifier}")
+                messageMap.put("ERROR", "ERROR: Failed to find partner system TIP at URL: ${params.identifier}.")
+            }
+        }
+
+        results.put("status", messageMap)
+        results.put("partnerSystemsTips", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def deletePartnerSystemsTips() {
+
+        Provider provider = providerService.deletePartnerSystemsTips(params.ids, params.pid)
+
+        withFormat  {
+            json {
+                render provider as JSON
+            }
+        }
+    }
+
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def listContacts()  {
         if (springSecurityService.isLoggedIn()) {
