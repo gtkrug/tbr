@@ -421,13 +421,17 @@ class ProviderController {
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def listContacts()  {
+
+        boolean isAdmin = false
         if (springSecurityService.isLoggedIn()) {
             User user = springSecurityService.currentUser
             log.info("user -> ${user.name}")
+
+            isAdmin = user.isAdmin()
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+        results.put("editable", isAdmin)
 
         def orgContacts = []
 

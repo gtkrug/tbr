@@ -20,14 +20,47 @@ let getCheckedIds = function(str, fn) {
  *  render organizations in a select control
  */
 let renderSelectOrganizations = function(target, id, data)  {
-    let html = "<select class='form-control col-sm-8' id='orgs' style='width: 70%;'>";
+    var selectId = id;
+
+    if (data.length > 0) {
+        selectId = (id === 0 ? data[0].id : id);
+    }
+
+    let html = "<select class='form-control col-sm-10' id='orgs' style='width: 70%;'>";
     html += "<option value='0'>-- Select an Organization --</option>";
     data.forEach(o => {
         html += "<option value='"+o.id+"'>"+o.name+"</option>";
     });
     html += "</select><span style='color:red;'>&nbsp;&nbsp;*</span>";
     document.getElementById(target).innerHTML = html;
-    document.getElementById('orgs').value = id;
+    document.getElementById('orgs').value = selectId;
+}
+
+/**
+ *  render organizations in a select control
+ */
+let renderSelectRoles = function(target, id, data)  {
+
+    let html = "<select class='form-control col-sm-10' id='roles' style='width: 70%;'>";
+    html += "<option value='0'>-- Select a Role --</option>";
+    data.forEach(o => {
+        html += "<option value='"+o.id+"'>"+o.label+"</option>";
+    });
+    html += "</select><span style='color:red;'>&nbsp;&nbsp;*</span>";
+    document.getElementById(target).innerHTML = html;
+    document.getElementById('roles').value = id;
+
+    // hide organization select if role is ROLE_ADMIN
+    $('#roles').on('change', function() {
+        console.log("Selected ROLE: " + this.value);
+        console.log("Selected HTML: " + this.options[this.selectedIndex].text);
+
+        if (this.options[this.selectedIndex].text == 'TBR Administrator') {
+            $('#select-organization-group').hide();
+        } else {
+            $('#select-organization-group').show();
+        }
+    });
 }
 
 /**
@@ -272,5 +305,7 @@ let trustmarkRecipientIdentifierDetail = curryFour(renderTrustmarkRecipientIdent
 let curriedContactTypes = curryThree(renderContactTypes);
 
 let curriedSelectOrganizations = curryThree(renderSelectOrganizations);
+
+let curriedSelectRoles = curryThree(renderSelectRoles);
 
 let curriedProviderTypes = curryTwo(renderProviderTypes);

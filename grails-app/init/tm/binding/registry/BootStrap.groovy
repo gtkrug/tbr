@@ -75,10 +75,6 @@ class BootStrap {
                 new Role(authority: Role.ROLE_ADMIN).save(failOnError: true)
                 log.debug("Adding role[@|cyan ${Role.ROLE_ORG_ADMIN}|@]...")
                 new Role(authority: Role.ROLE_ORG_ADMIN).save(failOnError: true)
-                log.debug("Adding role[@|cyan ${Role.ROLE_USER}|@]...")
-                new Role(authority: Role.ROLE_USER).save(failOnError: true)
-                log.debug("Adding role[@|cyan ${Role.ROLE_REVIEWER}|@]...")
-                new Role(authority: Role.ROLE_REVIEWER).save(failOnError: true)
             } else {
                 log.debug "Successfully found @|green ${roles.size()}|@ roles."
             }
@@ -128,13 +124,10 @@ class BootStrap {
         )
         user.save(failOnError: true)
 
-        String rolesForThisUser = "ROLE_ADMIN, ROLE_ORG_ADMIN, ROLE_REVIEWER"
+        String rolesForThisUser = "ROLE_ADMIN"
 
-        for (String roleName : rolesForThisUser.split(Pattern.quote(","))) {
-            roleName = roleName.trim()
-            Role role = Role.findByAuthority(roleName)
-            UserRole.create(user, role, true)
-        }
+        Role role = Role.findByAuthority(rolesForThisUser)
+        UserRole.create(user, role, true)
 
         log.debug "Successfully created user: @|cyan " + user.name + "|@ <@|magenta " + user.username + "|@>"
     }

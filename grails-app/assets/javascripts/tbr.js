@@ -483,12 +483,13 @@ let renderRegistrantOffset = function(){};
 let renderRegistrants = function(target, obj, data, offset)  {
     let html = renderPagination(offset, data.length, 'renderRegistrantOffset');
     html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='5' style='text-align: center'>";
+    html += "<tr><th colspan='6' style='text-align: center'>";
     if(obj.editable)  {
         html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Registrant'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Registrants'><span class='glyphicon glyphicon-minus'></span></a></div>";
     }
-    html += "<b>"+obj.title+"</b></td></tr>";
-    html += "<tr><td style='width: auto;'></td><td style='width: auto;'>Name</td><td style='width: auto;'>Email</td><td style='width: auto;'>Phone</td><td style='width: auto;'>Organization</td></tr>";
+    html += "<b>"+obj.title+"</b></th></tr>";
+    html += "<tr><th style='width: auto;'></th><th style='width: auto;'>Name</th><th style='width: auto;'>Email</th>" +
+        "<th style='width: auto;'>Phone</th><th style='width: auto;'>Role</th><th style='width: auto;'>Organization</th></tr>";
     if (data.length === 0)  {
         html += '<tr><td colspan="5"><em>There are no registrants.</em></td></tr>';
     }  else {
@@ -509,18 +510,19 @@ let renderRegistrants = function(target, obj, data, offset)  {
 }
 
 let drawRegistrants = function(obj, entry)  {
-
     let html = "<tr>";
-    if (entry.user.enabled === true) {
-        html += "<td style='width:auto;'><input type='checkbox' class='deactivate' value='" + entry.id + "'>&nbsp;ACTIVE</td>";
-    } else {
-        html += "<td style='width:auto;'><input type='checkbox' class='activate' value='" + entry.id + "'>&nbsp;INACTIVE</td>";
-    }
-    html += "<td>" + entry.user.contact.lastName + ", " + entry.user.contact.firstName + "&nbsp;<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    html += "<td>" + entry.user.contact.email + "</td>";
-    html += "<td>" + (entry.user.contact.phone != null ? entry.user.contact.phone : "") + "</td>";
 
-    html += "<td>" + entry.organization.name + "</td>";
+    html += "<td style='width:auto;'><input type='checkbox' class='deactivate' value='" + entry.id + "'>" +
+        "<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
+
+    html += "<td>" + entry.user.contact.lastName + ", " + entry.user.contact.firstName + "</td>";
+
+    html += "<td><a href='mailto:"+ entry.user.contact.email +"'>" + entry.user.contact.email + "</a></td>";
+    html += "<td>" + (entry.user.contact.phone != null ? entry.user.contact.phone : "") + "</td>";
+    html += "<td>" + entry.user.role + "</td>";
+
+    html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id + ">" + entry.organization.name + "</a></td>";
+
     html += "</tr>";
 
     return html;
@@ -1459,9 +1461,14 @@ let renderRegistrantForm = function(target, fn, registrant) {
 
     let html = "";
 
-    html += "<div class='form-group'>";
+    html += "<div id='select-organization-group' class='form-group'>";
     html += "<label style='margin-top: 10px;' id='select-organization-label' for='select-organization' class='col-sm-2 control-label'>Organization</label>";
     html += "<div class='col-sm-10' id='select-organization'></div>";
+    html += "</div>";
+
+    html += "<div class='form-group'>";
+    html += "<label style='margin-top: 10px;' id='select-role-label' for='select-role' class='col-sm-2 control-label'>Role</label>";
+    html += "<div class='col-sm-10' id='select-role'></div>";
     html += "</div>";
 
     html += "<div class='form-group'>";
@@ -1484,10 +1491,19 @@ let renderRegistrantForm = function(target, fn, registrant) {
     html += "<input id='detail_phone' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Phone Number'/><span style='color:red;'>*</span><br>";
     html += "</div>";
 
+
     // A registrant id of zero means add a new registrant
-    let addOrSave = "Add";
-    if(registrant.id !== 0) {
-        addOrSave = "Save";
+    let addOrSave = "Save";
+    if(registrant.id === 0) {
+        addOrSave = "Add";
+
+        html += "<div class='form-group'>";
+        html += "<label for='notify_registrant' class='col-sm-2 form-check text-right'>Notify</label>";
+        html += "<div class='col-sm-10'>";
+        html += "<input id='notify_registrant' name='notify_registrant' class='form-check-input tm-margin' type='checkbox' data-toggle='tooltip' data-placement='bottom' " +
+            "title='Notify registrant via email to reset their password.'  />";
+        html += "</div>";
+        html += "</div>";
     }
 
     html += "<div class='form-group'>";
@@ -1500,12 +1516,15 @@ let renderRegistrantForm = function(target, fn, registrant) {
     document.getElementById('registrantOk').onclick = fn;
     if(registrant.id === 0)  {
         selectOrganizations(0);
+        selectRoles(0);
     } else {
         selectOrganizations(registrant.organization.id);
-        document.getElementById('detail_lastName').value = registrant.contact.lastName;
-        document.getElementById('detail_firstName').value = registrant.contact.firstName;
-        document.getElementById('detail_email').value = registrant.contact.email;
-        document.getElementById('detail_phone').value = registrant.contact.phone;
+        selectRoles(registrant.user.roles[0].id);
+
+        document.getElementById('detail_lastName').value = registrant.user.contact.lastName;
+        document.getElementById('detail_firstName').value = registrant.user.contact.firstName;
+        document.getElementById('detail_email').value = registrant.user.contact.email;
+        document.getElementById('detail_phone').value = registrant.user.contact.phone;
     }
     document.getElementById('detail_lastName').focus();
 }

@@ -62,7 +62,7 @@ class RegistrantService {
     }
 
     /**
-     * add a registant
+     * add a registrant
      * @param args
      * args[0]: params.lname
      * args[1]: params.fname
@@ -70,6 +70,7 @@ class RegistrantService {
      * args[3]: params.phone
      * args[4]: params.pswd
      * args[5]: params.organizationId
+     * args[6]: params.roleId
      * @return
      */
     def add(String... args) {
@@ -77,7 +78,7 @@ class RegistrantService {
 
         Contact contact = contactService.add(args[0], args[1], args[2], args[3], args[5], "ADMINISTRATIVE")
 
-        User user = userService.add(args[1] + ", " + args[0], args[4], args[2], contact)
+        User user = userService.add(args[1] + ", " + args[0], args[4], args[2], contact, args[6])
 
         Organization organization = Organization.get(Integer.parseInt(args[5]))
 
@@ -114,12 +115,48 @@ class RegistrantService {
         log.info("update -> ${args[0]}  ${args[1]}  ${args[2]}  ${args[3]}  ${args[4]}")
         Registrant registrant = null
         try  {
-            registrant = Registrant.get(Integer.parseInt(args[0]))
-            registrant.contact.lastName = args[1]
-            registrant.contact.firstName = args[2]
-            registrant.contact.email = args[3]
-            registrant.contact.phone = args[4]
-            registrant.contact.save(true)
+            Registrant.withTransaction {
+                registrant = Registrant.get(Integer.parseInt(args[0]))
+                registrant.user.contact.lastName = args[1]
+                registrant.user.contact.firstName = args[2]
+                registrant.user.contact.email = args[3]
+                registrant.user.contact.phone = args[4]
+
+                // organization
+                Organization organization = Organization.get(Integer.parseInt(args[5]))
+
+                if (organization.id != registrant.user.contact.organization.id) {
+                    log.info("Organizations are different, UPDATING")
+                    registrant.user.contact.organization = organization
+                } else {
+                    log.info("SAME Organizations")
+                }
+
+                // role
+                Long roleId = Long.parseLong(args[6])
+
+                log.info("RoleId: ${roleId}: " + args[6])
+
+                // get the role from the user
+                Role newRole = Role.findById(roleId)
+                log.info("newRole: ${newRole.authority}")
+
+                Role oldRole = registrant.user.getAuthorities()[0]
+                log.info("oldRole: ${oldRole.authority}")
+
+                if (!newRole.authority.equals(oldRole.authority)) {
+                    log.info("Different ROLES")
+                    log.info("Current User/Role: ${registrant.user.id}/${oldRole.id}")
+
+                    UserRole.remove(registrant.user, oldRole)
+
+                    Role role = Role.findById(roleId)
+                    UserRole.create(registrant.user, newRole, true)
+                }
+
+                //registrant.contact.save(true)
+                registrant.save(true)
+            }
         } catch (NumberFormatException nfe)  {
             log.error("Invalid Registrant Id ${args[0]}")
         }
@@ -185,6 +222,24 @@ class RegistrantService {
             Registrant.findAll().forEach({r -> registrants.add(r.toJsonMap(false))})
         }
         return registrants
+    }
+
+    def roles(String... args) {
+        log.info("roles -> ${args[0]}")
+        def roles = []
+
+        if(args[0] == "ALL")  {
+            Role.findAll().forEach({r -> roles.add(r.toJsonMap())})
+            roles.sort( {r1, r2 ->
+                r1.name <=> r2.name
+            })
+        } else {
+            Role.findAllByAuthority(args[0]).forEach({r -> roles.add(r.toJsonMap())})
+            roles.sort( {r1, r2 ->
+                r1.name <=> r2.name
+            })
+        }
+        return roles
     }
 
     def findByUser(User user)  {

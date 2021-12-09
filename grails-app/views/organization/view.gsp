@@ -474,7 +474,7 @@
                 title: 'Partner Organization Trust Interoperability Profiles'
                 ,
                 titleTooltip: 'This list of trust interoperability profiles (TIPs) represents ' +
-                    'the requirements of this system for potential partner organizations that will engage in trusted information exchanges.'
+                    'the requirements of this organization for potential partner organizations that will engage in trusted information exchanges.'
             })
             (results);
             renderPartnerOrganizationTipOffset(0);

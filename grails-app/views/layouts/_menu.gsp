@@ -48,8 +48,9 @@
                     </a>
                     <ul class="dropdown-menu" role="menu">
                         <li><a href="${createLink(controller: 'index', action: 'index')}" title="Manage Organizations">Organizations</a></li>
-%{--                        Disabled temporarily--}%
-%{--                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>--}%
+                <sec:ifAllGranted roles="ROLE_ADMIN">
+                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>
+                </sec:ifAllGranted>
                         <li><a href="${createLink(controller: 'contact', action: 'administer')}" title="Manage Contacts">Points of Contact</a></li>
                         <li><a href="${createLink(controller: 'email', action: 'settings')}" title="Manage Email">Email</a></li>
                         <li><a href="${createLink(controller: 'document', action: 'administer')}" title="Manage Documents">Documents</a></li>
@@ -76,12 +77,6 @@
             <sec:ifNotLoggedIn>
                 <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
                     <li><a href="${createLink(controller: 'login')}">Login</a></li>
-                    <li>
-                        <a href="${createLink(controller: 'registrant', action: 'insert')}">
-                            <span class="glyphicon glyphicon-user"></span>
-                            Sign Up
-                        </a>
-                    </li>
                 </g:if>
             </sec:ifNotLoggedIn>
         </ul>

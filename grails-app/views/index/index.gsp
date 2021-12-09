@@ -197,39 +197,6 @@
 
 <div id="organization"></div>
 
-<sec:ifLoggedIn>
-    <sec:ifNotGranted roles="ROLE_USER,ROLE_ADMIN">
-        <h3 style="margin-top: 2em;">Report Only Account</h3>
-        <div class="text-muted">
-            On this page, you can view the organization report for ${user?.organization?.name},
-            or share it with another user.
-        </div>
-
-        <div style="margin-top: 2em;" class="row">
-            <div class="col-md-4">
-                <div class="reportContainer">
-                    <a href="${createLink(controller:'reports', action: 'organizationReport')}" class="reportLink">
-                        <div class="row">
-                            <div class="col-md-2 reportIcon">
-                                <span class="glyphicon glyphicon-home"></span>
-                            </div>
-                            <div class="col-md-10 reportTextContainer">
-                                <h4 class="reportTitle">Organization Details</h4>
-                                <div class="reportDescription">
-                                    Given a single organization, this report will provide a look into what the status
-                                    of each trustmark assessment is.
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="col-md-8">
-            </div>
-        </div>
-    </sec:ifNotGranted>
-</sec:ifLoggedIn>
-
 <g:if test='${flash.message}'>
     setDangerStatus("<b>Authentication Failed!</b> ${flash.message}");
 </g:if>

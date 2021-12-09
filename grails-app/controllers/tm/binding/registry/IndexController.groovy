@@ -28,6 +28,11 @@ class IndexController {
         if(registrant)  {
             organization = Organization.get(registrant.organizationId)
             orgname = organization.name
+
+            // If registrant's role is ROLE_ORG_ADMIN then redirect to its organization view
+            if (registrant.user.isOrgAdmin()) {
+                return redirect(controller:'organization', action:'view', id: organization.id)
+            }
         }
 
         [

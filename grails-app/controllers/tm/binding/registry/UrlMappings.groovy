@@ -25,6 +25,8 @@ class UrlMappings {
 
         "/documents/$id"(controller:'document', action: 'pdf')
 
+        "/reset-password"(controller:'forgotPassword', action: 'index')
+
         "/public/documents/$id"(controller: 'publicApi', action: 'findDocs')
         "/public/documents/$name"(controller:'publicApi', action: 'pdfByName')
 

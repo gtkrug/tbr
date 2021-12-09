@@ -40,32 +40,11 @@ class User {
         return hasRole
     }
 
-    Boolean isUser() {
-        Set<UserRole> roles = UserRole.findAllByUser(this)
-        boolean hasRole = false
-        roles.each { UserRole role ->
-            if( role.role.authority == Role.ROLE_USER )
-                hasRole = true
-        }
-        return hasRole
-    }
-
-
     Boolean isOrgAdmin() {
         Set<UserRole> roles = UserRole.findAllByUser(this)
         boolean hasRole = false
         roles.each { UserRole role ->
             if( role.role.authority == Role.ROLE_ORG_ADMIN )
-                hasRole = true
-        }
-        return hasRole
-    }
-
-    Boolean isReviewer() {
-        Set<UserRole> roles = UserRole.findAllByUser(this)
-        boolean hasRole = false
-        roles.each { UserRole role ->
-            if( role.role.authority == Role.ROLE_REVIEWER )
                 hasRole = true
         }
         return hasRole
@@ -85,9 +64,10 @@ class User {
                 username: this.username,
                 enabled: this.enabled,
                 contact: this.contact?.toJsonMap(true),
+                role: RoleName.valueOf(getAuthorities().toList().head().authority).getName(),
+                roles: getAuthorities(),
                 admin: this.isAdmin(),
-                orgAdmin: this.isOrgAdmin(),
-                reviewer: this.isReviewer()
+                orgAdmin: this.isOrgAdmin()
         ]
         return json;
     }//end toJsonMap
