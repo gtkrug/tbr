@@ -419,17 +419,25 @@ let renderOrganizationOffset = function(){};
 let renderOrganizations = function(target, obj, data, offset)  {
     let html = renderPagination(offset, data.length, 'renderOrganizationOffset');
     html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='5' style='text-align: center'>";
 
     if(obj.editable && LOGGED_IN)  {
+        html += "<tr><td colspan='4' style='text-align: center'>";
         html += "<div class='tm-left'><a id='plus-"+target+"' title='Add an Organization'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Organizations'><span class='glyphicon glyphicon-minus'></span></a></div>";
+    } else {
+        html += "<tr><td colspan='3' style='text-align: center'>";
     }
     html += "<b>"+obj.title+"</b></td></tr>"
     if (data.length === 0)  {
-        html += '<tr><td colspan="5"><em>There are no organizations.</em></td></tr>';
+        if(obj.editable && LOGGED_IN) {
+            html += '<tr><td colspan="4"><em>There are no organizations.</em></td></tr>';
+        } else {
+            html += '<tr><td colspan="3"><em>There are no organizations.</em></td></tr>';
+        }
     }  else {
         // table header
-        html += "<tr><th style='width: auto;'></th>";
+        if(obj.editable && LOGGED_IN) {
+            html += "<tr><th style='width: auto;'></th>";
+        }
         html += "<th style='width: auto;'>Name</th>";
         html += "<th style='width: auto;'>URL</th>";
         html += "<th style='width: auto;'>System Count</th></tr>";
@@ -453,14 +461,15 @@ let renderOrganizations = function(target, obj, data, offset)  {
 let drawOrganizations = function(obj, entry)  {
     let html = "<tr>";
 
-    html += "<td style='width:min-content;white-space:nowrap;'>";
-    if (LOGGED_IN) {
-        html += "<input type='checkbox' class='edit-organizations' value='" + entry.id + "'>" +
-            "<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a>";
-    } else {
-        html += "&nbsp";
+    if(obj.editable && LOGGED_IN) {
+        html += "<td style='width:min-content;white-space:nowrap;'>";
+        if (LOGGED_IN) {
+            html += "<input type='checkbox' class='edit-organizations' value='" + entry.id + "'>" +
+                "<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a>";
+        }
+
+        html += "</td>";
     }
-    html += "</td>";
 
     html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.id+">" + entry.name + "</a></td>";
     html += "<td><a href='" + entry.siteUrl + "' target='_blank'>" + entry.siteUrl + "</a></td>";
@@ -1457,19 +1466,21 @@ let renderDocumentForm = function(target, binaryUrl, preFn, fn, doc)  {
  * @param fn
  * @param registrant
  */
-let renderRegistrantForm = function(target, fn, registrant) {
+let renderRegistrantFormControls = function(registrant, contactInfoOnly) {
 
-    let html = "";
+    let html = "<br>";
 
-    html += "<div id='select-organization-group' class='form-group'>";
-    html += "<label style='margin-top: 10px;' id='select-organization-label' for='select-organization' class='col-sm-2 control-label'>Organization</label>";
-    html += "<div class='col-sm-10' id='select-organization'></div>";
-    html += "</div>";
+    if (!contactInfoOnly) {
+        html += "<div id='select-organization-group' class='form-group'>";
+        html += "<label style='margin-top: 10px;' id='select-organization-label' for='select-organization' class='col-sm-2 control-label'>Organization</label>";
+        html += "<div class='col-sm-10' id='select-organization'></div>";
+        html += "</div>";
 
-    html += "<div class='form-group'>";
-    html += "<label style='margin-top: 10px;' id='select-role-label' for='select-role' class='col-sm-2 control-label'>Role</label>";
-    html += "<div class='col-sm-10' id='select-role'></div>";
-    html += "</div>";
+        html += "<div class='form-group'>";
+        html += "<label style='margin-top: 10px;' id='select-role-label' for='select-role' class='col-sm-2 control-label'>Role</label>";
+        html += "<div class='col-sm-10' id='select-role'></div>";
+        html += "</div>";
+    }
 
     html += "<div class='form-group'>";
     html += "<label for='detail_lastName' class='col-sm-2 control-label tm-margin'>Last Name</label>";
@@ -1512,6 +1523,19 @@ let renderRegistrantForm = function(target, fn, registrant) {
     html += "</div>";
     html += "</div>";
 
+    return html;
+}
+
+/**
+ * renders a form for updating a registrant's data
+ * @param target
+ * @param fn
+ * @param registrant
+ */
+let renderRegistrantFormDialog = function(target, fn, registrant) {
+
+    let html = renderRegistrantFormControls(registrant, false);
+
     renderDialogForm(target, html);
     document.getElementById('registrantOk').onclick = fn;
     if(registrant.id === 0)  {
@@ -1530,6 +1554,27 @@ let renderRegistrantForm = function(target, fn, registrant) {
 }
 
 /**
+ * renders a form for updating a registrant's data
+ * @param target
+ * @param fn
+ * @param registrant
+ */
+let renderRegistrantForm = function(target, title, fn, registrant) {
+
+    let html = renderRegistrantFormControls(registrant, true);
+
+    renderForm(target, title, html);
+
+    document.getElementById('registrantOk').onclick = fn;
+    document.getElementById('detail_lastName').value = registrant.user.contact.lastName;
+    document.getElementById('detail_firstName').value = registrant.user.contact.firstName;
+    document.getElementById('detail_email').value = registrant.user.contact.email;
+    document.getElementById('detail_phone').value = registrant.user.contact.phone;
+
+    document.getElementById('detail_lastName').focus();
+}
+
+/**
  * renders content into a standard dialog with a close X
  * @param target
  * @param content
@@ -1538,6 +1583,24 @@ let renderDialogForm = function(target, content)  {
     let html = "<form class='form-horizontal'>";
     html += "<div class='full-width-form'>";
     html += "<a class='tm-margin tm-right' href=\"javascript:hideIt('"+target+"');\"><span class='glyphicon glyphicon-remove'></span></a><br>";
+    html += content;
+    html += "</div></form>";
+
+    html += "<p><span style='color:red;'>*</span> - Indicates required field.</p>"
+
+    document.getElementById(target).innerHTML = html;
+    showIt(target);
+}
+
+/**
+ * renders content into a standard dialog with a close X
+ * @param target
+ * @param content
+ */
+let renderForm = function(target, title, content)  {
+    let html = "<h2>" + title + "</h2>";
+    html += "<form class='form-horizontal'>";
+    html += "<div class='full-width-form'>";
     html += content;
     html += "</div></form>";
 

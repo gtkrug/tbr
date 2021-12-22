@@ -16,7 +16,7 @@
             listRegistrants([]);
         });
 
-        let registrantDetail = curryThree(renderRegistrantForm);
+        let registrantDetail = curryThree(renderRegistrantFormDialog);
 
         let listRegistrants = function(data)  {
             list("${createLink(controller:'registrant', action: 'list')}"
@@ -117,7 +117,7 @@
             renderRegistrantOffset = curriedRegistrant('registrant-table')
             ({
                 editable: true
-                , fnAdd: function(){renderRegistrantForm('registrant-detail'
+                , fnAdd: function(){renderRegistrantFormDialog('registrant-detail'
                     , function(){updateRegistrant(0, document.getElementById('detail_lastName').value
                         , document.getElementById('detail_firstName').value
                         , document.getElementById('detail_email').value

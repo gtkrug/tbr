@@ -1,9 +1,10 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN"])
 class ContactController {
 
     def springSecurityService

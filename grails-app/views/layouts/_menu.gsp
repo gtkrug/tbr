@@ -3,6 +3,7 @@
 <%@ page import="tm.binding.registry.Role" %>
 
 <nav class="navbar navbar-inverse navbar-fixed-top">
+<div class="container-fluid">
     <!--  <nav class="navbar navbar-default tatmenu" role="navigation">  -->
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">
@@ -58,9 +59,6 @@
                     </ul>
                 </li>
             </sec:ifAllGranted>
-            <sec:ifLoggedIn>
-                <li><a href="${createLink(controller: 'logout')}">Logout</a></li>
-            </sec:ifLoggedIn>
             <sec:ifNotLoggedIn>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -74,11 +72,32 @@
                     </ul>
                 </li>
             </sec:ifNotLoggedIn>
-            <sec:ifNotLoggedIn>
-                <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
-                    <li><a href="${createLink(controller: 'login')}">Login</a></li>
-                </g:if>
-            </sec:ifNotLoggedIn>
         </ul>
+        <sec:ifNotLoggedIn>
+            <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="${createLink(controller: 'login')}">Login</a></li>
+                </ul>
+            </g:if>
+        </sec:ifNotLoggedIn>
+        <sec:ifLoggedIn>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span id="profile-name"><g:registrantName/></span> <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <sec:ifAllGranted roles="ROLE_ORG_ADMIN">
+                            <g:isRegistrant>
+                                <li><a href="${createLink(controller: 'registrant', action: 'edit')}">Edit</a></li>
+                            </g:isRegistrant>
+                        </sec:ifAllGranted>
+                        <li><a href="${createLink(controller: 'changePassword', action: 'editPassword')}">Change Password</a></li>
+                        <li><a href="${createLink(controller: 'logout')}">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </sec:ifLoggedIn>
     </div><!-- /.navbar-collapse -->
+</div>
 </nav>

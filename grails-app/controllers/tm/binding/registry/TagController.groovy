@@ -46,7 +46,10 @@ class TagController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.id))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def tags = administrationService.listTags(params.id)
 

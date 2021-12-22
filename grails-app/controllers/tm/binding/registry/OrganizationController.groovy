@@ -5,7 +5,7 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import java.nio.charset.StandardCharsets
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class OrganizationController {
 
     OrganizationService organizationService
@@ -35,7 +35,9 @@ class OrganizationController {
             log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
             deserializeService.deserialize(xmlString, organization)
         }
-        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn()]
+        boolean isReadOnly = administrationService.isReadOnly(organization.id)
+
+        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn(), isReadOnly: isReadOnly]
     }
 
     def add()  {
@@ -107,7 +109,8 @@ class OrganizationController {
         log.debug("repos -> ${params.oid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
 
         def repos = organizationService.repos(params.oid)
         results.put("records", repos)
@@ -176,7 +179,8 @@ class OrganizationController {
         log.debug("trustmarkRecipientIdentifiers -> ${params.oid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
 
         def trustmarkRecipientIdentifiers = organizationService.trustmarkRecipientIdentifiers(params.oid)
         results.put("records", trustmarkRecipientIdentifiers)
@@ -241,7 +245,8 @@ class OrganizationController {
         log.debug("partnerSystemsTips -> ${params.oid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
 
         def partnerSystemsTips = organizationService.partnerSystemsTips(params.oid)
         results.put("records", partnerSystemsTips)

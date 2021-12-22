@@ -1,7 +1,10 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityUtils
+import org.springframework.security.access.annotation.Secured
 
+@Secured(["ROLE_ADMIN"])
 class RegistrantController {
 
     def springSecurityService
@@ -142,6 +145,30 @@ class RegistrantController {
         }
     }
 
+    //      id: regId
+    //    , lname: lname
+    //    , fname: fname
+    //    , email: email
+    //    , phone: phone
+
+    def updateContactInfo()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        Registrant registrant = registrantService.updateContactInfo(params.id
+                , params.lname
+                , params.fname
+                , params.email
+                , params.phone
+        )
+
+        withFormat  {
+            json {
+                render registrant.toJsonMap() as JSON
+            }
+        }
+    }
+
     def pswd()  {
         User user = springSecurityService.currentUser
         log.info("user -> ${user.name}")
@@ -164,7 +191,8 @@ class RegistrantController {
         log.info("user -> ${user.name}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
 
         def registrants = registrantService.list(params.id)
 
@@ -182,7 +210,8 @@ class RegistrantController {
         log.info("user -> ${user.name}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
 
         def roles = registrantService.roles(params.name)
 
@@ -193,5 +222,15 @@ class RegistrantController {
                 render roles as JSON
             }
         }
+    }
+
+    @Secured('isFullyAuthenticated()')
+    def edit() {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        Registrant registrant = registrantService.get(user.username)
+
+        [registrant: registrant]
     }
 }

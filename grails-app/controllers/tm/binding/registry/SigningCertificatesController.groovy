@@ -3,6 +3,7 @@ package tm.binding.registry
 import grails.converters.JSON
 import grails.converters.XML
 import grails.gorm.transactions.Transactional
+import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
 import org.apache.commons.lang.StringUtils
 import org.slf4j.Logger
@@ -18,7 +19,7 @@ import java.security.cert.X509Certificate
 import java.security.cert.CertificateFactory
 
 @Transactional
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class SigningCertificatesController {
 
     // certificate valid period in years
@@ -51,6 +52,11 @@ class SigningCertificatesController {
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def administer() {
         log.debug("SigningCertificatesController::administer...")
+
+        // redirect to public view if org admin role
+        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
+            return redirect(controller:'publicApi', action:'signingCertificates')
+        }
 
         [certificateValidPeriodIntervalList: CERTIFICATE_VALID_PERIOD_INTERVALS, keyLengthList: KEY_LENGTH,]
     }
@@ -92,6 +98,11 @@ class SigningCertificatesController {
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def view() {
         log.info("Viewing certificate: [${params.id}]...")
+
+        // redirect to public view if org admin role
+        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
+            return redirect(controller:'publicApi', action:'signingCertificates', id: params.id)
+        }
 
         // SigningCertificate domain object
         SigningCertificate cert = SigningCertificate.findById(params.id)

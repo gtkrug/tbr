@@ -81,13 +81,12 @@ dependencies {
 
     compile "org.hibernate:hibernate-ehcache:5.4.10.Final"
 
-    compile "edu.gatech.gtri.trustmark:tf-api:1.4.18"
-    compile "edu.gatech.gtri.trustmark:tf-api-impl:1.4.27"
+    compile "edu.gatech.gtri.trustmark:tf-api:1.4.21"
+    compile "edu.gatech.gtri.trustmark:tf-api-impl:1.4.30"
 
     compile 'org.grails.plugins:quartz:2.0.13' // For monitoring configuration directories periodically
     compile 'org.quartz-scheduler:quartz:2.2.1'
-
-    compile 'log4j:log4j:1.2.17'
+    
     compile 'org.dom4j:dom4j:2.1.3'
 
     compile 'org.grails.plugins:database-migration:3.1.0'

@@ -9,6 +9,7 @@ import org.apache.commons.lang.StringUtils
 @Secured("permitAll")
 class ChangePasswordController {
     def passwordService
+    def springSecurityService
 
     LinkGenerator grailsLinkGenerator
 
@@ -97,7 +98,63 @@ class ChangePasswordController {
             }
         }
 
-    }//end changePassword()
+    }
+
+    @Secured('isFullyAuthenticated()')
+    def editPassword() {
+        log.info("Edit password...")
+
+        def result = [:]
+
+        User user = springSecurityService.currentUser
+
+        if(!user)   {
+            log.warn("Uh-oh - no user logged-in.")
+            result.status = "FAILURE"
+            result.message = "No user logged-in!"
+        } else {
+
+            [user: user]
+        }
+    }
+
+    def changeExistingPassword() {
+        log.info("Request to change existing password")
+
+        def result = [:]
+
+        if( StringUtils.isEmpty(params.existingPassword) || StringUtils.isEmpty(params.newPassword) || StringUtils.isEmpty(params.confirmPassword))  {
+            log.info("Uh-oh - params.existingPassword or params.newPassword or params.confirmPassword is empty.")
+            result.status = "FAILURE"
+            result.message = "Missing password entries..."
+        } else {
+            // user should be logged-in before changing password
+            User user = springSecurityService.currentUser
+
+            if(!user)   {
+                log.warn("Uh-oh - no user logged-in.")
+                result.status = "FAILURE"
+                result.message = "No user logged-in!"
+            } else {
+
+                log.info("Changing password for user[${user.username}] to [$params.newPassword]...")
+                user.password = params.newPassword;
+                User.withTransaction {
+                    user.save(failOnError: true);
+                }
+
+                result.status = "SUCCESS"
+                result.message = "Your password has been successfully changed."
+            }
+        }
+
+        withFormat {
+            json {
+                render result as JSON
+            }
+        }
+
+    }
 
     boolean isTokenValid(PasswordResetToken pwt) {
 

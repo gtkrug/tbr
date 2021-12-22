@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 @Transactional
 class ProviderController {
 
@@ -191,7 +191,8 @@ class ProviderController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.orgid)))
 
         def providerBaseUrl = grailsLinkGenerator.link(controller: 'system', action: 'view')
         results.put("providerBaseUrl", providerBaseUrl)
@@ -224,9 +225,10 @@ class ProviderController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
 
-        Provider provider = Provider.get(params.id)
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def signingCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'signCertificate', id: provider.id)
         def encryptionCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'encryptCertificate', id: provider.id)
@@ -279,7 +281,10 @@ class ProviderController {
         log.debug("trustmarkRecipientIdentifiers -> ${params.pid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def trustmarkRecipientIdentifiers = providerService.trustmarkRecipientIdentifiers(params.pid)
         results.put("records", trustmarkRecipientIdentifiers)
@@ -344,7 +349,10 @@ class ProviderController {
         log.debug("partnerSystemsTips -> ${params.pid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def partnerSystemsTips = providerService.partnerSystemsTips(params.pid)
         results.put("records", partnerSystemsTips)

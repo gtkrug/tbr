@@ -1,5 +1,6 @@
 package tm.binding.registry
 
+
 class UrlPrintingInterceptor {
 
     UrlPrintingInterceptor(){
@@ -10,8 +11,14 @@ class UrlPrintingInterceptor {
 
     boolean before(){
         try {
-            if (controllerName != 'assets') {
-                log.info("URL[@|cyan ${controllerName}|@:@|green ${actionName}|@${params.id ? ':' + params.id : ''}] [user:@|yellow ${springSecurityService.currentUser ?: 'anonymous'}|@]")
+            log.debug("UrlPrintingInterceptor: controller [${controllerName}]")
+
+            if (controllerName == 'registrant' || controllerName == 'contact' || controllerName == 'email') {
+
+                if (session.getAttribute('user')) {
+                    redirect(controller: 'error', action: 'notAuthorized401')
+                    return false
+                }
             }
         }catch(Throwable t){}
         return true;

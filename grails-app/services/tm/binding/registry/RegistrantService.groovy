@@ -164,6 +164,35 @@ class RegistrantService {
     }
 
     /**
+     * update contact info
+     * @param args
+     * args[0]: params.id
+     * args[1]: params.lname
+     * args[2]: params.fname
+     * args[3]: params.email
+     * args[4]: params.phone
+     * @return
+     */
+    def updateContactInfo(String... args) {
+        log.info("update -> ${args[0]}  ${args[1]}  ${args[2]}  ${args[3]}  ${args[4]}")
+        Registrant registrant = null
+        try  {
+            Registrant.withTransaction {
+                registrant = Registrant.get(Integer.parseInt(args[0]))
+                registrant.user.contact.lastName = args[1]
+                registrant.user.contact.firstName = args[2]
+                registrant.user.contact.email = args[3]
+                registrant.user.contact.phone = args[4]
+
+                registrant.save(true)
+            }
+        } catch (NumberFormatException nfe)  {
+            log.error("Invalid Registrant Id ${args[0]}")
+        }
+        return registrant
+    }
+
+    /**
      * updating password
      * @param args
      * @return

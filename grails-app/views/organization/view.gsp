@@ -647,12 +647,12 @@
             <b>Display Name</b>
         </td>
         <td style='width: auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span>${organization.displayName}</span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <input id="org-display" type="text" size="50" value="${organization.displayName}">
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
     <tr>
@@ -660,12 +660,12 @@
             <b>URL</b>
         </td>
         <td style='width: auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span><a href="${organization.siteUrl}" target="_blank">${organization.siteUrl}</a></span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <input id="org-url" type="url" size="50" value="${organization.siteUrl}">
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
     <tr>
@@ -673,22 +673,22 @@
             <b>Description</b>
         </td>
         <td style='width:auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span>${organization.description}</span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <textarea id="org-description" cols="60" rows="4">${organization.description}</textarea>
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
 </table>
 
-<sec:ifLoggedIn>
+<g:ifNotReadOnly orgId="${organization.id}">
     <button class="btn btn-info" onclick="updateOrganization('${organization.id}',
         document.getElementById('org-url').value, document.getElementById('org-description').value, document.getElementById('org-display').value);">Update</button>
     <br>
     <br>
-</sec:ifLoggedIn>
+</g:ifNotReadOnly>
 
 <br>
 <br>

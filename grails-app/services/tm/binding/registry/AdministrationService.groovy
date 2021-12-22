@@ -10,6 +10,8 @@ import javax.servlet.ServletException
 
 @Transactional
 class AdministrationService {
+    def springSecurityService
+    def registrantService
 
     def serviceMethod(String... args) {
         log.info("serviceMethod -> ${args[0]}")
@@ -291,5 +293,18 @@ class AdministrationService {
             nfe.printStackTrace()
         }
         return contacts
+    }
+
+    boolean isReadOnly(Long orgId) {
+        if (!springSecurityService.isLoggedIn()) {
+            return true
+        } else {
+            User user = springSecurityService.currentUser
+            Registrant registrant = registrantService.findByUser(user)
+            if (user.isOrgAdmin() && registrant.organizationId != orgId ) {
+                return true
+            }
+        }
+        return false
     }
 }
