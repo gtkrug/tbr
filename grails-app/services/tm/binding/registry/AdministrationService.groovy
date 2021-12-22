@@ -10,6 +10,8 @@ import javax.servlet.ServletException
 
 @Transactional
 class AdministrationService {
+    def springSecurityService
+    def registrantService
 
     def serviceMethod(String... args) {
         log.info("serviceMethod -> ${args[0]}")
@@ -79,8 +81,40 @@ class AdministrationService {
         return args[0]
     }
 
+    def addPartnerSystemsTipForOrganization(String... args) {
+        log.info("addPartnerSystemsTipForOrganization -> ${args[1]}")
+
+        Organization organization = Organization.get(Integer.parseInt(args[0]))
+        PartnerSystemsTip tip = new PartnerSystemsTip()
+        tip.partnerSystemsTipIdentifier = args[1]
+
+        tip.name = tipNameFromUri(tip.partnerSystemsTipIdentifier)
+
+        organization.partnerSystemsTips.add(tip)
+        organization.save(true)
+
+        return args[0]
+    }
+
+    def addPartnerSystemsTipForSystem(String... args) {
+        log.info("addPartnerSystemsTipForSystem -> ${args[1]}")
+
+        Provider provider = Provider.get(Integer.parseInt(args[0]))
+        PartnerSystemsTip tip = new PartnerSystemsTip()
+        tip.partnerSystemsTipIdentifier = args[1]
+
+        String tipName = tipNameFromUri(tip.partnerSystemsTipIdentifier)
+
+        tip.name = tipName
+
+        provider.partnerSystemsTips.add(tip)
+        provider.save(true)
+
+        return args[0]
+    }
+
     private String tipNameFromUri(String tipUri) {
-        URL url = new URL(tipUri + "?format=xml");
+        URL url = new URL(tipUri)
 
         TrustInteroperabilityProfileResolver resolver = FactoryLoader.getInstance(TrustInteroperabilityProfileResolver.class)
 
@@ -222,6 +256,19 @@ class AdministrationService {
         return trustmarks
     }
 
+    def listTrustmarksByOrganization(String... args) {
+        log.info("listTrustmarksByOrganization -> ${args[0]}")
+
+        def trustmarks = []
+        try  {
+            Organization organization = Organization.get(Integer.parseInt(args[0]))
+            organization.trustmarks.forEach({t -> trustmarks.add(t)})
+        } catch (NumberFormatException nfe) {
+            nfe.printStackTrace()
+        }
+        return trustmarks
+    }
+
     def listAttributes(String... args) {
         log.info("listAttributes -> ${args[0]}")
 
@@ -246,5 +293,18 @@ class AdministrationService {
             nfe.printStackTrace()
         }
         return contacts
+    }
+
+    boolean isReadOnly(Long orgId) {
+        if (!springSecurityService.isLoggedIn()) {
+            return true
+        } else {
+            User user = springSecurityService.currentUser
+            Registrant registrant = registrantService.findByUser(user)
+            if (user.isOrgAdmin() && registrant.organizationId != orgId ) {
+                return true
+            }
+        }
+        return false
     }
 }

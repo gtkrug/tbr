@@ -3,7 +3,7 @@ package tm.binding.registry
 import grails.converters.JSON
 import grails.plugin.springsecurity.annotation.Secured
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class AttributeController {
 
     def springSecurityService
@@ -47,7 +47,10 @@ class AttributeController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.id))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def attributes = administrationService.listAttributes(params.id)
 

@@ -32,7 +32,7 @@
             <label for="password" class="col-sm-1 control-label"><g:message code="springSecurity.login.password.label"/></label>
             <div class="col-sm-3">
                 <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-                <p class="help-block"><a href="${createLink(controller:'forgotPassword')}">Forgot Password?</a></p>
+                <p class="help-block"><a href="${createLink(controller:'forgotPassword')}">Reset Password?</a></p>
             </div>
         </div>
 

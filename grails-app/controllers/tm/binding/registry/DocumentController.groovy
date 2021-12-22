@@ -7,7 +7,7 @@ import grails.web.mapping.LinkGenerator
 
 import javax.servlet.ServletException
 
-@Secured(["ROLE_ADMIN"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class DocumentController {
 
     def springSecurityService
@@ -18,7 +18,13 @@ class DocumentController {
 
     def index() { }
 
-    def administer() { }
+    def administer() {
+
+        // redirect to public view if org admin role
+        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
+            return redirect(controller:'publicApi', action:'documents')
+        }
+    }
 
     def add()  {
         User user = springSecurityService.currentUser
@@ -89,7 +95,7 @@ class DocumentController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
 
         // get binary url
         def binaryUrl = grailsLinkGenerator.link(controller: 'binary', action: 'upload')

@@ -8,6 +8,11 @@ grails:
             # Whether to translate GORM events into Reactor events
             # Disabled by default for performance reasons
             events: false
+    plugin:
+        databasemigration:
+            updateOnStart: true
+            updateOnStartFileName: changelog.groovy
+
 info:
     app:
         name: '@info.app.name@'
@@ -118,11 +123,13 @@ dataSource:
 environments:
     development:
         dataSource:
+            dbCreate: none
             properties:
                 testOnBorrow: true
                 testWhileIdle: true
     production:
         dataSource:
+            dbCreate: none
             properties:
                 jmxEnabled: true
                 initialSize: 5

@@ -31,4 +31,27 @@ class TrustmarkController {
             }
         }
     }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def listbyOrganization() {
+        log.info("listbyOrganization for organization id: " + params.id)
+
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        def trustmarks = administrationService.listTrustmarksByOrganization(params.id)
+
+        // sort ascending by name
+        trustmarks.sort( { a, b ->
+            a.name <=> b.name
+        })
+
+        withFormat  {
+            json {
+                render trustmarks as JSON
+            }
+        }
+    }
 }

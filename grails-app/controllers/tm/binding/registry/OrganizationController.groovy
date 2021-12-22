@@ -5,12 +5,14 @@ import grails.plugin.springsecurity.annotation.Secured
 
 import java.nio.charset.StandardCharsets
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class OrganizationController {
 
     OrganizationService organizationService
 
     DeserializeService deserializeService
+
+    AdministrationService administrationService
 
     def springSecurityService
 
@@ -33,7 +35,9 @@ class OrganizationController {
             log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
             deserializeService.deserialize(xmlString, organization)
         }
-        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn()]
+        boolean isReadOnly = administrationService.isReadOnly(organization.id)
+
+        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn(), isReadOnly: isReadOnly]
     }
 
     def add()  {
@@ -105,7 +109,8 @@ class OrganizationController {
         log.debug("repos -> ${params.oid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
 
         def repos = organizationService.repos(params.oid)
         results.put("records", repos)
@@ -174,7 +179,8 @@ class OrganizationController {
         log.debug("trustmarkRecipientIdentifiers -> ${params.oid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
 
         def trustmarkRecipientIdentifiers = organizationService.trustmarkRecipientIdentifiers(params.oid)
         results.put("records", trustmarkRecipientIdentifiers)
@@ -232,5 +238,137 @@ class OrganizationController {
                 render trid as JSON
             }
         }
+    }
+
+    // Partner systems tips
+    def partnerSystemsTips()  {
+        log.debug("partnerSystemsTips -> ${params.oid}")
+
+        Map results = [:]
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.oid)))
+
+        def partnerSystemsTips = organizationService.partnerSystemsTips(params.oid)
+        results.put("records", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addPartnerSystemsTip()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        log.info("add partner systems tip identifier -> ${params.identifier}")
+
+        def results = [:]
+
+        def messageMap = [:]
+
+        def partnerSystemsTips = []
+
+        Organization organization = Organization.get(Integer.parseInt(params.oid))
+
+        PartnerSystemsTip tip = PartnerSystemsTip.findByPartnerSystemsTipIdentifier(params.identifier)
+        boolean tipAlreadyExists = false
+
+        if (tip) {
+            PartnerSystemsTip tempTip = organization.partnerSystemsTips.stream()
+                .filter({ tempTip -> tip.partnerSystemsTipIdentifier.equals(tempTip.partnerSystemsTipIdentifier) })
+                .findAny()
+                .orElse(null)
+
+            if(tempTip) {
+                tipAlreadyExists = true
+            }
+        }
+
+        if (tipAlreadyExists) {
+            messageMap.put("WARNING", "WARNING: Partner organization TIP \"${tip.name}\" already exists." )
+        } else {
+            try {
+                partnerSystemsTips.add(administrationService.addPartnerSystemsTipForOrganization(params.oid, params.identifier))
+
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added partner organization TIP.")
+
+            } catch (Throwable t) {
+                log.error("Unable to add TIP: ${params.identifier}")
+                messageMap.put("ERROR", "ERROR: Failed to find partner organization TIP at URL: ${params.identifier}.")
+            }
+        }
+
+        results.put("status", messageMap)
+        results.put("partnerSystemsTips", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def deletePartnerSystemsTips()  {
+
+        Organization organization = organizationService.deletePartnerSystemsTips(params.ids, params.oid)
+
+        withFormat  {
+            json {
+                render organization as JSON
+            }
+        }
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def trustmarks() {
+        log.info("listbyOrganization for organization id: " + params.id)
+
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        def trustmarks = administrationService.listTrustmarksByOrganization(params.id)
+
+        // sort ascending by name
+        trustmarks.sort( { a, b ->
+            a.name <=> b.name
+        })
+
+        withFormat  {
+            json {
+                render trustmarks as JSON
+            }
+        }
+    }
+
+    def bindTrustmarks() {
+        User user = springSecurityService.currentUser
+        log.info("bindTrustmarks...")
+
+        final Integer organizationId = Integer.parseInt(params.id)
+
+        organizationService.bindTrustmarksToOrganization(organizationId)
+
+        Organization organization = Organization.get(organizationId)
+
+        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+                            numberOfTrustmarksBound      : organization.trustmarks.size()]
+
+        render jsonResponse as JSON
+    }
+
+    def updateTrustmarkBindingDetails() {
+        User user = springSecurityService.currentUser
+
+        Integer organizationId = Integer.parseInt(params.id)
+
+        Organization organization = Organization.get(organizationId)
+
+        Map jsonResponse = [numberOfTrustmarksBound: organization.trustmarks.size()]
+
+        render jsonResponse as JSON
     }
 }

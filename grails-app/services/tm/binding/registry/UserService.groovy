@@ -1,6 +1,7 @@
 package tm.binding.registry
 
 import grails.gorm.transactions.Transactional
+import tm.binding.registry.util.PasswordUtil
 
 @Transactional
 class UserService {
@@ -20,21 +21,23 @@ class UserService {
      * contact
      * @return
      */
-    def add(String name, String pswd, String email, Contact contact)  {
+    def add(String name, String pswd, String email, Contact contact, String roleIdString)  {
 
         User user = new User(
                 username: email,
-                password: pswd,
+                password: PasswordUtil.generateRandom(),
                 name: name,
-                enabled: false,
+                enabled: true,
                 accountExpired: false,
-                accountLocked: true,
+                accountLocked: false,
                 passwordExpired: false,
                 contact: contact
         )
         user.save(true)
 
-        Role role = Role.findByAuthority(ROLE_USER)
+        Long roleId = Long.parseLong(roleIdString)
+
+        Role role = Role.findById(roleId)
         UserRole.create(user, role, true)
 
         return user

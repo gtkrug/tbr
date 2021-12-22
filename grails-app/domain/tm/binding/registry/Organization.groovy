@@ -15,6 +15,8 @@ class Organization {
       , providers: Provider
       , assessmentRepos: AssessmentRepository
       , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
+      , partnerSystemsTips: PartnerSystemsTip
+      , trustmarks: Trustmark
     ]
 
     static constraints = {
@@ -29,6 +31,7 @@ class Organization {
         providers cascade: "all-delete-orphan"
         assessmentRepos cascade: "all-delete-orphan"
         trustmarkRecipientIdentifiers cascade: "all-delete-orphan"
+        partnerSystemsTips cascade: "all-delete-orphan"
     }
 
     static mapping = {
@@ -37,6 +40,7 @@ class Organization {
         siteUrl column: 'site_url'
         displayName column: 'display_name'
         description column: 'description', type: 'text'
+        trustmarks cascade: "all-delete-orphan"
     }
 
     Map toJsonMap(boolean shallow = true) {
@@ -48,9 +52,25 @@ class Organization {
                 siteUrl: this.siteUrl,
                 providers: this.providers,
                 assessmentRepos: this.assessmentRepos,
-                trustmarkRecipientIdentifiers: this.trustmarkRecipientIdentifiers,
                 registrants: this.registrants
         ]
+
+        if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {
+            def jsonTrustmarkRecipientIdentifiers = []
+            this.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
+                jsonTrustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
+            }
+            json.put("trustmarkRecipientIdentifiers", jsonTrustmarkRecipientIdentifiers);
+        }
+
+        if (this.partnerSystemsTips && this.partnerSystemsTips.size() > 0) {
+            def jsonPartnerSystemsTips = []
+            this.partnerSystemsTips.each { partnerSystemsTip ->
+                jsonPartnerSystemsTips.add(partnerSystemsTip.partnerSystemsTipIdentifier)
+            }
+            json.put("partnerOrganizationTips", jsonPartnerSystemsTips)
+        }
+
         return json;
     }
 

@@ -13,7 +13,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 @Transactional
 class ProviderController {
 
@@ -162,7 +162,7 @@ class ProviderController {
             messageMap["ERROR"] = "ERROR: " + messageMap["ERROR"]
         }
 
-        Map jsonResponse = [messageMap: messageMap, providerId: provider.id]
+        Map jsonResponse = [messageMap: messageMap, providerId: provider.id, organizationId: provider.organization.id]
 
         render jsonResponse as JSON
     }
@@ -191,7 +191,8 @@ class ProviderController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        results.put("editable", !administrationService.isReadOnly(Integer.parseInt(params.orgid)))
 
         def providerBaseUrl = grailsLinkGenerator.link(controller: 'system', action: 'view')
         results.put("providerBaseUrl", providerBaseUrl)
@@ -224,9 +225,10 @@ class ProviderController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
 
-        Provider provider = Provider.get(params.id)
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def signingCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'signCertificate', id: provider.id)
         def encryptionCertificateUrl = grailsLinkGenerator.link(controller: 'provider', action: 'encryptCertificate', id: provider.id)
@@ -279,7 +281,10 @@ class ProviderController {
         log.debug("trustmarkRecipientIdentifiers -> ${params.pid}")
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def trustmarkRecipientIdentifiers = providerService.trustmarkRecipientIdentifiers(params.pid)
         results.put("records", trustmarkRecipientIdentifiers)
@@ -339,15 +344,102 @@ class ProviderController {
         }
     }
 
+    // partner systems tips
+    def partnerSystemsTips()  {
+        log.debug("partnerSystemsTips -> ${params.pid}")
+
+        Map results = [:]
+
+        Provider provider = Provider.get(Integer.parseInt(params.pid))
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
+
+        def partnerSystemsTips = providerService.partnerSystemsTips(params.pid)
+        results.put("records", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def addPartnerSystemsTip() {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        log.info("add partner systems tip identifier -> ${params.identifier}")
+
+        def results = [:]
+
+        def messageMap = [:]
+
+        def partnerSystemsTips = []
+
+        Provider provider = Provider.get(Integer.parseInt(params.pId))
+
+        PartnerSystemsTip tip = PartnerSystemsTip.findByPartnerSystemsTipIdentifier(params.identifier)
+        boolean tipAlreadyExists = false
+
+        if (tip) {
+            PartnerSystemsTip tempTip = provider.partnerSystemsTips.stream()
+                    .filter({ tempTip -> tip.partnerSystemsTipIdentifier.equals(tempTip.partnerSystemsTipIdentifier) })
+                    .findAny()
+                    .orElse(null)
+
+            if(tempTip) {
+                tipAlreadyExists = true
+            }
+        }
+
+        if (tipAlreadyExists) {
+            messageMap.put("WARNING", "WARNING: Partner system TIP \"${tip.name}\" already exists." )
+        } else {
+            try {
+                partnerSystemsTips.add(administrationService.addPartnerSystemsTipForSystem(params.pId, params.identifier))
+
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added partner system TIP.")
+
+            } catch (Throwable t) {
+                log.error("Unable to add TIP: ${params.identifier}")
+                messageMap.put("ERROR", "ERROR: Failed to find partner system TIP at URL: ${params.identifier}.")
+            }
+        }
+
+        results.put("status", messageMap)
+        results.put("partnerSystemsTips", partnerSystemsTips)
+
+        withFormat  {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    def deletePartnerSystemsTips() {
+
+        Provider provider = providerService.deletePartnerSystemsTips(params.ids, params.pid)
+
+        withFormat  {
+            json {
+                render provider as JSON
+            }
+        }
+    }
+
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def listContacts()  {
+
+        boolean isAdmin = false
         if (springSecurityService.isLoggedIn()) {
             User user = springSecurityService.currentUser
             log.info("user -> ${user.name}")
+
+            isAdmin = user.isAdmin()
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+        results.put("editable", isAdmin)
 
         def orgContacts = []
 

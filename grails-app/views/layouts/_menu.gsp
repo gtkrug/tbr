@@ -3,6 +3,7 @@
 <%@ page import="tm.binding.registry.Role" %>
 
 <nav class="navbar navbar-inverse navbar-fixed-top">
+<div class="container-fluid">
     <!--  <nav class="navbar navbar-default tatmenu" role="navigation">  -->
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">
@@ -48,8 +49,9 @@
                     </a>
                     <ul class="dropdown-menu" role="menu">
                         <li><a href="${createLink(controller: 'index', action: 'index')}" title="Manage Organizations">Organizations</a></li>
-%{--                        Disabled temporarily--}%
-%{--                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>--}%
+                <sec:ifAllGranted roles="ROLE_ADMIN">
+                        <li><a href="${createLink(controller: 'registrant', action: 'administer')}" title="Manage Registrants">Registrants</a></li>
+                </sec:ifAllGranted>
                         <li><a href="${createLink(controller: 'contact', action: 'administer')}" title="Manage Contacts">Points of Contact</a></li>
                         <li><a href="${createLink(controller: 'email', action: 'settings')}" title="Manage Email">Email</a></li>
                         <li><a href="${createLink(controller: 'document', action: 'administer')}" title="Manage Documents">Documents</a></li>
@@ -57,9 +59,6 @@
                     </ul>
                 </li>
             </sec:ifAllGranted>
-            <sec:ifLoggedIn>
-                <li><a href="${createLink(controller: 'logout')}">Logout</a></li>
-            </sec:ifLoggedIn>
             <sec:ifNotLoggedIn>
                 <li class="dropdown">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
@@ -73,17 +72,32 @@
                     </ul>
                 </li>
             </sec:ifNotLoggedIn>
-            <sec:ifNotLoggedIn>
-                <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
-                    <li><a href="${createLink(controller: 'login')}">Login</a></li>
-                    <li>
-                        <a href="${createLink(controller: 'registrant', action: 'insert')}">
-                            <span class="glyphicon glyphicon-user"></span>
-                            Sign Up
-                        </a>
-                    </li>
-                </g:if>
-            </sec:ifNotLoggedIn>
         </ul>
+        <sec:ifNotLoggedIn>
+            <g:if test="${(UserRole.countByRole(Role.findByAuthority(Role.ROLE_ADMIN)) != 0)}">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="${createLink(controller: 'login')}">Login</a></li>
+                </ul>
+            </g:if>
+        </sec:ifNotLoggedIn>
+        <sec:ifLoggedIn>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            <span id="profile-name"><g:registrantName/></span> <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <sec:ifAllGranted roles="ROLE_ORG_ADMIN">
+                            <g:isRegistrant>
+                                <li><a href="${createLink(controller: 'registrant', action: 'edit')}">Edit</a></li>
+                            </g:isRegistrant>
+                        </sec:ifAllGranted>
+                        <li><a href="${createLink(controller: 'changePassword', action: 'editPassword')}">Change Password</a></li>
+                        <li><a href="${createLink(controller: 'logout')}">Logout</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </sec:ifLoggedIn>
     </div><!-- /.navbar-collapse -->
+</div>
 </nav>

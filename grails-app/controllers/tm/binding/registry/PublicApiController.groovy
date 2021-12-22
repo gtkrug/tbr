@@ -3,13 +3,19 @@ package tm.binding.registry
 import grails.converters.JSON
 import grails.converters.XML
 import grails.plugin.springsecurity.SpringSecurityUtils
+import grails.web.mapping.LinkGenerator
+import org.apache.commons.lang.StringUtils
 import tm.binding.registry.util.TBRProperties
+import tm.binding.registry.util.UrlEncodingUtil
 
 import javax.servlet.ServletException
 
 class PublicApiController {
 
+    LinkGenerator grailsLinkGenerator
+
     final String STATUS = "/status/"
+    final String TRUSTMARKS_FIND_BY_ORGANIZATION = "/public/trustmarks/find-by-organization/"
 
     def index() {
     }
@@ -154,6 +160,75 @@ class PublicApiController {
         withFormat {
             json {
                 render tbrStatus as JSON
+            }
+        }
+    }
+
+    /**
+     * Called to find all trustmarks bound to an organization by the orgaization's uri.
+     */
+    def findByOrganization() {
+        log.info("findByOrganization: ${params.organizationUri}")
+
+        String decoded = UrlEncodingUtil.decodeURIComponent(params.organizationUri)
+
+        String organizationUri = new String(decoded.decodeBase64())
+
+        List<PublicTrustmark> trustmarks = new ArrayList<>()
+
+        if (StringUtils.isNotEmpty(organizationUri))  {
+            Organization recipientOrganization = Organization.findBySiteUrl(organizationUri)
+
+            recipientOrganization.trustmarks.forEach {t ->
+                    trustmarks.add(new PublicTrustmark(t.name, t.url, t.trustmarkDefinitionURL,
+                            t.status, t.provisional, t.assessorComments))
+            }
+        }
+
+        def result = ["trustmarks" : trustmarks]
+
+        withFormat {
+            json {
+                render result as JSON
+            }
+            xml {
+                render result as XML
+            }
+        }
+    }
+
+    /**
+     * Called to find all organizations registered to the TBR.
+     */
+    def organizations() {
+        log.info("organizations...")
+
+        def orgs = Organization.findAll()
+
+        List<PublicOrganization> organizations = new ArrayList<>()
+
+        orgs.forEach {o ->
+                // url encode organization's uri
+                String orgUrl = o.siteUrl
+                String orgUrlBase64 = Base64.getEncoder().encodeToString(orgUrl.getBytes())
+                String encodedorgUrl = UrlEncodingUtil.encodeURIComponent(orgUrlBase64)
+
+                // create the trustmarks api url
+                def trustmraksApiUrl = grailsLinkGenerator.serverBaseURL
+                trustmraksApiUrl += TRUSTMARKS_FIND_BY_ORGANIZATION + encodedorgUrl;
+
+                organizations.add(new PublicOrganization(o.name, o.displayName,
+                        o.siteUrl, o.description, trustmraksApiUrl))
+        }
+
+        def result = ["organizations" : organizations]
+
+        withFormat {
+            json {
+                render result as JSON
+            }
+            xml {
+                render result as XML
             }
         }
     }

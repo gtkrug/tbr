@@ -18,7 +18,7 @@ class CheckForExpiredCertificatesWithinTrustFabricObjectsJob {
     //==================================================================================================================
     // Job Specifics
     //==================================================================================================================
-    def concurrent = false
+    static concurrent = false
     def description = "Scans all the signing and encrypting certificates withing each provider/system trust fabric \n" +
             "and checks the certificate expiration. Then, for expired certificates, notify via email the TBR admin \n" +
             "and the trust fabric's main point of contact."

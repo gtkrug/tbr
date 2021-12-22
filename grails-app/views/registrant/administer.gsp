@@ -7,11 +7,16 @@
     <style type="text/css">
     </style>
     <script type="text/javascript">
+
+        var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
+
+        var FORGOT_PASSWORD_URL = "${createLink(controller:'forgotPassword', action: 'index', absolute: true)}/";
+
         $(document).ready(function(){
             listRegistrants([]);
         });
 
-        let registrantDetail = curryThree(renderRegistrantForm);
+        let registrantDetail = curryThree(renderRegistrantFormDialog);
 
         let listRegistrants = function(data)  {
             list("${createLink(controller:'registrant', action: 'list')}"
@@ -46,8 +51,14 @@
                 , {name: 'ALL'});
         }
 
-        let updateRegistrant = function(regId, lname, fname, email, phone, orgId)  {
-            if(checkRegistrant(lname, fname, email, orgId))  {
+        let selectRoles = function(id)  {
+            list("${createLink(controller:'registrant', action: 'roles')}"
+                , curriedSelectRoles('select-role')(id)
+                , {name: 'ALL'});
+        }
+
+        let updateRegistrant = function(regId, lname, fname, email, phone, orgId, roleId, notifyRegistrant)  {
+            if(checkRegistrant(lname, fname, email, orgId, roleId))  {
                 if(regId === 0)  {
                     add("${createLink(controller:'registrant', action: 'add')}"
                         , listRegistrants
@@ -57,7 +68,17 @@
                             , phone: phone
                             , pswd: 'changeMe!'
                             , organizationId: orgId
+                            , roleId: roleId
+                            , notifyRegistrant: notifyRegistrant
                         });
+
+                    if (notifyRegistrant) {
+                        setSuccessStatus("Successfully created the registrant account!");
+                    } else {
+                        setSuccessStatus("Successfully created the registrant account!<br><br>Please note that the person who you created the account for will not be notified." +
+                            " You must notify them yourself and when you do, tell them to go to this link: <br><br>" + FORGOT_PASSWORD_URL + "<br><br>" +
+                            "to reset their password so that they can choose the appropriate password.");
+                    }
                 } else {
                     update("${createLink(controller:'registrant', action: 'update')}"
                         , listRegistrants
@@ -67,9 +88,12 @@
                             , email: email
                             , phone: phone
                             , organizationId: orgId
+                            , roleId: roleId
                         });
+                    setSuccessStatus("Successfully updated the registrant account!");
                 }
-                clearForm();
+
+                clearForm(notifyRegistrant);
             } else {
                 scroll(0,0);
             }
@@ -77,7 +101,14 @@
 
         let getDetails = function(id)  {
             get("${createLink(controller:'registrant', action: 'get')}"
-                , registrantDetail('registrant-detail')(function(){updateRegistrant(id, document.getElementById('detail_lastName').value, document.getElementById('detail_firstName').value, document.getElementById('detail_email').value, document.getElementById('detail_phone').value, document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value);})
+                , registrantDetail('registrant-detail')(function(){updateRegistrant(id,
+                    document.getElementById('detail_lastName').value,
+                    document.getElementById('detail_firstName').value, document.getElementById('detail_email').value,
+                    document.getElementById('detail_phone').value,
+                    document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value,
+                    document.getElementById('roles').options[document.getElementById('roles').selectedIndex].value,
+                    false
+                );})
                 , { id: id }
             );
         }
@@ -86,12 +117,14 @@
             renderRegistrantOffset = curriedRegistrant('registrant-table')
             ({
                 editable: true
-                , fnAdd: function(){renderRegistrantForm('registrant-detail'
+                , fnAdd: function(){renderRegistrantFormDialog('registrant-detail'
                     , function(){updateRegistrant(0, document.getElementById('detail_lastName').value
                         , document.getElementById('detail_firstName').value
                         , document.getElementById('detail_email').value
                         , document.getElementById('detail_phone').value
-                        , document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value);}
+                        , document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value
+                        , document.getElementById('roles').options[document.getElementById('roles').selectedIndex].value
+                        , document.getElementById('notify_registrant').checked);}
                     , {id: 0});}
                 , fnRemove: removeRegistrant
                 , fnDraw: drawRegistrants
@@ -111,7 +144,7 @@
             getCheckedIds('deactivate', deleteRegistrants);
         }
 
-        let checkRegistrant = function(lname, fname, email, orgId)  {
+        let checkRegistrant = function(lname, fname, email, orgId, roleId)  {
             if(lname == null || lname.length === 0) {
                 setDangerStatus("<b>Last name cannot be blank.</b>");
                 document.getElementById('lastName').focus();
@@ -132,11 +165,15 @@
                 document.getElementById('orgs').focus();
                 return false;
             }
+            if(roleId == null || roleId === "0") {
+                setWarningStatus("<b>You must select a role.</b>");
+                document.getElementById('roles').focus();
+                return false;
+            }
             return true;
         }
 
-        let clearForm = function()  {
-            setSuccessStatus("Successfully saved registrant!");
+        let clearForm = function(notifyRegistrant)  {
             hideIt('registrant-detail')
             scroll(0,0);
         }
@@ -145,12 +182,6 @@
 <body>
 <div id="status-header"></div>
 <div id="registrant-table"></div>
-<div  class="tm-right" id="activate">
-    <form class="form-inline">
-        <button type="button" class="btn btn-info"
-                onClick="activateRegistrant();">Activate / Deactivate</button>
-    </form>
-</div>
 <br><br>
 <div id="registrant-detail"></div>
 </body>

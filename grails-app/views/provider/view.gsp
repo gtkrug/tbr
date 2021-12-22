@@ -240,7 +240,7 @@
             if (checkContact(lname, fname, email, phone, type, orgId)) {
                 update("${createLink(controller:'contact', action: 'update')}"
                     , function (data) {
-                        getContacts(${provider.id});
+                        getContacts(orgId, ${provider.id});
                     }
                     , {
                         id: id
@@ -454,7 +454,7 @@
                 ,
                 title: 'Conformance Target Trust Interoperability Profiles'
                 ,
-                titleTooltip: 'Conformance target TIPs are trust interoperability profiles that this system aspires to fully earn, and frequently has earned most or all of the required Trustmarks.'
+                titleTooltip: 'Conformance Target TIPs are trust interoperability profiles that this system aspires to fully earn, and frequently has earned most or all of the required trustmarks.'
             })
             (results);
             renderConformanceTargetTipOffset(0);
@@ -500,6 +500,101 @@
             document.getElementById('conformanceTargetTipIdentifier').focus();
         }
 
+
+        /**
+         * Partner Systems TIPs editing functionality
+         * @param pid
+         */
+        let removePartnerSystemsTips = function (pid) {
+            getCheckedIds('edit-partnerSystemsTips', function (list) {
+                update("${createLink(controller:'provider', action: 'deletePartnerSystemsTips')}"
+                    , function (data) {
+                        $('#partnerSystemsTips-status').html('');
+                        getPartnerSystemsTips(pid);
+                    }
+                    , {ids: list, pid: pid}
+                );
+            });
+        }
+
+        let getPartnerSystemsTips = function (pid) {
+            list("${createLink(controller:'provider', action: 'partnerSystemsTips')}"
+                , partnerSystemsTipResults
+                , {pid: pid}
+            );
+            hideIt('partner-systems-tips-details');
+        }
+
+        // {function(*=): function(*=): function(*=): *}
+        let partnerSystemsTipResults = function (results) {
+            renderPartnerSystemsTipOffset = curriedPartnerSystemsTip('partner-systems-tips-list')
+            ({
+                editable: results.editable
+                ,
+                fnAdd: function () {
+                    $('#partner-systems-tips-status').html('');
+                    renderPartnerSystemTipForm('partner-systems-tips-details'
+                        , function () {
+                            insertPartnerSystemsTip(document.getElementById('partnerSystemsTipIdentifier').value
+                                , ${provider.id});
+                        });
+                }
+                ,
+                fnRemove: function () {
+                    removePartnerSystemsTips('${provider.id}');
+                }
+                ,
+                fnDraw: drawPartnerSystemsTips
+                ,
+                title: 'Partner System Trust Interoperability Profiles'
+                ,
+                titleTooltip: 'This list of trust interoperability profiles (TIPs) represents ' +
+                    'the requirements of this system for potential partner systems that will engage in trusted information exchanges.'
+            })
+            (results);
+            renderPartnerSystemsTipOffset(0);
+        }
+
+        let insertPartnerSystemsTip = function (identifier, pid) {
+            $('#partner-systems-tips-status').html('');
+            add("${createLink(controller:'provider', action: 'addPartnerSystemsTip')}"
+                , function (data) {
+                    let html = "<br>";
+                    if (!isEmtpy(data.status['SUCCESS'])) {
+                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['WARNING'])) {
+                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['ERROR'])) {
+                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
+                    }
+
+                    $('#partner-systems-tips-status').html(html);
+
+                    getPartnerSystemsTips(pid);
+                }
+                , {
+                    identifier: identifier
+                    , pId: pid
+                }
+            );
+        }
+
+        /**
+         * render a form for adding a partner systems tip
+         */
+        let renderInternalPartnerSystemsTipForm = function (target, fn) {
+            let html = "<input id='partnerSystemsTipIdentifier' size='80' type='text' class='form-control tm-margin' placeholder='Enter Partner System TIP Identifier' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
+            html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+            renderInternalDialogForm(target, html);
+            document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
+            document.getElementById('partnerSystemsTipIdentifier').focus();
+        }
+
+
         /**
          * renders content into a standard dialog with a close X
          * @param target
@@ -533,6 +628,7 @@
 
             if (isLoggedIn) {
                 getTrustmarkRecipientIdentifiers(${provider.id})
+                getPartnerSystemsTips(${provider.id})
             }
 
             getConformanceTargetTips(pid);
@@ -659,6 +755,8 @@
                 scroll(0, 0);
             }
         }
+
+
 
 
         let updateTrustmarkBindingDetails = function (providerId) {
@@ -968,7 +1066,7 @@
                                     },
                                     success: function (data, statusText, jqXHR) {
 
-                                        showProvider(data.providerId, $("#isIdp").val());
+                                        showProvider(data.providerId, data.organizationId, $("#isIdp").val());
 
                                         $(document).ajaxStop(function () {
                                             // keep the protocols section open
@@ -1127,6 +1225,12 @@
     <div id="trustmark-recipient-identifiers-list"></div>
     <br>
     <div id="trustmark-recipient-identifiers-details"></div>
+    <br>
+    <br>
+    <div id="partner-systems-tips-list"></div>
+    <br>
+    <div id="partner-systems-tips-status"></div>
+    <div id="partner-systems-tips-details"></div>
     <br>
     <br>
 </sec:ifLoggedIn>

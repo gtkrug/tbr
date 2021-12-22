@@ -3,7 +3,7 @@ package tm.binding.registry
 import grails.converters.JSON
 import grails.plugin.springsecurity.annotation.Secured
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 class ConformanceTargetTipController {
 
     def springSecurityService
@@ -29,12 +29,12 @@ class ConformanceTargetTipController {
         ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(params.identifier)
 
         if (tip != null && provider.conformanceTargetTips.contains(tip)) {
-            messageMap.put("WARNING", "WARNING: Conformance target tip ${tip.name} already exists." )
+            messageMap.put("WARNING", "WARNING: Conformance target TIP \"${tip.name}\" already exists." )
         } else {
             try {
                 conformanceTargetTips.add(administrationService.addConformanceTargetTip(params.pId, params.identifier))
 
-                messageMap.put("SUCCESS", "SUCCESS: Successfully added conformance target tip.")
+                messageMap.put("SUCCESS", "SUCCESS: Successfully added conformance target TIP.")
 
             } catch (Throwable t) {
                 log.error("Unable to add TIP: ${params.identifier}")
@@ -75,7 +75,9 @@ class ConformanceTargetTipController {
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+
+        Provider provider = Provider.get(Integer.parseInt(params.id))
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
         def conformanceTargetTips = administrationService.listConformanceTargetTips(params.id)
 

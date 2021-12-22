@@ -13,6 +13,8 @@ class UrlMappings {
 
         "/public/systems/$type" (controller: 'public', action: 'listByType')
         "/public/certificates/$filename"(controller:'public', action: 'download', id: '$filename')
+        "/public/trustmarks/find-by-organization/$organizationUri"(controller: 'publicApi', action: 'findByOrganization')
+        "/public/organizations"(controller: 'publicApi', action: 'organizations')
 
         "/provider/generate-metadata/$id"(controller: "provider", action: "generateSaml2Metadata")
 
@@ -22,6 +24,9 @@ class UrlMappings {
         "/system/saml2Metadata/$id"(controller: "provider", action: "saml2Metadata")
 
         "/documents/$id"(controller:'document', action: 'pdf')
+
+        "/reset-password"(controller:'forgotPassword', action: 'index')
+        "/change-password"(controller:'changePassword', action: 'editPassword')
 
         "/public/documents/$id"(controller: 'publicApi', action: 'findDocs')
         "/public/documents/$name"(controller:'publicApi', action: 'pdfByName')

@@ -629,22 +629,7 @@ class DeserializeService {
                 provider.tags.add(a.text)
             })
 
-        Attribute attribute = parseAttribute(attributeNode, NAME, OWNER_AGENCY_NAME, ATTRIBUTE_VALUE)
-        if(attribute)  {
-            provider.attributes.add(attribute)
-        }
-
-        attribute = parseAttribute(attributeNode, NAME, OWNER_CATEGORY_CODE, ATTRIBUTE_VALUE)
-        if(attribute)  {
-            provider.attributes.add(attribute)
-        }
-
-        attribute = parseAttribute(attributeNode, NAME, OWNER_AGENCY_DESC, ATTRIBUTE_VALUE)
-        if(attribute)  {
-            provider.attributes.add(attribute)
-        }
-
-        attribute = parseAttribute(attributeNode, NAME, TRUSTMARK_RECIPIENT_ID, ATTRIBUTE_VALUE)
+        Attribute attribute = parseAttribute(attributeNode, NAME, OWNER_CATEGORY_CODE, ATTRIBUTE_VALUE)
         if(attribute)  {
             provider.attributes.add(attribute)
         }
@@ -975,27 +960,32 @@ class DeserializeService {
         systemNameAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
                 .setText(provider.name)
 
-        // add trustmark recipient identifier attributes
-        if (provider.organization.trustmarkRecipientIdentifiers.size() > 0) {
+        // add trustmark recipient identifier attributes for organizations and systems
+        if (provider.organization.trustmarkRecipientIdentifiers.size() > 0 || provider.trustmarkRecipientIdentifiers.size() > 0) {
             Element trustmarkRecipientIdentifiersAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
                     .addAttribute(NAME, "https://nief.org/attribute-registry/attributes/entity/trustmark/TrustmarkRecipientIdentifiers/1.0/")
                     .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
 
-            provider.organization.trustmarkRecipientIdentifiers.each { tri ->
+            provider.organization.trustmarkRecipientIdentifiers.each { orgTri ->
                 trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
-                        .setText(tri.trustmarkRecipientIdentifierUrl)
+                        .setText(orgTri.trustmarkRecipientIdentifierUrl)
+            }
+
+            provider.trustmarkRecipientIdentifiers.each { sysTri ->
+                trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
+                        .setText(sysTri.trustmarkRecipientIdentifierUrl)
             }
         }
 
-        // add conformance target trust interoperability profile attributes
-        if (provider.conformanceTargetTips.size() > 0) {
-            provider.conformanceTargetTips.each { ctt ->
-                Element trustmarkRecipientIdentifiersAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
-                        .addAttribute(NAME, TIP_REFERENCE_NAME)
-                        .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
+        // add Partner System TIPs
+        if (provider.partnerSystemsTips.size() > 0) {
+            Element partnerSystemsTipsAttribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
+                    .addAttribute(NAME, "https://nief.org/attribute-registry/attributes/entity/trustmark/TrustInteroperabilityProfiles/1.0/")
+                    .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
 
-                trustmarkRecipientIdentifiersAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
-                        .setText(ctt.conformanceTargetTipIdentifier)
+            provider.partnerSystemsTips.each { partnerSystemsTip ->
+                partnerSystemsTipsAttribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
+                        .setText(partnerSystemsTip.partnerSystemsTipIdentifier)
             }
         }
 
@@ -1012,27 +1002,23 @@ class DeserializeService {
         }
 
         // add attributes
+        addAttributeToMetadata(entityAttributes, saml2AssertionNs,
+                               "https://nief.org/attribute-registry/attributes/entity/gfipm/OwnerAgencyName/2.0/", provider.organization.name)
+
+        if (StringUtils.isNotEmpty(provider.organization.description)) {
+            addAttributeToMetadata(entityAttributes, saml2AssertionNs,
+                    "https://nief.org/attribute-registry/attributes/entity/gfipm/OwnerAgencyDescriptionText/2.0/", provider.organization.description)
+        }
+
         provider.attributes.each { attrb ->
 
             String name = attrb.name
-            if (name == OWNER_AGENCY_NAME) {
-                name = "https://nief.org/attribute-registry/attributes/entity/gfipm/OwnerAgencyName/2.0/"
-            }
-
-            if (name == OWNER_AGENCY_DESC) {
-                name = "https://nief.org/attribute-registry/attributes/entity/gfipm/OwnerAgencyDescriptionText/2.0/"
-            }
 
             if (name == OWNER_CATEGORY_CODE) {
                 name = "https://nief.org/attribute-registry/attributes/entity/gfipm/OwnerAgencyOrganizationGeneralCategoryCode/2.0/"
             }
 
-            Element attribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
-                    .addAttribute(NAME, name)
-                    .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
-
-            attribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
-                .setText(attrb.value)
+            addAttributeToMetadata(entityAttributes, saml2AssertionNs, name, attrb.value)
         }
 
         // add tag attributes
@@ -1296,13 +1282,22 @@ class DeserializeService {
         provider.saml2MetadataXml = signedSamlMetadata
 
         // save the metadata url
-        String saml2MetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'saml2Metadata', id: provider.id, absolute: true)
+        String saml2MetadataUrl = getMetadataUrl(provider.id)
         provider.saml2MetadataUrl = saml2MetadataUrl
 
         saveProvider(provider)
 
 //        log.info("Signed Saml Metadata:")
 //        log.info("${signedSamlMetadata}")
+    }
+
+    private void addAttributeToMetadata(Element entityAttributes, Namespace saml2AssertionNs, String name, String value) {
+        Element attribute = entityAttributes.addElement(new QName(ATTRIBUTE, saml2AssertionNs))
+                .addAttribute(NAME, name)
+                .addAttribute(NAME_FORMAT, SAML2_ATTRIBUTE_NAME_FORMAT_URI)
+
+        attribute.addElement(new QName(ATTRIBUTE_VALUE, saml2AssertionNs))
+                .setText(value)
     }
 
     SigningCertificate queryDefaultCertificate() {
@@ -1404,4 +1399,12 @@ class DeserializeService {
         return result
     }
 
+    private String getMetadataUrl(int id) {
+        StringBuilder sb = new StringBuilder()
+        def baseAppUrl = TBRProperties.getProperties().getProperty("tf.base.url")
+        sb.append(baseAppUrl)
+        sb.append("/system/saml2Metadata/${id}")
+
+        return sb.toString()
+    }
 }

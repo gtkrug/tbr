@@ -1,6 +1,31 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <html>
 <head>
+    <style type="text/css">
+    .clickable {
+        cursor: pointer;
+    }
+
+    .clickable .glyphicon {
+        background: rgba(0, 0, 0, 0.15);
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 4px
+    }
+
+    .panel-heading span {
+        font-size: 15px;
+    }
+
+    .panel-heading button {
+        margin-top: -25px;
+    }
+
+    a.disabledLink {
+        pointer-events: none;
+        color: #ccc;
+    }
+    </style>
     <script type="text/javascript">
         var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
 
@@ -15,8 +40,26 @@
             if (isLoggedIn) {
                 getRepos(${organization.id});
                 getTrustmarkRecipientIdentifiers(${organization.id})
+                getPartnerSystemsTips(${organization.id})
+                getBoundTrustmarks(${organization.id});
             }
+
+            hideIt('trustmarks-list');
         });
+
+        let getBoundTrustmarks = function (oid) {
+            list("${createLink(controller:'organization', action: 'trustmarks')}"
+                , trustmarkResults(oid)
+                , {id: oid}
+            );
+        }
+
+        let trustmarkResults = function (pId) {
+            return function (results) {
+                renderTrustmarkOffset = curriedTrustmark('trustmarks-list')(results);
+                renderTrustmarkOffset(0);
+            }
+        }
 
         /**
          * contacts functionality for editing contacts
@@ -381,6 +424,119 @@
             }
         }
 
+        // Partner Systems TIPs
+
+        /**
+         * Partner Systems TIPs editing functionality
+         * @param pid
+         */
+        let removePartnerSystemsTips = function (oid) {
+            getCheckedIds('edit-partnerSystemsTips', function (list) {
+                update("${createLink(controller:'organization', action: 'deletePartnerSystemsTips')}"
+                    , function (data) {
+                        $('#partnerSystemsTips-status').html('');
+                        getPartnerSystemsTips(oid);
+                    }
+                    , {ids: list, oid: oid}
+                );
+            });
+        }
+
+        let getPartnerSystemsTips = function (oid) {
+            list("${createLink(controller:'organization', action: 'partnerSystemsTips')}"
+                , partnerSystemsTipResults
+                , {oid: oid}
+            );
+            hideIt('partner-systems-tips-details');
+        }
+
+        // {function(*=): function(*=): function(*=): *}
+        let partnerSystemsTipResults = function (results) {
+            renderPartnerOrganizationTipOffset = curriedPartnerOrganizationTip('partner-systems-tips-list')
+            ({
+                editable: results.editable
+                ,
+                fnAdd: function () {
+                    $('#partner-systems-tips-status').html('');
+                    renderPartnerOrganizationTipForm('partner-systems-tips-details'
+                        , function () {
+                            insertPartnerSystemsTip(document.getElementById('partnerSystemsTipIdentifier').value
+                                , ${organization.id});
+                        });
+                }
+                ,
+                fnRemove: function () {
+                    removePartnerSystemsTips('${organization.id}');
+                }
+                ,
+                fnDraw: drawPartnerSystemsTips
+                ,
+                title: 'Partner Organization Trust Interoperability Profiles'
+                ,
+                titleTooltip: 'This list of trust interoperability profiles (TIPs) represents ' +
+                    'the requirements of this organization for potential partner organizations that will engage in trusted information exchanges.'
+            })
+            (results);
+            renderPartnerOrganizationTipOffset(0);
+        }
+
+        let insertPartnerSystemsTip = function (identifier, oid) {
+            $('#partner-systems-tips-status').html('');
+            add("${createLink(controller:'organization', action: 'addPartnerSystemsTip')}"
+                , function (data) {
+
+                    let html = "<br>";
+                    if (!isEmtpy(data.status['SUCCESS'])) {
+                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['WARNING'])) {
+                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
+                    }
+
+                    if (!isEmtpy(data.status['ERROR'])) {
+                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
+                    }
+
+                    $('#partner-systems-tips-status').html(html);
+
+                    getPartnerSystemsTips(oid);
+                }
+                , {
+                    identifier: identifier
+                    , oid: oid
+                }
+            );
+        }
+
+        /**
+         * render a form for adding a conformance target tip
+         */
+        let renderInternalPartnerSystemsTipForm = function (target, fn) {
+            let html = "<input id='partnerSystemsTipIdentifier' size='80' type='text' class='form-control tm-margin' placeholder='Enter Partner Systems TIP Identifier' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
+            html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
+            renderInternalDialogForm(target, html);
+            document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
+            document.getElementById('partnerSystemsTipIdentifier').focus();
+        }
+
+        /**
+         * renders content into a standard dialog with a close X
+         * @param target
+         * @param content
+         */
+        let renderInternalDialogForm = function (target, content) {
+            let html = "<form class='form-inline'>";
+            html += "<div class='full-width-form form-group'>";
+            html += "<a class='tm-margin tm-right' href=\"javascript:hideIt('" + target + "');\"><span class='glyphicon glyphicon-remove'></span></a><br>";
+            html += content;
+            html += "</div></form>";
+
+            html += "<p><span style='color:red;'>*</span> - Indicates required field.</p>"
+
+            document.getElementById(target).innerHTML = html;
+            showIt(target);
+        }
 
         let updateOrganization = function(orgId, url, desc, display)  {
             update("${createLink(controller:'organization', action: 'update')}"
@@ -393,9 +549,82 @@
             );
         }
 
+        let bindTrustmarks = function (organizationId) {
+            $('#bindTrustmarkStatusMessage').html('Started the trustmark binding process; trustmarks should be available once bound. ${raw(asset.image(src: 'spinner.gif'))}');
+
+            // reset the state variables
+            // initTrustmarkBindingState(organizationId);
+
+            STOP_LOOP = false;
+            // trustmarkBindingStatusLoop(organizationId);
+
+            var url = '${createLink(controller: 'organization',  action: 'bindTrustmarks')}';
+            $.ajax({
+                url: url,
+                dataType: 'json',
+                data: {
+                    id: organizationId,
+                    format: 'json'
+                },
+                beforeSend: function () {
+                },
+                success: function (data, statusText, jqXHR) {
+                    updateTrustmarkBindingDetails(organizationId);
+                },
+                error: function (jqXHR, statusText, errorThrown) {
+                    console.log("Error: " + errorThrown);
+
+                    $('#bindTrustmarkStatusMessage').html(errorThrown);
+                },
+                timeout: 120000 // 2 minutes
+            });
+        }
+
+        let updateTrustmarkBindingDetails = function (organizationId) {
+
+            $('#bindTrustmarkStatusMessage').html('');
+
+            var url = '${createLink(controller: 'organization',  action: 'updateTrustmarkBindingDetails')}';
+            $.ajax({
+                url: url,
+                dataType: 'json',
+                async: false,
+                data: {
+                    id: organizationId,
+                    format: 'json'
+                },
+                beforeSend: function () {
+                },
+                success: function (data, statusText, jqXHR) {
+
+                    // reload trustmarks
+                    getBoundTrustmarks(organizationId);
+
+                    $('#numberOfTrustmarksBound').html(data['numberOfTrustmarksBound']);
+
+                    // update binding button
+                    if (data['numberOfTrustmarksBound'] > 0) {
+                        $('.bind-trustmark-button').text("Refresh Trustmark Bindings");
+                    } else {
+                        $('.bind-trustmark-button').text("Bind Trustmarks");
+                    }
+
+                },
+                error: function (jqXHR, statusText, errorThrown) {
+                    console.log("Error: " + errorThrown);
+
+                    $('#bindTrustmarkStatusMessage').html(errorThrown);
+                }
+            });
+        }
+
         let clearForm = function()  {
             setSuccessStatus("<b>Successfully saved system provider.</b>");
             hideIt('new-provider');
+        }
+
+        function isEmtpy(str) {
+            return (!str || str.length === 0);
         }
     </script>
     <meta charset="UTF-8">
@@ -418,12 +647,12 @@
             <b>Display Name</b>
         </td>
         <td style='width: auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span>${organization.displayName}</span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <input id="org-display" type="text" size="50" value="${organization.displayName}">
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
     <tr>
@@ -431,12 +660,12 @@
             <b>URL</b>
         </td>
         <td style='width: auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span><a href="${organization.siteUrl}" target="_blank">${organization.siteUrl}</a></span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <input id="org-url" type="url" size="50" value="${organization.siteUrl}">
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
     <tr>
@@ -444,22 +673,22 @@
             <b>Description</b>
         </td>
         <td style='width:auto;'>
-            <sec:ifNotLoggedIn>
+            <g:ifReadOnly orgId="${organization.id}">
                 <span>${organization.description}</span>
-            </sec:ifNotLoggedIn>
-            <sec:ifLoggedIn>
+            </g:ifReadOnly>
+            <g:ifNotReadOnly orgId="${organization.id}">
                 <textarea id="org-description" cols="60" rows="4">${organization.description}</textarea>
-            </sec:ifLoggedIn>
+            </g:ifNotReadOnly>
         </td>
     </tr>
 </table>
 
-<sec:ifLoggedIn>
+<g:ifNotReadOnly orgId="${organization.id}">
     <button class="btn btn-info" onclick="updateOrganization('${organization.id}',
         document.getElementById('org-url').value, document.getElementById('org-description').value, document.getElementById('org-display').value);">Update</button>
     <br>
     <br>
-</sec:ifLoggedIn>
+</g:ifNotReadOnly>
 
 <br>
 <br>
@@ -472,17 +701,23 @@
 
 <sec:ifLoggedIn>
 
-<div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
-<div id="assessment-tool-url-list"></div>
-<br>
-<div id="assessment-tool-url-details"></div>
-<br>
-<br>
-<div id="trustmark-revipient-identifiers-list"></div>
-<br>
-<div id="trustmark-revipient-identifiers-details"></div>
-<br>
-<br>
+    <div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
+    <div id="assessment-tool-url-list"></div>
+    <br>
+    <div id="assessment-tool-url-details"></div>
+    <br>
+    <br>
+    <div id="trustmark-revipient-identifiers-list"></div>
+    <br>
+    <div id="trustmark-revipient-identifiers-details"></div>
+    <br>
+    <br>
+    <div id="partner-systems-tips-list"></div>
+    <br>
+    <div id="partner-systems-tips-status"></div>
+    <div id="partner-systems-tips-details"></div>
+    <br>
+    <br>
 </sec:ifLoggedIn>
 
 
@@ -490,6 +725,65 @@
 <br>
 <div id="new-provider"></div>
 <br>
+<br>
+
+<script>
+    $(document).on('click', '.panel-heading button', function (e) {
+        var $this = $(this);
+        var icon = $this.find('i');
+        if (icon.hasClass('glyphicon-plus')) {
+            $this.find('i').removeClass('glyphicon-plus').addClass('glyphicon-minus');
+        } else {
+            $this.find('i').removeClass('glyphicon-minus').addClass('glyphicon-plus');
+        }
+    });
+</script>
+
+%{--    Bind Trustmarks section--}%
+<div class="panel panel-primary">
+    <div class="panel-heading">
+        <h4 class="panel-title">Trustmark Binding Details</h4>
+        <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
+                data-target="#collapseTrustmarks" aria-expanded="false" aria-controls="collapseTrustmarks">
+            <i class="glyphicon glyphicon-plus"></i>
+        </button>
+    </div>
+
+    <div class="collapse" id="collapseTrustmarks">
+        <div class="panel-body">
+
+            <table class='table table-condensed table-striped table-bordered'>
+                <tr>
+                    <td style='width: auto;'><b>Number of Trustmarks Bound</b></td>
+                    <td id="numberOfTrustmarksBound" style='width: auto;'>${organization.trustmarks.size()}</td>
+                </tr>
+            </table>
+            <br>
+
+            <sec:ifLoggedIn>
+                <g:if test="${organization.trustmarks.size() == 0}">
+                    <button class="btn btn-info bind-trustmark-button"
+                            onclick="bindTrustmarks(${organization.id});">Bind Trustmarks</button>
+                </g:if>
+                <g:else>
+                    <button class="btn btn-info bind-trustmark-button"
+                            onclick="bindTrustmarks(${organization.id});">Refresh Trustmark Bindings</button>
+                </g:else>
+
+                <div id="cancelTrusmarkBindings"></div>
+
+                <div id="bindTrustmarkStatusMessage"></div>
+            </sec:ifLoggedIn>
+            <br>
+
+            <a class="tm-right" href="#" onclick="toggleIt('trustmarks-list');
+            return false;"><< Trustmarks</a><br>
+
+            <div id="trustmarks-list"></div>
+
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

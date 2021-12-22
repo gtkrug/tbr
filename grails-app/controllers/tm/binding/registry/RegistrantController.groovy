@@ -1,12 +1,17 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityUtils
+import org.springframework.security.access.annotation.Secured
 
+@Secured(["ROLE_ADMIN"])
 class RegistrantController {
 
     def springSecurityService
 
-    RegistrantService registrantService
+    def passwordService
+
+    def registrantService
 
     def index() { }
 
@@ -66,7 +71,13 @@ class RegistrantController {
                 , params.phone
                 , params.pswd
                 , params.organizationId
+                , params.roleId
         )
+
+        if(params.notifyRegistrant) {
+            // email registrant to reset their password
+            def result = passwordService.resetPassword(params.email)
+        }
 
         registrants.add(registrant.toJsonMap())
         withFormat  {
@@ -104,6 +115,14 @@ class RegistrantController {
         }
     }
 
+//    id: regId
+//    , lname: lname
+//    , fname: fname
+//    , email: email
+//    , phone: phone
+//    , organizationId: orgId
+//    , roleId: roleId
+
     def update()  {
         User user = springSecurityService.currentUser
         log.info("user -> ${user.name}")
@@ -115,14 +134,37 @@ class RegistrantController {
                 , params.fname
                 , params.email
                 , params.phone
-                , params.tatUrl
-                , params.recipientId
                 , params.organizationId
+                , params.roleId
                 )
         registrants.add(registrant.toJsonMap())
         withFormat  {
             json {
                 render registrants as JSON
+            }
+        }
+    }
+
+    //      id: regId
+    //    , lname: lname
+    //    , fname: fname
+    //    , email: email
+    //    , phone: phone
+
+    def updateContactInfo()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        Registrant registrant = registrantService.updateContactInfo(params.id
+                , params.lname
+                , params.fname
+                , params.email
+                , params.phone
+        )
+
+        withFormat  {
+            json {
+                render registrant.toJsonMap() as JSON
             }
         }
     }
@@ -148,12 +190,47 @@ class RegistrantController {
         User user = springSecurityService.currentUser
         log.info("user -> ${user.name}")
 
+        Map results = [:]
+
+        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
+
         def registrants = registrantService.list(params.id)
+
+        results.put("records", registrants)
 
         withFormat  {
             json {
                 render registrants as JSON
             }
         }
+    }
+
+    def roles()  {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        Map results = [:]
+
+        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
+
+        def roles = registrantService.roles(params.name)
+
+        results.put("records", roles)
+
+        withFormat  {
+            json {
+                render roles as JSON
+            }
+        }
+    }
+
+    @Secured('isFullyAuthenticated()')
+    def edit() {
+        User user = springSecurityService.currentUser
+        log.info("user -> ${user.name}")
+
+        Registrant registrant = registrantService.get(user.username)
+
+        [registrant: registrant]
     }
 }

@@ -50,6 +50,7 @@ class Provider {
         , trustmarks: Trustmark
         , tags: String
         , conformanceTargetTips: ConformanceTargetTip
+        , partnerSystemsTips: PartnerSystemsTip
         , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
     ]
 
@@ -66,6 +67,7 @@ class Provider {
         idpAttributes cascade: "all-delete-orphan"
         trustmarks cascade: "all-delete-orphan"
         conformanceTargetTips cascade: "all-delete-orphan"
+        partnerSystemsTips cascade: "all-delete-orphan"
         trustmarkRecipientIdentifiers cascade: "all-delete-orphan"
     }
 
@@ -83,7 +85,7 @@ class Provider {
                 id : this.id,
                 name : this.name,
                 entityId : this.entityId,
-                organization: this.organization,
+                organization: this.organization.toJsonMap(),
                 signingCertificate : this.signingCertificate,
                 encryptionCertificate : this.encryptionCertificate,
                 providerType : this.providerType.toString(),
@@ -96,6 +98,23 @@ class Provider {
                 lastTimeSAMLMetadataGeneratedDate: lastTimeSAMLMetadataGeneratedDate.toString(),
                 saml2MetadataUrl: this.saml2MetadataUrl
         ]
+
+        if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {
+            def jsonTrustmarkRecipientIdentifiers = []
+            this.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
+                jsonTrustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
+            }
+            json.put("trustmarkRecipientIdentifiers", jsonTrustmarkRecipientIdentifiers)
+        }
+
+        if (this.partnerSystemsTips && this.partnerSystemsTips.size() > 0) {
+            def jsonPartnerSystemsTips = []
+            this.partnerSystemsTips.each { partnerSystemsTip ->
+                jsonPartnerSystemsTips.add(partnerSystemsTip.partnerSystemsTipIdentifier)
+            }
+            json.put("partnerSystemTips", jsonPartnerSystemsTips)
+        }
+
         return json
     }
 }

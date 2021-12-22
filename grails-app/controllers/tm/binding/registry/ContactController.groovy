@@ -1,9 +1,10 @@
 package tm.binding.registry
 
 import grails.converters.JSON
+import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.plugin.springsecurity.annotation.Secured
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN", "ROLE_USER"])
+@Secured(["ROLE_ADMIN"])
 class ContactController {
 
     def springSecurityService
@@ -89,13 +90,16 @@ class ContactController {
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def list()  {
+        boolean isAdmin = false
         if (springSecurityService.isLoggedIn()) {
             User user = springSecurityService.currentUser
             log.info("user -> ${user.name}")
+
+            isAdmin = user.isAdmin()
         }
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn())
+        results.put("editable", isAdmin)
 
         def contacts = []
 
