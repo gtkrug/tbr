@@ -226,7 +226,7 @@ class ProviderController {
 
         Map results = [:]
 
-        Provider provider = Provider.get(Integer.parseInt(params.pid))
+        Provider provider = Provider.get(Integer.parseInt(params.id))
 
         results.put("editable", !administrationService.isReadOnly(provider.organizationId))
 
