@@ -284,6 +284,8 @@ let curriedIdpAttribute = curryFour(renderIdpAttributes);
 
 let curriedProtocolDetails = curryFour(renderProtocolDetails);
 
+let curriedCertificateDetails = curryFour(renderCertificateDetails);
+
 let curriedProvider = curryFour(renderProviders);
 
 let curriedTag = curryFour(renderTags);

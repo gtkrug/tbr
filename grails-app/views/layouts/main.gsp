@@ -32,19 +32,37 @@
     <div style="margin-bottom: 4em;">&nbsp;</div>
 </div>
 
-<footer>
-    <div class="container-fluid">
+<div id="footerContainer">
+    <div class="container">
         <div class="row">
-            <div class="col-md-6">
-                <span class="text-muted">&copy;2021 Georgia Tech Research Institute</span>
-            </div>
-            <div>
-                v.<g:meta name="info.app.version"/>,
-                Build Date: <g:meta name="info.app.buildDate"/>
+            <div class="col-md-12">
+                <div>Copyright &copy; 2013-2022, Georgia Tech Research Institute</div>
+                <div>
+                    v.<g:meta name="info.app.version"/>,
+                    Build Date: <g:meta name="info.app.buildDate"/>
+                </div>
+                <div>
+                    Your IP: ${request.remoteAddr}
+                </div>
             </div>
         </div>
     </div>
-</footer>
+
+</div>
+
+%{--<footer>--}%
+%{--    <div class="container-fluid">--}%
+%{--        <div class="row">--}%
+%{--            <div class="col-md-6">--}%
+%{--                <span class="text-muted">&copy;2021 Georgia Tech Research Institute</span>--}%
+%{--            </div>--}%
+%{--            <div>--}%
+%{--                v.<g:meta name="info.app.version"/>,--}%
+%{--                Build Date: <g:meta name="info.app.buildDate"/>--}%
+%{--            </div>--}%
+%{--        </div>--}%
+%{--    </div>--}%
+%{--</footer>--}%
 
 </body>
 </html>

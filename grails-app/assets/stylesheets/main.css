@@ -204,6 +204,19 @@ body.printablePage .pageContent {
     border: 2px solid #111;
 }
 
+#footerContainer {
+    clear: both;
+    position: fixed;
+    bottom: 0px;
+    height: 60px;
+    width: 100%;
 
+    text-align: center;
+    font-size: 80%;
+    font-style: italic;
+
+    background-color: #e2e2e2;
+    border-top: 3px double #002b55;
+}
 
 

@@ -12,6 +12,74 @@ let renderPagination = function(offset, totalCount, fnName)  {
     return "";
 }
 
+let renderCertificateDetailsOffset = function(){};
+/**
+ * renders a table of Certificate Details
+ *
+ * @param target
+ * @param obj
+ * @param data
+ * @param offset
+ */
+let renderCertificateDetails = function(target, obj, data, offset) {
+
+    let html = renderPagination(offset, data.records.length, 'renderCertificateDetailsOffset');
+    html += "<table class='table table-condensed table-striped table-bordered'>";
+    html += "<tr><td colspan='2' style='text-align: center'>";
+
+    html += "<b>" + obj.title + "</b></td></tr>"
+
+    if (data.records.length === 0) {
+        html += '<tr><td colspan="2"><em>There are no Certificate Details.</em></td></tr>';
+    } else {
+        html += obj.fnDraw(obj, data.records);
+    }
+    html += "</table>";
+
+    // The element might be hidden due to logged in and/or roles privileges
+    if (document.getElementById(target) != null) {
+        document.getElementById(target).innerHTML = html;
+    }
+}
+
+let drawCertificateDetails = function(obj, entry)  {
+    let html = "<tr>";
+    html += "<td style='width: auto;'><b>System Type</b></td>";
+    html += "<td style='width: auto;'>" + entry.systemType + "</td>";
+    html += "</tr>";
+
+    if (entry.subject && entry.subject.length > 0) {
+        html += "<tr>";
+        html += "<td style='width: auto;'><b>Subject</b></td>";
+        html += "<td style='width: auto;'>" + entry.subject + "</td>";
+        html += "</tr>";
+
+        html += "<tr>";
+        html += "<td style='width: auto;'><b>Issuer</b></td>";
+        html += "<td style='width: auto;'>" + entry.issuer + "</td>";
+        html += "</tr>";
+
+        html += "<tr>";
+        html += "<td style='width: auto;'><b>Valid Not Before</b></td>";
+        html += "<td style='width: auto;'>" + entry.notBefore + "</td>";
+        html += "</tr>";
+
+        html += "<tr>";
+        html += "<td style='width: auto;'><b>Valid Not After</b></td>";
+        html += "<td style='width: auto;'>" + entry.notAfter + "</td>";
+        html += "</tr>";
+
+        html += "<tr>";
+        html += "<td style='width: auto;'><b>X509 Certificate</b></td>";
+        html += "<td style='width: auto;'>";
+        html += " <a href='" + entry.systemCertificateUrl + "' id='systemCertificateUrl'>download</a>";
+        html += "</td>";
+        html += "</tr>";
+    }
+
+    return html;
+}
+
 let renderProtocolDetailsOffset = function(){};
 /**
  * renders a table of Protocol Details
@@ -918,13 +986,9 @@ let drawConformanceTargetTips = function(obj, entry)  {
     return html;
 }
 
-
-
-
-//let curriedPartnerSystemsTip = curryFour(renderPartnerSystemsTips);
 let renderPartnerOrganizationTipOffset = function(){};
 /**
- * renders a table of Conformance Target Tips
+ * renders a table of Partner Organization Tips
  *
  * @param target
  * @param obj
@@ -964,8 +1028,9 @@ let renderPartnerOrganizationTips = function(target, obj, data, offset)  {
     }
 }
 
+let renderPartnerSystemsTipOffset = function(){};
 /**
- * renders a table of Conformance Target Tips
+ * renders a table of Partner Systems Tips
  *
  * @param target
  * @param obj
@@ -1608,4 +1673,30 @@ let renderForm = function(target, title, content)  {
 
     document.getElementById(target).innerHTML = html;
     showIt(target);
+}
+
+/**
+ * renders a status message into a container div that fades out after 3 seconds
+ * @param target: container div for message
+ * @param data: content of the message
+ */
+let setStatusMessage = function(target, data) {
+    let html = "";
+    if (!isEmtpy(data.status['SUCCESS'])) {
+        html += "<div id='status-message' class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
+    }
+
+    if (!isEmtpy(data.status['WARNING'])) {
+        html += "<div id='status-message' class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
+    }
+
+    if (!isEmtpy(data.status['ERROR'])) {
+        html += "<div id='status-message' class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
+    }
+
+    if (!isEmtpy(html)) {
+        $('#'+target).html(html);
+        $('#'+target).fadeTo(200, 1);
+        $('#'+target).delay(3000).fadeTo(300, 0);
+    }
 }

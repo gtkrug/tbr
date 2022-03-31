@@ -118,19 +118,27 @@ class OrganizationService {
         log.info("add repos -> ${args[0]} ${args[1]}")
 
         String statusMessage = ""
+        Map messageMap = [:]
 
-        // check the status of the repo url
-        if (checkTATStatusUrl(args[1])) {
+        AssessmentRepository assessmentRepository = AssessmentRepository.findByRepoUrl(args[1])
 
-            Organization organization = Organization.get(Integer.parseInt(args[0]))
-            AssessmentRepository assessmentRepository = new AssessmentRepository(repoUrl: args[1], organization: organization)
-
-            assessmentRepository.save(true)
+        if ( assessmentRepository != null) {
+            messageMap["WARNING"] = "Trustmark Assessment Tool at URL: ${args[1]} already exists!"
         } else {
-            statusMessage = "Trustmark Assessment Tool not found at URL: ${args[1]}"
+
+            // check the status of the repo url
+            if (checkTATStatusUrl(args[1])) {
+
+                Organization organization = Organization.get(Integer.parseInt(args[0]))
+                assessmentRepository = new AssessmentRepository(repoUrl: args[1], organization: organization)
+
+                assessmentRepository.save(true)
+            } else {
+                messageMap["ERROR"] = "Trustmark Assessment Tool not found at URL: ${args[1]}"
+            }
         }
 
-        return statusMessage
+        return messageMap
     }
 
     /**
@@ -218,18 +226,28 @@ class OrganizationService {
     def addTrustmarkRecipientIdentifier(String... args) {
         log.info("add trustmarkRecipientIdentifier -> ${args[0]} ${args[1]}")
 
+        Map messageMap = [:]
+
         Organization organization = Organization.get(Integer.parseInt(args[0]))
-        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
-                trustmarkRecipientIdentifierUrl: args[1], organization: organization)
 
-        Organization.withTransaction {
-            organization.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
-            trustmarkRecipientIdentifier.save(true)
+        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = TrustmarkRecipientIdentifier.findByTrustmarkRecipientIdentifierUrl(args[1])
 
-            organization.save(true)
+        if (organization.trustmarkRecipientIdentifiers.contains(trustmarkRecipientIdentifier)) {
+            messageMap["WARNING"] = "Trustmark Recipient Identifier ${args[1]} already exists!"
+        } else {
+
+            trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
+                    trustmarkRecipientIdentifierUrl: args[1], organization: organization)
+
+            Organization.withTransaction {
+                organization.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
+                trustmarkRecipientIdentifier.save(true)
+
+                organization.save(true)
+            }
         }
 
-        return trustmarkRecipientIdentifier
+        return messageMap
     }
 
     def getTrustmarkRecipientIdentifier(String... args) {
@@ -420,7 +438,7 @@ class OrganizationService {
                     JSONObject trustmarksJson = IOUtils.fetchJSON(recipientIdentifierQueryUrl);
                     JSONArray trustmarksJsonArray = trustmarksJson.getJSONArray("trustmarks");
 
-                    totalNumberOfTrustmarksQueried += trustmarksJsonArray.size()
+                    totalNumberOfTrustmarksQueried += trustmarksJsonArray.length()
 
                     trustmarks.add(trustmarksJsonArray)
                 }

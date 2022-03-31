@@ -9,6 +9,9 @@ class Provider {
     String       entityId
     String       signingCertificate
     String       encryptionCertificate
+    String       systemCertificate
+    String       systemCertificateFilename
+    String       systemCertificateUrl
     String       saml2MetadataXml
     String       saml2MetadataUrl
     Instant      validUntilDate
@@ -26,6 +29,9 @@ class Provider {
         endpoints nullable: true
         signingCertificate nullable: true
         encryptionCertificate nullable: true
+        systemCertificate nullable: true
+        systemCertificateFilename nullable: true
+        systemCertificateUrl nullable: true
         saml2MetadataXml nullable: true
         saml2MetadataUrl nullable: true
         validUntilDate nullable: true
@@ -60,6 +66,9 @@ class Provider {
         providerType column: 'provider_type'
         signingCertificate column: 'sign_cert', type: 'text'
         encryptionCertificate column: 'encrypt_cert', type: 'text'
+        systemCertificate column: 'system_cert', type: 'text'
+        systemCertificateFilename column: 'system_cert_filename', type: 'text'
+        systemCertificateUrl column: 'system_cert_url', type: 'text'
         saml2MetadataXml column: 'saml2_metadata_xml', type: 'text'
         saml2MetadataUrl column: 'saml2_metadata_url', type: 'text'
         endpoints cascade: "all-delete-orphan"
@@ -84,20 +93,26 @@ class Provider {
         def json = [
                 id : this.id,
                 name : this.name,
-                entityId : this.entityId,
                 organization: this.organization.toJsonMap(),
-                signingCertificate : this.signingCertificate,
-                encryptionCertificate : this.encryptionCertificate,
                 providerType : this.providerType.toString(),
-                endpoints : this.endpoints,
                 trustmarks : this.trustmarks,
-                protocols : this.protocols,
-                nameFormats : this.nameFormats,
-                attributes : this.attributes,
-                conformanceTargetTips : this.conformanceTargetTips,
-                lastTimeSAMLMetadataGeneratedDate: lastTimeSAMLMetadataGeneratedDate.toString(),
-                saml2MetadataUrl: this.saml2MetadataUrl
+                conformanceTargetTips : this.conformanceTargetTips
         ]
+
+        if (this.providerType == ProviderType.SAML_IDP || this.providerType == ProviderType.SAML_SP) {
+            json.put("entityId", this.entityId)
+            json.put("signingCertificate", this.signingCertificate)
+            json.put("encryptionCertificate", this.encryptionCertificate)
+            json.put("endpoints", this.endpoints)
+            json.put("protocols", this.protocols)
+            json.put("nameFormats", this.nameFormats)
+            json.put("attributes", this.attributes)
+            json.put("lastTimeSAMLMetadataGeneratedDate", this.lastTimeSAMLMetadataGeneratedDate)
+            json.put("saml2MetadataUrl", this.saml2MetadataUrl)
+        } else if (this.providerType == ProviderType.CERTIFICATE) {
+            json.put("systemCertificate", this.systemCertificate)
+            json.put("systemCertificateUrl", this.systemCertificateUrl)
+        }
 
         if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {
             def jsonTrustmarkRecipientIdentifiers = []

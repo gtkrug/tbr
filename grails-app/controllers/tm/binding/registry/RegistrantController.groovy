@@ -74,9 +74,10 @@ class RegistrantController {
                 , params.roleId
         )
 
-        if(params.notifyRegistrant) {
-            // email registrant to reset their password
-            def result = passwordService.resetPassword(params.email)
+        boolean notifyRegistrant  = Boolean.parseBoolean(params.notifyRegistrant)
+        if(notifyRegistrant) {
+            // email registrant to create new password
+            def result = passwordService.newRegistrantEmail(params.email, params.organizationId)
         }
 
         registrants.add(registrant.toJsonMap())

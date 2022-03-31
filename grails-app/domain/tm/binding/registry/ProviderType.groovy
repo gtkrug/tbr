@@ -7,7 +7,8 @@ import java.util.concurrent.ConcurrentHashMap
 enum ProviderType  {
 
    SAML_IDP("SAML IDP"),
-   SAML_SP("SAML SP")
+   SAML_SP("SAML SP"),
+   CERTIFICATE("Certificate")
 
    private final String name
    private static final Map<String, ProviderType> ENUM_MAP;

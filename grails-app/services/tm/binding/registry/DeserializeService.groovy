@@ -1047,23 +1047,26 @@ class DeserializeService {
             }
 
             // singning key
-            Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "signing")
+            if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+                Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "signing")
 
-            Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.signingCertificate)
+                Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.signingCertificate)
+            }
 
             // encrypting key
-            Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "encryption")
+            if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+                Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "encryption")
 
-            Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.encryptionCertificate)
-
+                Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.encryptionCertificate)
+            }
 
             // endpoints
 
@@ -1148,22 +1151,26 @@ class DeserializeService {
             }
 
             // singning key
-            Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "signing")
+            if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+                Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "signing")
 
-            Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.signingCertificate)
+                Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.signingCertificate)
+            }
 
             // encrypting key
-            Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "encryption")
+            if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+                Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "encryption")
 
-            Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.encryptionCertificate)
+                Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.encryptionCertificate)
+            }
 
             // endpoints
             Integer artifactResolutionServiceCounter = 0 // base

@@ -14,4 +14,9 @@ class ErrorController {
                 "${request.getAttribute('javax.servlet.error.request_uri')}")
     }//end notAuthorized401
 
+    @Secured("permitAll")
+    def notFound404(){
+        log.warn("User[@|yellow ${springSecurityService.currentUser ?: request.remoteAddr}|@] has requested unknown page: ${request.getAttribute('javax.servlet.error.request_uri')}")
+    }//end notFound404
+
 }//end ErrorController()

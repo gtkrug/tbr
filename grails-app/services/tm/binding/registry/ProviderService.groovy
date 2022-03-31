@@ -211,18 +211,36 @@ class ProviderService {
     def addTrustmarkRecipientIdentifier(String... args) {
         log.info("add trustmarkRecipientIdentifier -> ${args[0]} ${args[1]}")
 
+        Map messageMap = [:]
+
         Provider provider = Provider.get(Integer.parseInt(args[0]))
-        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
-                trustmarkRecipientIdentifierUrl: args[1], organization: provider.organization)
 
-        Provider.withTransaction {
-            provider.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
-            trustmarkRecipientIdentifier.save(true)
+        def trustmarkRecipientIdentifiers = TrustmarkRecipientIdentifier.findAllByTrustmarkRecipientIdentifierUrl(args[1])
 
-            provider.save(true)
+        boolean alreadyExists = false
+        for (def trustmarkRecipientIdentifier : trustmarkRecipientIdentifiers) {
+            if (provider.trustmarkRecipientIdentifiers.contains(trustmarkRecipientIdentifier)) {
+                alreadyExists = true;
+                break;
+            }
         }
 
-        return trustmarkRecipientIdentifier
+        if (alreadyExists) {
+            messageMap["WARNING"] = "Trustmark Recipient Identifier ${args[1]} already exists!"
+        } else {
+
+            TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = new TrustmarkRecipientIdentifier(
+                    trustmarkRecipientIdentifierUrl: args[1], organization: provider.organization)
+
+            Provider.withTransaction {
+                provider.trustmarkRecipientIdentifiers.add(trustmarkRecipientIdentifier)
+                trustmarkRecipientIdentifier.save(true)
+
+                provider.save(true)
+            }
+        }
+
+        return messageMap
     }
 
     def getTrustmarkRecipientIdentifier(String... args) {
@@ -420,14 +438,20 @@ class ProviderService {
                 // Get assessment tool URLs
                 def assessmentToolUrls = org.assessmentRepos
 
-                // Collect Trustmark Recipient Identifiers
-                Set<TrustmarkRecipientIdentifier> recipientIdentifiers = new HashSet<TrustmarkRecipientIdentifier>()
+                // Collect Trustmark Recipient Identifier urls
+                Set<String> recipientIdentifiers = new HashSet<String>()
 
                 // Get Trustmark Recipient Identifiers from parent organization
-                recipientIdentifiers.addAll(org.trustmarkRecipientIdentifiers)
+                org.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
+                    recipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
+                }
 
-                // Add Trustmark Recipient Identifiers from this system provider
-                recipientIdentifiers.addAll(provider.trustmarkRecipientIdentifiers)
+                // Add Trustmark Recipient Identifiers urls from this system provider
+                provider.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
+                    if (!recipientIdentifiers.contains(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)) {
+                        recipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
+                    }
+                }
 
                 if (monitoringProgress) {
                     setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Querying trustmarks for all registered trustmark recipients against all assessment tools registered for the organization: ${org.name}")
@@ -447,7 +471,7 @@ class ProviderService {
                     String tatUrl = ensureTrailingSlash(assessmentToolUrl.repoUrl)
                     tatUrl += TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT
 
-                    recipientIdentifiers.each { recipientIdentifier ->
+                    recipientIdentifiers.each { recipientIdentifierUrl ->
                         if (monitoringProgress) {
                             if (!isExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)) {
                                 // exit operation
@@ -457,7 +481,7 @@ class ProviderService {
                         }
 
                         // encode the recipient id url
-                        String recipientId = recipientIdentifier.trustmarkRecipientIdentifierUrl
+                        String recipientId = recipientIdentifierUrl
                         String recipientIdBase64 = Base64.getEncoder().encodeToString(recipientId.getBytes())
                         String encodedRecipientId = UrlEncodingUtil.encodeURIComponent(recipientIdBase64)
 
@@ -468,7 +492,7 @@ class ProviderService {
                         JSONObject trustmarksJson = IOUtils.fetchJSON(recipientIdentifierQueryUrl);
                         JSONArray trustmarksJsonArray = trustmarksJson.getJSONArray("trustmarks");
 
-                        totalNumberOfTrustmarksQueried += trustmarksJsonArray.size()
+                        totalNumberOfTrustmarksQueried += trustmarksJsonArray.length()
 
                         trustmarks.add(trustmarksJsonArray)
 

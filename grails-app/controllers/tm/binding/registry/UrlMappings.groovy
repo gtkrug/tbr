@@ -13,6 +13,7 @@ class UrlMappings {
 
         "/public/systems/$type" (controller: 'public', action: 'listByType')
         "/public/certificates/$filename"(controller:'public', action: 'download', id: '$filename')
+        "/public/system-certificate/$filename"(controller:'publicApi', action: 'downloadSystemCertificate')
         "/public/trustmarks/find-by-organization/$organizationUri"(controller: 'publicApi', action: 'findByOrganization')
         "/public/organizations"(controller: 'publicApi', action: 'organizations')
 
@@ -36,6 +37,6 @@ class UrlMappings {
         "/public/status"(controller: 'publicApi', action: 'status')
 
         "500" (view:'/error')
-        "404" (view:'/notFound')
+        "404"(controller:'error', action: 'notFound404')
     }
 }
