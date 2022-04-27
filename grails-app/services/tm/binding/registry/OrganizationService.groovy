@@ -120,7 +120,10 @@ class OrganizationService {
         String statusMessage = ""
         Map messageMap = [:]
 
-        AssessmentRepository assessmentRepository = AssessmentRepository.findByRepoUrl(args[1])
+        Organization organization = Organization.get(Integer.parseInt(args[0]))
+
+        AssessmentRepository assessmentRepository =
+                AssessmentRepository.findByRepoUrlAndOrganization(args[1], organization)
 
         if ( assessmentRepository != null) {
             messageMap["WARNING"] = "Trustmark Assessment Tool at URL: ${args[1]} already exists!"
@@ -129,7 +132,6 @@ class OrganizationService {
             // check the status of the repo url
             if (checkTATStatusUrl(args[1])) {
 
-                Organization organization = Organization.get(Integer.parseInt(args[0]))
                 assessmentRepository = new AssessmentRepository(repoUrl: args[1], organization: organization)
 
                 assessmentRepository.save(true)

@@ -34,11 +34,15 @@
             var isSAMLSystem = ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP} ||
                                 ${provider.providerType == tm.binding.registry.ProviderType.SAML_SP};
             var isCertificateSystem = ${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}
+            var isOpenIdSystem = ${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP} ||
+                                 ${provider.providerType == tm.binding.registry.ProviderType.OIDC_OP};
 
             if (isCertificateSystem) {
                 showCertificateSystem(${provider.id}, ${provider.organization.id})
             } else if (isSAMLSystem) {
                 showSAMLSystem(${provider.id}, ${provider.organization.id}, ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP})
+            } else if (isOpenIdSystem) {
+                showOidcSystem(${provider.id}, ${provider.organization.id})
             } else {
                 console.error("Unknown system type.")
             }
@@ -632,6 +636,50 @@
             hideIt('trustmarks-list');
         }
 
+
+        // OIDC System
+
+        let getOidcDetails = function (pid) {
+            list("${createLink(controller:'provider', action: 'oidcDetails')}"
+                , oidcDetailsResults
+                , {id: pid}
+            );
+        }
+
+
+        let oidcDetailsResults = function (results) {
+            renderOidcDetailsOffset = curriedOidcDetails('openid-connect-details')
+            ({
+                readonly: results.readonly
+                , fnDraw: drawOidcDetails
+                , title: 'OpenId Connect Details'
+            })
+            (results);
+            renderOidcDetailsOffset(0);
+        }
+
+        let showOidcSystem = function (pid, orgId) {
+            getOidcDetails(pid);
+            getTrustmarks(pid);
+            getContacts(orgId, pid);
+
+            getTags(pid);
+            getAttributes(pid);
+
+            var isLoggedIn = ${isLoggedIn};
+
+            if (isLoggedIn) {
+                getTrustmarkRecipientIdentifiers(${provider.id})
+            }
+
+            getPartnerSystemsTips(${provider.id})
+            getConformanceTargetTips(pid);
+            hideIt('trustmarks-list');
+        }
+
+        // End OIDC System
+
+
         let getProtocolDetails = function (pid) {
             list("${createLink(controller:'provider', action: 'protocolDetails')}"
                 , protocolDetailsResults
@@ -1086,9 +1134,16 @@
             <g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP}">
                 <h4 class="panel-title">Protocol-Specific Details</h4>
             </g:if>
-            <g:else>
+            <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
                 <h4 class="panel-title">Certificate-Specific Details</h4>
+            </g:elseif>
+            <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                <h4 class="panel-title">OpenId Connect-Specific Details</h4>
+            </g:elseif>
+            <g:else>
+
             </g:else>
+
             <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
                     data-target="#collapseProtocols" aria-expanded="false" aria-controls="collapseProtocols">
                 <i class="glyphicon glyphicon-plus"></i>
@@ -1145,7 +1200,7 @@
                                 </g:if>
                             </div>
                         </g:if>
-                        <g:else>
+                        <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
                             <form id="uploadCertificateForm" method="post" enctype="multipart/form-data"
                                   class="form-inline">
                                 <div class="form-group">
@@ -1186,6 +1241,52 @@
                                     </div>
                                 </g:if>
                             </div>
+                        </g:elseif>
+                        <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                            <form id="uploadOidcMetadataForm" method="post" enctype="multipart/form-data"
+                                  class="form-inline">
+                                <div class="form-group">
+                                    <input id="filename" name="filename" type="file" class="form-control" accept=".json"/>
+                                    <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                    <g:hiddenField name="providerId" value="${provider.id}"></g:hiddenField>
+                                </div>
+                                <button type="submit" class="btn btn-default">Upload</button>
+
+                            </form>
+                            <script>
+                                // attach a submit handler to the form
+                                $("#uploadOidcMetadataForm").submit(function (event) {
+
+                                    var form = $("#uploadOidcMetadataForm").find('input[type="file"]');
+                                    var formData = new FormData(this);
+                                    formData.append("id", $("#providerId").val());
+
+                                    // stop form from submitting normally
+                                    event.preventDefault();
+
+                                    var url = '${createLink(controller: 'provider',  action: 'uploadOidcMetadata')}';
+
+                                    showSystem(showOidcSystem, url, formData);
+
+                                    return false;
+                                });
+
+                                function isEmtpy(str) {
+                                    return (!str || str.length === 0);
+                                }
+                            </script>
+
+                            <div style="height: 100%;">
+                                <g:if test="${provider.openIdConnectMetadata && !provider.openIdConnectMetadata.empty}">
+                                    <div><span
+                                            class="label label-warning">An OIDC metadata file has already been uploaded. Uploading again will overwrite the currently loaded data.</span>
+                                   </div>
+                               </g:if>
+                            </div>
+
+                        </g:elseif>
+                        <g:else>
+
                         </g:else>
 
                         <div id="uploadStatusMessage"></div>
@@ -1213,9 +1314,18 @@
 
                     <br>
                 </g:if>
-                <g:else>
+                <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
                     <div id="certificate-details"></div>
 
+                    <br>
+                </g:elseif>
+                <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                    <div id="openid-connect-details"></div>
+
+                    <br>
+                </g:elseif>
+                <g:else>
+                    <div class="alert alert-warning"><h3>Invalid System Type Specified</h3></div>
                     <br>
                 </g:else>
 
@@ -1273,7 +1383,8 @@
 
 <div id="contact-details"></div>
 
-<g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP}">
+<g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP ||
+    provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
 
     <br>
     <br>

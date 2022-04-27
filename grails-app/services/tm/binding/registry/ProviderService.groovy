@@ -188,6 +188,15 @@ class ProviderService {
             case 'SAML_IDP':
                 type = ProviderType.SAML_IDP.toString()
                 break;
+            case 'CERTIFICATE':
+                type = ProviderType.CERTIFICATE.toString()
+                break;
+            case 'OIDC_RP':
+                type = ProviderType.OIDC_RP.toString()
+                break;
+            case 'OIDC_OP':
+                type = ProviderType.OIDC_OP.toString()
+                break;
         }
 
         ProviderType providerType = ProviderType.fromString(type)

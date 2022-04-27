@@ -1,5 +1,7 @@
 package tm.binding.registry
 
+import org.apache.commons.lang.StringUtils
+
 class Contact {
 
     String      firstName
@@ -13,11 +15,11 @@ class Contact {
     ]
 
     static constraints = {
-        lastName nullable: false
-        firstName nullable: false
-        email nullable: false
+        lastName nullable: true
+        firstName nullable: true
+        email nullable: true
         phone nullable: true
-        type nullable: false
+        type nullable: true
     }
 
     static mapping = {
@@ -32,11 +34,11 @@ class Contact {
     Map toJsonMap(boolean shallow = true) {
         def json = [
                 id: this.id,
-                lastName: this.lastName,
-                firstName: this.firstName,
+                lastName: StringUtils.isNotEmpty(this.lastName) ? this.lastName : "",
+                firstName: StringUtils.isNotEmpty(this.firstName) ? this.firstName : "",
                 type: this.type,
-                email: this.email,
-                phone: this.phone,
+                email: StringUtils.isNotEmpty(this.email) ? this.email : "",
+                phone: StringUtils.isNotEmpty(this.phone) ? this.phone : "",
                 organization: this.organization
         ]
         return json;

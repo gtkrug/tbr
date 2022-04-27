@@ -23,6 +23,7 @@ class UrlMappings {
         "/system/signCertificate/$id"(controller: "provider", action: "signCertificate")
         "/system/encryptCertificate/$id"(controller: "provider", action: "encryptCertificate")
         "/system/saml2Metadata/$id"(controller: "provider", action: "saml2Metadata")
+        "/system/oidcMetadata/$id"(controller: "provider", action: "oidcMetadata")
 
         "/documents/$id"(controller:'document', action: 'pdf')
 

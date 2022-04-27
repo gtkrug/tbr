@@ -80,6 +80,76 @@ let drawCertificateDetails = function(obj, entry)  {
     return html;
 }
 
+// OpenId Connect
+let renderOidcDetailsOffset = function(){};
+/**
+ * renders a table of Certificate Details
+ *
+ * @param target
+ * @param obj
+ * @param data
+ * @param offset
+ */
+let renderOidcDetails = function(target, obj, data, offset) {
+
+    let html = renderPagination(offset, data.records.length, 'renderOidcDetailsOffset');
+    html += "<table class='table table-condensed table-striped table-bordered'>";
+    html += "<tr><td colspan='2' style='text-align: center'>";
+
+    html += "<b>" + obj.title + "</b></td></tr>"
+
+    if (data.records.length === 0) {
+        html += '<tr><td colspan="2"><em>There are no OpenId Connect Details.</em></td></tr>';
+    } else {
+        html += obj.fnDraw(obj, data.records);
+    }
+    html += "</table>";
+
+    // The element might be hidden due to logged in and/or roles privileges
+    if (document.getElementById(target) != null) {
+        document.getElementById(target).innerHTML = html;
+    }
+}
+
+let drawOidcDetails = function(obj, entry)  {
+
+    let html = "<tr>";
+    html += "<td style='width: auto;'><b>System Type</b></td>";
+    html += "<td style='width: auto;'>" + entry.systemType + "</td>";
+    html += "</tr>";
+
+    html += "<tr>";
+    html += "<td style='width: auto;'><b>" + entry.systemType + " Metadata</b></td>";
+    html += "<td style='width: auto;'>";
+    if (entry.hasOidcMetadata) {
+        html += " <a href='" + entry.viewOidcMetadataLink + "' id='viewOidcMetadataLink' target='_blank'>view</a>";
+    } else {
+        html += " <a href='" + entry.viewOidcMetadataLink + "' id='viewOidcMetadataLink' target='_blank' class='disabledLink'>view</a>";
+    }
+    html += "</td>";
+    html += "</tr>";
+
+    if (entry.openIdConnectMetadata) {
+
+        for (const [key, value] of Object.entries(entry.openIdConnectMetadata)) {
+            console.log(key, value);
+
+            html += "<tr>";
+            html += "<td style='width: auto;'><b>"+ key +"</b></td>";
+            if (Array.isArray(value)) {
+                let names = "";
+                value.forEach(a => { names += a+"<br>";});
+                html += "<td style='width: auto;'>" + names + "</td>";
+            } else {
+                html += "<td style='width: auto;'>" + value + "</td>";
+            }
+            html += "</tr>";
+        }
+    }
+
+    return html;
+}
+
 let renderProtocolDetailsOffset = function(){};
 /**
  * renders a table of Protocol Details

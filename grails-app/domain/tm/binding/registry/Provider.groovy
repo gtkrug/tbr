@@ -1,5 +1,8 @@
 package tm.binding.registry
 
+import org.apache.commons.lang.StringUtils
+import org.json.JSONObject
+
 import java.time.Instant
 
 class Provider {
@@ -17,6 +20,8 @@ class Provider {
     Instant      validUntilDate
     ProviderType providerType
     Date         lastTimeSAMLMetadataGeneratedDate
+
+    String       openIdConnectMetadata
 
     static belongsTo = [
         organization: Organization
@@ -44,6 +49,7 @@ class Provider {
         tags nullable: true
         conformanceTargetTips nullable: true
         lastTimeSAMLMetadataGeneratedDate nullable: true
+        openIdConnectMetadata nullable: true, blank: true, maxSize: 65535
     }
 
     static hasMany = [
@@ -71,6 +77,7 @@ class Provider {
         systemCertificateUrl column: 'system_cert_url', type: 'text'
         saml2MetadataXml column: 'saml2_metadata_xml', type: 'text'
         saml2MetadataUrl column: 'saml2_metadata_url', type: 'text'
+        openIdConnectMetadata column: 'openid_connect_metadata', type: 'text'
         endpoints cascade: "all-delete-orphan"
         attributes cascade: "all-delete-orphan"
         idpAttributes cascade: "all-delete-orphan"
@@ -112,6 +119,15 @@ class Provider {
         } else if (this.providerType == ProviderType.CERTIFICATE) {
             json.put("systemCertificate", this.systemCertificate)
             json.put("systemCertificateUrl", this.systemCertificateUrl)
+        } else if (this.providerType == ProviderType.OIDC_RP || this.providerType == ProviderType.OIDC_OP) {
+            if (StringUtils.isNotEmpty(this.openIdConnectMetadata)) {
+                // the OIDC metadata is already a serialized JSON string. If we return the string as-is and
+                // other processes serialize this string to JSON again, artifacts like newlines and escaped
+                // quotes will be introduced. To avoid that, convert the JSON string to a map that can be
+                // safely serialized to JSON.
+                JSONObject jsonObject = new JSONObject(this.openIdConnectMetadata)
+                json.put("openIdConnectMetadata", jsonObject.toMap())
+            }
         }
 
         if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {

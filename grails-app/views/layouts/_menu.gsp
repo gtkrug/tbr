@@ -3,7 +3,7 @@
 <%@ page import="tm.binding.registry.Role" %>
 
 <nav class="navbar navbar-inverse navbar-fixed-top">
-<div class="container-fluid">
+<div class="container">
     <!--  <nav class="navbar navbar-default tatmenu" role="navigation">  -->
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">

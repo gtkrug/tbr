@@ -8,7 +8,9 @@ enum ProviderType  {
 
    SAML_IDP("SAML IDP"),
    SAML_SP("SAML SP"),
-   CERTIFICATE("Certificate")
+   CERTIFICATE("Certificate"),
+   OIDC_RP("OIDC Relying Party"),
+   OIDC_OP("OIDC Provider")
 
    private final String name
    private static final Map<String, ProviderType> ENUM_MAP;
