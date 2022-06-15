@@ -41,8 +41,9 @@
                 getRepos(${organization.id});
                 getTrustmarkRecipientIdentifiers(${organization.id})
                 getPartnerSystemsTips(${organization.id})
-                getBoundTrustmarks(${organization.id});
             }
+
+            getBoundTrustmarks(${organization.id});
 
             hideIt('trustmarks-list');
         });
@@ -247,9 +248,9 @@
             if(checkRepo(repoNm)) {
                 add("${createLink(controller:'organization', action: 'addRepo')}"
                     , function (data) {
-                        if (data.statusMessage && data.statusMessage.length > 0) {
-                            repoStatus(data.statusMessage)
-                        }
+
+                        setStatusMessage('assessment-tool-urls-status', data);
+
                         getRepos(${organization.id});
                     }
                     , {
@@ -341,13 +342,15 @@
                 , trustmarkRecipientIdentifierResults
                 , { oid: oid }
             );
-            hideIt('trustmark-revipient-identifiers-details');
+            hideIt('trustmark-recipient-identifiers-details');
         }
 
         let addTrustmarkRecipientIdentifier = function(trustmarkRecipientIdentifier)  {
             if(checkTrustmarkRecipientIdentifier(trustmarkRecipientIdentifier)) {
                 add("${createLink(controller:'organization', action: 'addTrustmarkRecipientIdentifier')}"
                     , function (data) {
+                        setStatusMessage('trustmark-recipient-identifiers-status', data);
+
                         getTrustmarkRecipientIdentifiers(${organization.id});
                     }
                     , {
@@ -378,10 +381,10 @@
         }
 
         let trustmarkRecipientIdentifierResults = function(results)  {
-            renderTrustmarkRecipientIdentifiersOffset = curriedTrustmarkRecipientIdentifier('trustmark-revipient-identifiers-list')
+            renderTrustmarkRecipientIdentifiersOffset = curriedTrustmarkRecipientIdentifier('trustmark-recipient-identifiers-list')
             ({
                 editable: results.editable
-                , fnAdd: function(){renderTrustmarkRecipientIdentifiersForm('trustmark-revipient-identifiers-details'
+                , fnAdd: function(){renderTrustmarkRecipientIdentifiersForm('trustmark-recipient-identifiers-details'
                     , populateTrustmarkRecipientIdentifiersForm
                     , function(){
                         addTrustmarkRecipientIdentifier(document.getElementById('trustmarkRecipientIdentifier').value);}, {id:0})}
@@ -403,7 +406,7 @@
 
         let getTrustmarkRecipientIdentifierDetails = function(id)  {
             get("${createLink(controller:'organization', action: 'getTrustmarkRecipientIdentifier')}"
-                , trustmarkRecipientIdentifierDetail('trustmark-revipient-identifiers-details')(populateTrustmarkRecipientIdentifiersForm)
+                , trustmarkRecipientIdentifierDetail('trustmark-recipient-identifiers-details')(populateTrustmarkRecipientIdentifiersForm)
                 (function(){updateTrustmarkRecipientIdentifier(id, document.getElementById('trustmarkRecipientIdentifier').value
                     , ${organization.id});})
                 , { orgid: ${organization.id}, rid:id }
@@ -485,20 +488,7 @@
             add("${createLink(controller:'organization', action: 'addPartnerSystemsTip')}"
                 , function (data) {
 
-                    let html = "<br>";
-                    if (!isEmtpy(data.status['SUCCESS'])) {
-                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['WARNING'])) {
-                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['ERROR'])) {
-                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
-                    }
-
-                    $('#partner-systems-tips-status').html(html);
+                    setStatusMessage('partner-systems-tips-status', data);
 
                     getPartnerSystemsTips(oid);
                 }
@@ -701,20 +691,21 @@
 
 <sec:ifLoggedIn>
 
-    <div id="assessment-tool-urls-status" class='alert alert-danger p-1' style="opacity: 0; margin-bottom: 0; padding: 5px;"></div>
     <div id="assessment-tool-url-list"></div>
+    <div id="assessment-tool-urls-status"></div>
     <br>
     <div id="assessment-tool-url-details"></div>
     <br>
     <br>
-    <div id="trustmark-revipient-identifiers-list"></div>
+    <div id="trustmark-recipient-identifiers-list"></div>
+    <div id="trustmark-recipient-identifiers-status"></div>
     <br>
-    <div id="trustmark-revipient-identifiers-details"></div>
+    <div id="trustmark-recipient-identifiers-details"></div>
     <br>
     <br>
     <div id="partner-systems-tips-list"></div>
-    <br>
     <div id="partner-systems-tips-status"></div>
+    <br>
     <div id="partner-systems-tips-details"></div>
     <br>
     <br>
@@ -776,8 +767,7 @@
             </sec:ifLoggedIn>
             <br>
 
-            <a class="tm-right" href="#" onclick="toggleIt('trustmarks-list');
-            return false;"><< Trustmarks</a><br>
+            <a class="tm-right" href="#" onclick="toggleIt('trustmarks-list'); return false;"><< Trustmarks</a><br>
 
             <div id="trustmarks-list"></div>
 

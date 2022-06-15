@@ -107,8 +107,8 @@ class SigningCertificatesController {
         // SigningCertificate domain object
         SigningCertificate cert = SigningCertificate.findById(params.id)
         if( !cert ) {
-            log.info("cert == null...")
-            throw new ServletException("No such certificate: ${params.id}")
+            log.error("Signing certificate with id ${params.id} does not exist!")
+            return redirect(controller:'error', action:'notFound404')
         }
 
         CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509")

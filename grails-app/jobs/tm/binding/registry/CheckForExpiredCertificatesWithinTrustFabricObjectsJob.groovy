@@ -59,20 +59,26 @@ class CheckForExpiredCertificatesWithinTrustFabricObjectsJob {
         def providers = Provider.findAll()
         providers.each { provider ->
 
-            String beginCert = "-----BEGIN CERTIFICATE-----\n";
-            String endCert = "\n-----END CERTIFICATE-----";
+            if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
+                String beginCert = "-----BEGIN CERTIFICATE-----\n";
+                String endCert = "\n-----END CERTIFICATE-----";
 
-            // check signing certificate
-            String signingCertificate = beginCert + provider.signingCertificate + endCert
-            X509Certificate x509SigningCertificate = certService.convertFromPem(signingCertificate)
+                // check signing certificate
+                if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+                    String signingCertificate = beginCert + provider.signingCertificate + endCert
+                    X509Certificate x509SigningCertificate = certService.convertFromPem(signingCertificate)
 
-            checkForCertificateExpiration(provider, x509SigningCertificate, expirationWarningPeriodInDays)
+                    checkForCertificateExpiration(provider, x509SigningCertificate, expirationWarningPeriodInDays)
+                }
 
-            // check encrypting certificate
-            String encryptingCertificate = beginCert + provider.encryptionCertificate + endCert
-            X509Certificate x509EncryptingCertificate = certService.convertFromPem(encryptingCertificate)
+                // check encrypting certificate
+                if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+                    String encryptingCertificate = beginCert + provider.encryptionCertificate + endCert
+                    X509Certificate x509EncryptingCertificate = certService.convertFromPem(encryptingCertificate)
 
-            checkForCertificateExpiration(provider, x509EncryptingCertificate, expirationWarningPeriodInDays)
+                    checkForCertificateExpiration(provider, x509EncryptingCertificate, expirationWarningPeriodInDays)
+                }
+            }
         }
     }
 

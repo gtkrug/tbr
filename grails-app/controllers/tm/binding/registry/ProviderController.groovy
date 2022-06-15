@@ -7,11 +7,16 @@ import org.apache.commons.lang.StringUtils
 import org.dom4j.DocumentException
 import org.grails.web.json.JSONArray
 import grails.web.mapping.LinkGenerator
+import sun.security.x509.X500Name
+import tm.binding.registry.util.TBRProperties
+
 import javax.xml.bind.DatatypeConverter
 import java.nio.charset.StandardCharsets
+import java.security.cert.X509Certificate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+
 
 @Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
 @Transactional
@@ -29,6 +34,10 @@ class ProviderController {
 
     def administrationService
 
+    def x509CertificateService
+
+    def signingCertificateService
+
     def index() { }
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
@@ -36,6 +45,10 @@ class ProviderController {
         log.info("** ProviderController::view id -> ${params.id}")
         log.info(params.id)
         Provider provider = providerService.get(params.id)
+        if (!provider) {
+            log.error("System with id ${params.id} does not exist!")
+            return redirect(controller:'error', action:'notFound404')
+        }
 
         Map messageMap = [:]
 
@@ -165,6 +178,211 @@ class ProviderController {
         Map jsonResponse = [messageMap: messageMap, providerId: provider.id, organizationId: provider.organization.id]
 
         render jsonResponse as JSON
+    }
+
+    def uploadCertificate() {
+        User user = springSecurityService.currentUser
+        log.info("upload user -> ${user.name}")
+
+        Provider provider = providerService.get(params.providerId)
+
+        Map messageMap = [:]
+
+        try {
+            if (params.filename != null) {
+
+                byte[] buffer = new byte[params.filename.size]
+                params.filename.getInputStream().read(buffer)
+                String pemString = new String(buffer, StandardCharsets.UTF_8)
+                log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
+
+                // URL: create a unique filename to create the downloadable file
+                // filename: commonName-thumbprint.pem
+                X509Certificate x509Certificate = x509CertificateService.convertFromPem(pemString)
+
+                X500Name x500Name = new X500Name(x509Certificate.getSubjectX500Principal().getName())
+                String thumbprint = x509CertificateService.getThumbPrint(x509Certificate)
+
+                // remove spaces from common name before creating filename
+                String filename = signingCertificateService.replaceNonAlphanumeric(x500Name.commonName, "-") + "-" + thumbprint + ".pem"
+
+                provider.systemCertificateFilename = filename
+
+                // get the base url from the http request and append the controller
+                String baseUrl = TBRProperties.getBaseUrl()
+
+                provider.systemCertificateUrl = baseUrl + "/public/system-certificate/" + filename
+
+                provider.systemCertificate = pemString
+                messageMap["SUCCESS"] = "Successfully uploaded certificate."
+            }
+        } catch (Exception e) {
+            log.info("Error parsing ${params.filename.originalFilename}, error: ${e.message}")
+            messageMap["ERROR"] = "Error loading ${params.filename.originalFilename}"
+        }
+
+        // prefix warning and error messages
+        if (StringUtils.isNotEmpty(messageMap["WARNING"])) {
+            messageMap["WARNING"] = "WARNING: " + messageMap["WARNING"]
+        }
+
+        if (StringUtils.isNotEmpty(messageMap["ERROR"])) {
+            messageMap["ERROR"] = "ERROR: " + messageMap["ERROR"]
+        }
+
+        Map jsonResponse = [messageMap: messageMap, providerId: provider.id, organizationId: provider.organization.id]
+
+        render jsonResponse as JSON
+    }
+
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def certificateDetails() {
+        if (springSecurityService.isLoggedIn()) {
+            User user = springSecurityService.currentUser
+            log.info("user -> ${user.name}")
+        }
+
+        Map results = [:]
+
+        Provider provider = Provider.get(Integer.parseInt(params.id))
+
+        results.put("readonly", administrationService.isReadOnly(provider.organizationId))
+
+        String subject = ""
+        String issuer = ""
+
+        // Validity
+        String notBefore = ""
+        String notAfter = ""
+
+        // download url
+        String systemCertificateUrl = ""
+
+        if (StringUtils.isNotEmpty(provider.systemCertificate)) {
+            X509Certificate x509Certificate = x509CertificateService.convertFromPem(provider.systemCertificate)
+
+            subject = x509Certificate.subjectDN.toString()
+            issuer = x509Certificate.issuerDN.name
+
+            // Validity
+            notBefore = x509Certificate.notBefore.toString()
+            notAfter = x509Certificate.notAfter.toString()
+
+            //download url
+            systemCertificateUrl = provider.systemCertificateUrl
+        }
+
+        def certificateDetails = [
+                systemType                       : provider.providerType.name,
+                providerId                       : provider.id,
+                subject                          : subject,
+                issuer                           : issuer,
+                notBefore                        : notBefore,
+                notAfter                         : notAfter,
+                systemCertificateUrl             : systemCertificateUrl
+        ]
+
+        results.put("records", certificateDetails)
+
+        render results as JSON
+    }
+
+    def uploadOidcMetadata() {
+        User user = springSecurityService.currentUser
+        log.info("upload user -> ${user.name}")
+
+        Provider provider = providerService.get(params.providerId)
+
+        Map messageMap = [:]
+
+        try {
+            if (params.filename != null) {
+
+                byte[] buffer = new byte[params.filename.size]
+                params.filename.getInputStream().read(buffer)
+                String jsonString = new String(buffer, StandardCharsets.UTF_8)
+                log.info("File Name: ${params.filename.originalFilename}  ${params.filename.size}")
+
+                messageMap = deserializeService.deserializeOidcMetadata(jsonString,
+                        params.filename.originalFilename, provider)
+
+                messageMap["SUCCESS"] = "Successfully uploaded ${provider.providerType.name} metadata."
+            }
+        } catch (Exception e) {
+            log.info("Error parsing ${params.filename.originalFilename}, error: ${e.message}")
+            messageMap["ERROR"] = "Error loading ${params.filename.originalFilename}"
+        }
+
+        // prefix warning and error messages
+        if (StringUtils.isNotEmpty(messageMap["WARNING"])) {
+            messageMap["WARNING"] = "WARNING: " + messageMap["WARNING"]
+        }
+
+        if (StringUtils.isNotEmpty(messageMap["ERROR"])) {
+            messageMap["ERROR"] = "ERROR: " + messageMap["ERROR"]
+        }
+
+        Map jsonResponse = [messageMap: messageMap, providerId: provider.id, organizationId: provider.organization.id]
+
+        render jsonResponse as JSON
+    }
+
+    def oidcDetails() {
+        log.debug("oidcDetails -> ${params.id}")
+
+        Map results = [:]
+
+        Provider provider = Provider.get(Integer.parseInt(params.id))
+        String jsonString = provider.openIdConnectMetadata
+
+        results.put("editable", !administrationService.isReadOnly(provider.organizationId))
+
+        Map metadata = [:]
+
+        if (StringUtils.isNotEmpty(jsonString)) {
+            OidcBaseMetadataProcessor metadataProcessor = deserializeService.createOidcMetadataProcessor(provider.providerType)
+
+            Optional<Map<String, Object>> optionalMap = metadataProcessor.getLabelValueMap(jsonString)
+
+            if (optionalMap.isPresent()) {
+                metadata = optionalMap.get()
+            }
+        }
+
+        def viewMetadataUrl = grailsLinkGenerator.link(controller: 'provider', action: 'oidcMetadata', id: provider.id, absolute: true)
+        boolean hasOidcMetadata = StringUtils.isNotEmpty(jsonString)
+
+        def oidcMetadata = [
+                systemType: provider.providerType.name,
+                uniqueId: provider.oidcUniqueId,
+                openIdConnectMetadata: metadata,
+                viewOidcMetadataLink: viewMetadataUrl,
+                hasOidcMetadata: hasOidcMetadata
+        ]
+        results.put("records", oidcMetadata)
+
+        withFormat {
+            json {
+                render results as JSON
+            }
+        }
+    }
+
+    // view oidc metadata json
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    def oidcMetadata()  {
+        log.info(params.id)
+        Provider provider = providerService.get(params.id)
+        String text = ""
+        String contentType = ""
+
+        if (StringUtils.isNotEmpty(provider.openIdConnectMetadata)) {
+            // serialize OIDC Connect
+            text = deserializeService.serializeOidc(provider.openIdConnectMetadata, provider)
+            contentType = 'text/json'
+        }
+
+        return render(contentType: contentType, text: text)
     }
 
     def add()  {
@@ -299,11 +517,15 @@ class ProviderController {
     def addTrustmarkRecipientIdentifier() {
         log.debug("system -> ${params.pid}")
 
-        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = providerService.addTrustmarkRecipientIdentifier(params.pid, params.identifier)
+        Map results = [:]
+
+        Map messageMap = providerService.addTrustmarkRecipientIdentifier(params.pid, params.identifier)
+
+        results.put("status", messageMap)
 
         withFormat {
             json {
-                render trustmarkRecipientIdentifier as JSON
+                render results as JSON
             }
         }
     }
@@ -345,6 +567,7 @@ class ProviderController {
     }
 
     // partner systems tips
+    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def partnerSystemsTips()  {
         log.debug("partnerSystemsTips -> ${params.pid}")
 

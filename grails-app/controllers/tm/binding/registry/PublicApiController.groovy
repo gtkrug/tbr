@@ -208,17 +208,24 @@ class PublicApiController {
         List<PublicOrganization> organizations = new ArrayList<>()
 
         orgs.forEach {o ->
-                // url encode organization's uri
-                String orgUrl = o.siteUrl
-                String orgUrlBase64 = Base64.getEncoder().encodeToString(orgUrl.getBytes())
-                String encodedorgUrl = UrlEncodingUtil.encodeURIComponent(orgUrlBase64)
+            Map jsonMap = o.toJsonMap()
 
-                // create the trustmarks api url
-                def trustmraksApiUrl = grailsLinkGenerator.serverBaseURL
-                trustmraksApiUrl += TRUSTMARKS_FIND_BY_ORGANIZATION + encodedorgUrl;
+            // url encode organization's uri
+            String orgUrl = jsonMap["siteUrl"]
+            String orgUrlBase64 = Base64.getEncoder().encodeToString(orgUrl.getBytes())
+            String encodedorgUrl = UrlEncodingUtil.encodeURIComponent(orgUrlBase64)
 
-                organizations.add(new PublicOrganization(o.name, o.displayName,
-                        o.siteUrl, o.description, trustmraksApiUrl))
+            // create the trustmarks api url
+            def trustmraksApiUrl = grailsLinkGenerator.serverBaseURL
+            trustmraksApiUrl += TRUSTMARKS_FIND_BY_ORGANIZATION + encodedorgUrl;
+
+            organizations.add(new PublicOrganization(
+                    jsonMap["name"],
+                    jsonMap["displayName"],
+                    jsonMap["siteUrl"],
+                    jsonMap["description"],
+                    trustmraksApiUrl,
+                    jsonMap["trustmarkRecipientIdentifiers"]))
         }
 
         def result = ["organizations" : organizations]
@@ -231,5 +238,29 @@ class PublicApiController {
                 render result as XML
             }
         }
+    }
+
+    /**
+     * Called to download the system certificate.
+     */
+    def downloadSystemCertificate() {
+
+        if( StringUtils.isBlank(params.filename) ){
+            log.warn "Missing required parameter filename"
+            throw new ServletException("Missing required parameter: 'filename")
+        }
+
+        X509CertificateService x509CertificateService = new X509CertificateService()
+
+        // the filename is passed in the id parameter
+        Provider provider = Provider.findBySystemCertificateFilename(params.filename)
+
+        response.setHeader("Content-length", provider.systemCertificate.length().toString())
+
+        String mimeType = "text/html"
+
+        response.setContentType( "application-xdownload")
+        response.setHeader("Content-Disposition", "attachment;filename=${params.filename}")
+        response.getOutputStream() << new ByteArrayInputStream(provider.systemCertificate.getBytes())
     }
 }

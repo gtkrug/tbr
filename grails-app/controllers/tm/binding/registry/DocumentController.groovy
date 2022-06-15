@@ -119,12 +119,14 @@ class DocumentController {
         // get the document associated to the binary id
         BinaryObject binaryObject = BinaryObject.findById(params.id);
         if( !binaryObject ) {
-            throw new ServletException("No such binary object: ${params.id}")
+            log.error("No such binary object: ${params.id}!")
+            return redirect(controller:'error', action:'notFound404')
         }
 
         Document doc = Document.findByBinaryObject(binaryObject);
-        if( !doc ) {
-            throw new ServletException("No such document asscociated to binary object id: ${params.id}")
+        if (!doc) {
+            log.error("No such document associated to binary object id: ${params.id}!")
+            return redirect(controller:'error', action:'notFound404')
         }
 
         boolean  isAdmin = SpringSecurityUtils.ifAllGranted("ROLE_ADMIN")

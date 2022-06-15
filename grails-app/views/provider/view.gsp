@@ -31,7 +31,21 @@
 
         $(document).ready(function () {
 
-            showProvider(${provider.id}, ${provider.organization.id}, ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP})
+            var isSAMLSystem = ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP} ||
+                                ${provider.providerType == tm.binding.registry.ProviderType.SAML_SP};
+            var isCertificateSystem = ${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}
+            var isOpenIdSystem = ${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP} ||
+                                 ${provider.providerType == tm.binding.registry.ProviderType.OIDC_OP};
+
+            if (isCertificateSystem) {
+                showCertificateSystem(${provider.id}, ${provider.organization.id})
+            } else if (isSAMLSystem) {
+                showSAMLSystem(${provider.id}, ${provider.organization.id}, ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP})
+            } else if (isOpenIdSystem) {
+                showOidcSystem(${provider.id}, ${provider.organization.id})
+            } else {
+                console.error("Unknown system type.")
+            }
         });
 
         let selectOrganizations = function (id) {
@@ -464,20 +478,7 @@
             $('#conformanceTargetTips-status').html('');
             add("${createLink(controller:'conformanceTargetTip', action: 'add')}"
                 , function (data) {
-                    let html = "<br>";
-                    if (!isEmtpy(data.status['SUCCESS'])) {
-                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['WARNING'])) {
-                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['ERROR'])) {
-                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
-                    }
-
-                    $('#conformanceTargetTips-status').html(html);
+                    setStatusMessage('conformanceTargetTips-status', data);
 
                     getConformanceTargetTips(pid);
                     updateTrustmarkBindingDetails(pid);
@@ -559,20 +560,7 @@
             $('#partner-systems-tips-status').html('');
             add("${createLink(controller:'provider', action: 'addPartnerSystemsTip')}"
                 , function (data) {
-                    let html = "<br>";
-                    if (!isEmtpy(data.status['SUCCESS'])) {
-                        html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['WARNING'])) {
-                        html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
-                    }
-
-                    if (!isEmtpy(data.status['ERROR'])) {
-                        html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
-                    }
-
-                    $('#partner-systems-tips-status').html(html);
+                    setStatusMessage('partner-systems-tips-status', data);
 
                     getPartnerSystemsTips(pid);
                 }
@@ -613,7 +601,93 @@
             showIt(target);
         }
 
-        let showProvider = function (pid, orgId, isIdp) {
+        let getCertificateDetails = function (pid) {
+            list("${createLink(controller:'provider', action: 'certificateDetails')}"
+                , certificateDetailsResults
+                , {id: pid}
+            );
+        }
+
+
+        let certificateDetailsResults = function (results) {
+            renderCertificateDetailsOffset = curriedCertificateDetails('certificate-details')
+            ({
+                readonly: results.readonly
+                , fnDraw: drawCertificateDetails
+                , title: 'Certificate Details'
+            })
+            (results);
+            renderCertificateDetailsOffset(0);
+        }
+
+        let showCertificateSystem = function (pid, orgId) {
+            getCertificateDetails(pid);
+            getTrustmarks(pid);
+            getContacts(orgId, pid);
+
+            var isLoggedIn = ${isLoggedIn};
+
+            if (isLoggedIn) {
+                getTrustmarkRecipientIdentifiers(${provider.id})
+            }
+
+            getPartnerSystemsTips(${provider.id})
+            getConformanceTargetTips(pid);
+            hideIt('trustmarks-list');
+        }
+
+
+        // OIDC System
+
+        let getOidcDetails = function (pid) {
+            list("${createLink(controller:'provider', action: 'oidcDetails')}"
+                , oidcDetailsResults
+                , {id: pid}
+            );
+        }
+
+
+        let oidcDetailsResults = function (results) {
+            renderOidcDetailsOffset = curriedOidcDetails('openid-connect-details')
+            ({
+                readonly: results.readonly
+                , fnDraw: drawOidcDetails
+                , title: 'OpenId Connect Details'
+            })
+            (results);
+            renderOidcDetailsOffset(0);
+        }
+
+        let showOidcSystem = function (pid, orgId) {
+            getOidcDetails(pid);
+            getTrustmarks(pid);
+            getContacts(orgId, pid);
+
+            getTags(pid);
+            getAttributes(pid);
+
+            var isLoggedIn = ${isLoggedIn};
+
+            if (isLoggedIn) {
+                getTrustmarkRecipientIdentifiers(${provider.id})
+            }
+
+            getPartnerSystemsTips(${provider.id})
+            getConformanceTargetTips(pid);
+            hideIt('trustmarks-list');
+        }
+
+        // End OIDC System
+
+
+        let getProtocolDetails = function (pid) {
+            list("${createLink(controller:'provider', action: 'protocolDetails')}"
+                , protocolDetailsResults
+                , {id: pid}
+            );
+        }
+
+        let showSAMLSystem = function (pid, orgId, isIdp) {
             getProtocolDetails(pid);
             getTrustmarks(pid);
             getTags(pid);
@@ -628,18 +702,11 @@
 
             if (isLoggedIn) {
                 getTrustmarkRecipientIdentifiers(${provider.id})
-                getPartnerSystemsTips(${provider.id})
             }
 
+            getPartnerSystemsTips(${provider.id})
             getConformanceTargetTips(pid);
             hideIt('trustmarks-list');
-        }
-
-        let getProtocolDetails = function (pid) {
-            list("${createLink(controller:'provider', action: 'protocolDetails')}"
-                , protocolDetailsResults
-                , {id: pid}
-            );
         }
 
         let protocolDetailsResults = function (results) {
@@ -667,6 +734,8 @@
             if (checkTrustmarkRecipientIdentifier(trustmarkRecipientIdentifier)) {
                 add("${createLink(controller:'provider', action: 'addTrustmarkRecipientIdentifier')}"
                     , function (data) {
+                        setStatusMessage('trustmark-recipient-identifiers-status', data);
+
                         getTrustmarkRecipientIdentifiers(${provider.id});
                     }
                     , {
@@ -755,9 +824,6 @@
                 scroll(0, 0);
             }
         }
-
-
-
 
         let updateTrustmarkBindingDetails = function (providerId) {
 
@@ -978,6 +1044,54 @@
                 }
             });
         }
+
+        let showSystem = function(showFnc, url, formData, isIdp) {
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                enctype: 'multipart/form-data',
+                data: formData,
+                processData: false,
+                contentType: false,
+
+                beforeSend: function () {
+                },
+                success: function (data, statusText, jqXHR) {
+
+                    if (isIdp != null) {
+                        showFnc(data.providerId, data.organizationId, isIdp);
+                    } else {
+                        showFnc(data.providerId, data.organizationId);
+                    }
+
+                    $(document).ajaxStop(function () {
+                        // keep the protocols section open
+                        $('#collapseProtocols').collapse('show');
+
+                        let html = "<br>";
+                        if (!isEmtpy(data.messageMap['SUCCESS'])) {
+                            html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.messageMap['SUCCESS'] + "</div>";
+                        }
+
+                        if (!isEmtpy(data.messageMap['WARNING'])) {
+                            html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.messageMap['WARNING'] + "</div>";
+                        }
+
+                        if (!isEmtpy(data.messageMap['ERROR'])) {
+                            html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.messageMap['ERROR'] + "</div>";
+                        }
+
+                        $('#uploadStatusMessage').html(html);
+                    });
+                },
+                error: function (jqXHR, statusText, errorThrown) {
+                    console.log("Error: " + errorThrown);
+
+                    $('#uploadStatusMessage').html(errorThrown);
+                }
+            });
+        }
     </script>
     <meta charset="UTF-8">
     <meta name="layout" content="main"/>
@@ -1017,7 +1131,19 @@
 
     <div class="panel panel-primary">
         <div class="panel-heading">
-            <h4 class="panel-title">Protocol-Specific Details</h4>
+            <g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP}">
+                <h4 class="panel-title">Protocol-Specific Details</h4>
+            </g:if>
+            <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
+                <h4 class="panel-title">Certificate-Specific Details</h4>
+            </g:elseif>
+            <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                <h4 class="panel-title">OpenId Connect-Specific Details</h4>
+            </g:elseif>
+            <g:else>
+
+            </g:else>
+
             <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
                     data-target="#collapseProtocols" aria-expanded="false" aria-controls="collapseProtocols">
                 <i class="glyphicon glyphicon-plus"></i>
@@ -1030,86 +1156,138 @@
                 <sec:ifLoggedIn>
                     <div style="height: auto; float:left; margin-bottom: 2em;" id="uploadForm">
 
-                        <form id="uploadSAMLMetadataForm" method="post" enctype="multipart/form-data"
-                              class="form-inline">
-                            <div class="form-group">
-                                <input id="filename" name="filename" type="file" class="form-control" accept=".xml"/>
-                                <input name="id" type="hidden" value="${provider.organization.id}"/>
-                                <g:hiddenField name="providerId" value="${provider.id}"></g:hiddenField>
-                                <g:hiddenField name="isIdp"
-                                               value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"></g:hiddenField>
-                            </div>
-                            <button type="submit" class="btn btn-default">Upload</button>
+                        <g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP}">
+                            <form id="uploadSAMLMetadataForm" method="post" enctype="multipart/form-data"
+                                  class="form-inline">
+                                <div class="form-group">
+                                    <input id="filename" name="filename" type="file" class="form-control" accept=".xml"/>
+                                    <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                    <g:hiddenField name="providerId" value="${provider.id}"></g:hiddenField>
+                                    <g:hiddenField name="isIdp"
+                                                   value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"></g:hiddenField>
+                                </div>
+                                <button type="submit" class="btn btn-default">Upload</button>
 
-                        </form>
-                        <script>
-                            // attach a submit handler to the form
-                            $("#uploadSAMLMetadataForm").submit(function (event) {
+                            </form>
+                            <script>
+                                // attach a submit handler to the form
+                                $("#uploadSAMLMetadataForm").submit(function (event) {
 
-                                var form = $("#uploadSAMLMetadataForm").find('input[type="file"]');
-                                var formData = new FormData(this);
-                                formData.append("id", $("#providerId").val());
+                                    var form = $("#uploadSAMLMetadataForm").find('input[type="file"]');
+                                    var formData = new FormData(this);
+                                    formData.append("id", $("#providerId").val());
 
-                                // stop form from submitting normally
-                                event.preventDefault();
+                                    // stop form from submitting normally
+                                    event.preventDefault();
 
-                                var url = '${createLink(controller: 'provider',  action: 'upload')}';
-                                $.ajax({
-                                    url: url,
-                                    type: 'POST',
-                                    enctype: 'multipart/form-data',
-                                    data: formData,
-                                    processData: false,
-                                    contentType: false,
+                                    var url = '${createLink(controller: 'provider',  action: 'upload')}';
 
-                                    beforeSend: function () {
-                                    },
-                                    success: function (data, statusText, jqXHR) {
+                                    showSystem(showSAMLSystem, url, formData, $("#isIdp").val());
 
-                                        showProvider(data.providerId, data.organizationId, $("#isIdp").val());
-
-                                        $(document).ajaxStop(function () {
-                                            // keep the protocols section open
-                                            $('#collapseProtocols').collapse('show');
-
-                                            let html = "<br>";
-                                            if (!isEmtpy(data.messageMap['SUCCESS'])) {
-                                                html += "<div class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.messageMap['SUCCESS'] + "</div>";
-                                            }
-
-                                            if (!isEmtpy(data.messageMap['WARNING'])) {
-                                                html += "<div class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.messageMap['WARNING'] + "</div>";
-                                            }
-
-                                            if (!isEmtpy(data.messageMap['ERROR'])) {
-                                                html += "<div class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.messageMap['ERROR'] + "</div>";
-                                            }
-
-                                            $('#uploadStatusMessage').html(html);
-                                        });
-                                    },
-                                    error: function (jqXHR, statusText, errorThrown) {
-                                        console.log("Error: " + errorThrown);
-
-                                        $('#uploadStatusMessage').html(errorThrown);
-                                    }
+                                    return false;
                                 });
 
-                                return false;
-                            });
+                                function isEmtpy(str) {
+                                    return (!str || str.length === 0);
+                                }
+                            </script>
 
-                            function isEmtpy(str) {
-                                return (!str || str.length === 0);
-                            }
-                        </script>
-
-                        <div style="height: 100%;">
-                            <g:if test="${!provider.entityId.empty}">
-                                <div><span
-                                        class="label label-warning">A metadata file has already been uploaded. Uploading again will overwrite the currently loaded data.</span>
+                            <div style="height: 100%;">
+                                <g:if test="${!provider.entityId.empty}">
+                                    <div><span
+                                            class="label label-warning">A metadata file has already been uploaded. Uploading again will overwrite the currently loaded data.</span>
+                                    </div>
+                                </g:if>
+                            </div>
+                        </g:if>
+                        <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
+                            <form id="uploadCertificateForm" method="post" enctype="multipart/form-data"
+                                  class="form-inline">
+                                <div class="form-group">
+                                    <input id="filename" name="filename" type="file" class="form-control" accept=".pem"/>
+                                    <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                    <g:hiddenField name="providerId" value="${provider.id}"></g:hiddenField>
                                 </div>
-                            </g:if>
-                        </div>
+                                <button type="submit" class="btn btn-default">Upload</button>
+
+                            </form>
+                            <script>
+                                // attach a submit handler to the form
+                                $("#uploadCertificateForm").submit(function (event) {
+
+                                    var form = $("#uploadCertificateForm").find('input[type="file"]');
+                                    var formData = new FormData(this);
+                                    formData.append("id", $("#providerId").val());
+
+                                    // stop form from submitting normally
+                                    event.preventDefault();
+
+                                    var url = '${createLink(controller: 'provider',  action: 'uploadCertificate')}';
+
+                                    showSystem(showCertificateSystem, url, formData);
+
+                                    return false;
+                                });
+
+                                function isEmtpy(str) {
+                                    return (!str || str.length === 0);
+                                }
+                            </script>
+
+                            <div style="height: 100%;">
+                                <g:if test="${provider.systemCertificate && !provider.systemCertificate.empty}">
+                                    <div><span
+                                            class="label label-warning">A certificate file has already been uploaded. Uploading again will overwrite the currently loaded data.</span>
+                                    </div>
+                                </g:if>
+                            </div>
+                        </g:elseif>
+                        <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                            <form id="uploadOidcMetadataForm" method="post" enctype="multipart/form-data"
+                                  class="form-inline">
+                                <div class="form-group">
+                                    <input id="filename" name="filename" type="file" class="form-control" accept=".json"/>
+                                    <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                    <g:hiddenField name="providerId" value="${provider.id}"></g:hiddenField>
+                                </div>
+                                <button type="submit" class="btn btn-default">Upload</button>
+
+                            </form>
+                            <script>
+                                // attach a submit handler to the form
+                                $("#uploadOidcMetadataForm").submit(function (event) {
+
+                                    var form = $("#uploadOidcMetadataForm").find('input[type="file"]');
+                                    var formData = new FormData(this);
+                                    formData.append("id", $("#providerId").val());
+
+                                    // stop form from submitting normally
+                                    event.preventDefault();
+
+                                    var url = '${createLink(controller: 'provider',  action: 'uploadOidcMetadata')}';
+
+                                    showSystem(showOidcSystem, url, formData);
+
+                                    return false;
+                                });
+
+                                function isEmtpy(str) {
+                                    return (!str || str.length === 0);
+                                }
+                            </script>
+
+                            <div style="height: 100%;">
+                                <g:if test="${provider.openIdConnectMetadata && !provider.openIdConnectMetadata.empty}">
+                                    <div><span
+                                            class="label label-warning">An OIDC metadata file has already been uploaded. Uploading again will overwrite the currently loaded data.</span>
+                                   </div>
+                               </g:if>
+                            </div>
+
+                        </g:elseif>
+                        <g:else>
+
+                        </g:else>
 
                         <div id="uploadStatusMessage"></div>
 
@@ -1118,21 +1296,38 @@
                 <br>
                 <br>
 
-                <div id="protocol-details"></div>
+                <g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP}">
 
-                <br>
+                    <div id="protocol-details"></div>
 
-                <div id="endpoints-list"></div>
+                    <br>
 
-                <br>
+                    <div id="endpoints-list"></div>
 
-                <div id="endpoint-details"></div>
+                    <br>
 
-                <br>
+                    <div id="endpoint-details"></div>
 
-                <div id="idp-attributes"></div>
+                    <br>
 
-                <br>
+                    <div id="idp-attributes"></div>
+
+                    <br>
+                </g:if>
+                <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.CERTIFICATE}">
+                    <div id="certificate-details"></div>
+
+                    <br>
+                </g:elseif>
+                <g:elseif test="${provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
+                    <div id="openid-connect-details"></div>
+
+                    <br>
+                </g:elseif>
+                <g:else>
+                    <div class="alert alert-warning"><h3>Invalid System Type Specified</h3></div>
+                    <br>
+                </g:else>
 
             </div>
         </div>
@@ -1188,58 +1383,62 @@
 
 <div id="contact-details"></div>
 
-<br>
-<br>
+<g:if test="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP || provider.providerType == tm.binding.registry.ProviderType.SAML_SP ||
+    provider.providerType == tm.binding.registry.ProviderType.OIDC_RP || provider.providerType == tm.binding.registry.ProviderType.OIDC_OP}">
 
-<div id="attributes-list"></div>
-<br>
+    <br>
+    <br>
 
-<div id="attribute-details"></div>
+    <div id="attributes-list"></div>
+    <br>
 
-<br>
-<br>
+    <div id="attribute-details"></div>
 
-<div class="panel panel-primary">
-    <div class="panel-heading">
-        <h4 class="panel-title">Keyword Tags Details</h4>
-        <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
-                data-target="#collapseTags" aria-expanded="false" aria-controls="collapseTags">
-            <i class="glyphicon glyphicon-plus"></i>
-        </button>
-    </div>
+    <br>
+    <br>
 
-    <div class="collapse" id="collapseTags">
-        <div class="panel-body">
-            <div id="tags-list"></div>
-            <br>
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h4 class="panel-title">Keyword Tags Details</h4>
+            <button class="btn btn-primary pull-right" type="button" data-toggle="collapse"
+                    data-target="#collapseTags" aria-expanded="false" aria-controls="collapseTags">
+                <i class="glyphicon glyphicon-plus"></i>
+            </button>
+        </div>
 
-            <div id="tag-details"></div>
+        <div class="collapse" id="collapseTags">
+            <div class="panel-body">
+                <div id="tags-list"></div>
+                <br>
+
+                <div id="tag-details"></div>
+            </div>
         </div>
     </div>
-</div>
+</g:if>
+
 
 <br>
 <br>
 
 <sec:ifLoggedIn>
     <div id="trustmark-recipient-identifiers-list"></div>
+    <div id="trustmark-recipient-identifiers-status"></div>
     <br>
     <div id="trustmark-recipient-identifiers-details"></div>
     <br>
     <br>
-    <div id="partner-systems-tips-list"></div>
-    <br>
-    <div id="partner-systems-tips-status"></div>
-    <div id="partner-systems-tips-details"></div>
-    <br>
-    <br>
+
 </sec:ifLoggedIn>
-
+<div id="partner-systems-tips-list"></div>
+<div id="partner-systems-tips-status"></div>
+<br>
+<div id="partner-systems-tips-details"></div>
+<br>
+<br>
 <div id="conformanceTargetTips-list"></div>
-
 <div id="conformanceTargetTips-status"></div>
 <br>
-
 <div id="conformanceTargetTips-details"></div>
 
 

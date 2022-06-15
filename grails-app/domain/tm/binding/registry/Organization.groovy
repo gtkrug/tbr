@@ -49,11 +49,14 @@ class Organization {
                 name: this.name,
                 displayName: this.displayName,
                 description: this.description,
-                siteUrl: this.siteUrl,
-                providers: this.providers,
-                assessmentRepos: this.assessmentRepos,
-                registrants: this.registrants
+                siteUrl: this.siteUrl
         ]
+
+        if (shallow) {
+            json.put("providers", this.providers)
+            json.put("assessmentRepos", this.assessmentRepos)
+            json.put("registrants", this.registrants)
+        }
 
         if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {
             def jsonTrustmarkRecipientIdentifiers = []

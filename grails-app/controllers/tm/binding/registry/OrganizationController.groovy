@@ -28,6 +28,11 @@ class OrganizationController {
     def view() {
         log.info(params.id)
         Organization organization = organizationService.get(params.id)
+        if (!organization) {
+            log.error("Organization with id ${params.id} does not exist!")
+            return redirect(controller:'error', action:'notFound404')
+        }
+
         if(params.filename != null)  {
             byte[] buffer = new byte[params.filename.size]
             params.filename.getInputStream().read(buffer)
@@ -127,9 +132,9 @@ class OrganizationController {
 
         Map results = [:]
 
-        String statusMessage = organizationService.addRepos(params.orgid, params.name)
+        Map messageMap = organizationService.addRepos(params.orgid, params.name)
 
-        results.put("statusMessage", statusMessage)
+        results.put("status", messageMap)
 
         withFormat  {
             json {
@@ -195,11 +200,15 @@ class OrganizationController {
     def addTrustmarkRecipientIdentifier()  {
         log.debug("organization -> ${params.orgid}")
 
-        TrustmarkRecipientIdentifier trustmarkRecipientIdentifier = organizationService.addTrustmarkRecipientIdentifier(params.orgid, params.identifier)
+        Map results = [:]
+
+        Map messageMap = organizationService.addTrustmarkRecipientIdentifier(params.orgid, params.identifier)
+
+        results.put("status", messageMap)
 
         withFormat  {
             json {
-                render trustmarkRecipientIdentifier as JSON
+                render results as JSON
             }
         }
     }

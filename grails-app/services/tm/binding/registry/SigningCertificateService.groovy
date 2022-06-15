@@ -78,7 +78,7 @@ class SigningCertificateService {
 
         // URL: create a unique filename to create the downloadable file
         // filename: commonName-thumbprint.pem
-        String filename = x500Name.commonName + "-" + thumbprint + ".pem"
+        String filename = replaceNonAlphanumeric(x500Name.commonName, "-") + "-" + thumbprint + ".pem"
         signingCertificate.filename = filename
 
         // get the base url from the http request and append the controller
@@ -144,5 +144,11 @@ class SigningCertificateService {
             })
         }
         return signingCertificates
+    }
+
+    def replaceNonAlphanumeric(String str, String replacement)
+    {
+        // replace all non-alphanumeric characters with replacement
+        return str.replaceAll("[^a-zA-Z0-9]", replacement);
     }
 }

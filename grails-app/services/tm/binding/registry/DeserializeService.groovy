@@ -117,6 +117,9 @@ class DeserializeService {
 
     public static final String SAML2_ATTRIBUTE_NAME_FORMAT_URI = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
+    public static final String SAML2_VIEW_RELATIVE_PATH = "saml2Metadata"
+    public static final String OIDC_VIEW_RELATIVE_PATH = "oidcMetadata"
+
     ContactService contactService
 
     LinkGenerator grailsLinkGenerator
@@ -225,6 +228,174 @@ class DeserializeService {
 
         return messageMap
     }
+
+    /**
+     * parse a json string into it's provider and sub-components
+     * @param json
+     * @return
+     */
+    def deserializeOidcMetadata(String json, String jsonFilename, Provider provider) {
+        def messageMap = [:]
+
+        if (StringUtils.isNotEmpty(json)) {
+
+            provider.openIdConnectMetadata = json
+
+            deserializeOidcMetadata(json, provider)
+
+            saveProvider(provider)
+        }
+
+        return messageMap
+    }
+
+    def deserializeOidcMetadata(String json, Provider provider) {
+        def messageMap = [:]
+
+        if (StringUtils.isNotEmpty(json)) {
+            OidcBaseMetadataProcessor metadataProcessor = createOidcMetadataProcessor(provider.providerType)
+            metadataProcessor.parseMetadata(json)
+
+            Optional<List<String>> contacts = metadataProcessor.getMetadataParameterValues("contacts");
+
+            if (provider.providerType == ProviderType.OIDC_RP && contacts.isPresent()) {
+                contacts.get().forEach(email -> {
+                    Contact contact = createOidcRPContact(email)
+
+                    checkForExistingOidcRPContact(contact, provider)
+                });
+            }
+
+            provider.oidcMetadataUrl = getMetadataUrl(provider.id, OIDC_VIEW_RELATIVE_PATH)
+
+            if (provider.providerType == ProviderType.OIDC_RP) {
+                Optional<List<String>> redirectUris  = metadataProcessor.getMetadataParameterValues("redirect_uris")
+                provider.oidcUniqueId = redirectUris.isPresent() ? redirectUris.get().get(0) : ""
+            } else if (provider.providerType == ProviderType.OIDC_OP) {
+                Optional<String> issuer  = metadataProcessor.getValue("issuer")
+                provider.oidcUniqueId = issuer.isPresent() ? issuer.get() : ""
+            }
+        }
+
+        return messageMap
+    }
+
+    /**
+     * parse out the Contact based from the RP Metadata
+     * @param email
+     * @return contact (only email)
+     */
+    def createOidcRPContact(String email)  {
+        Contact contact = new Contact()
+        contact.email = email
+        contact.type = ContactType.ADMINISTRATIVE
+
+        return contact
+    }
+
+    def checkForExistingOidcRPContact(Contact contact, Provider provider)  {
+        Contact existingContact = Contact.findByEmailAndType(contact.email, contact.type)
+        if(existingContact)  {
+            existingContact.organization = provider.organization
+            provider.contacts.add(existingContact)
+        }  else {
+            contact.organization = provider.organization
+            provider.contacts.add(contact)
+        }
+    }
+
+    OidcBaseMetadataProcessor createOidcMetadataProcessor(ProviderType type) {
+
+        OidcBaseMetadataProcessor metadataProcessor = null;
+
+        if (type == ProviderType.OIDC_RP) {
+            metadataProcessor = new OidcRelyingPartyMetadataProcessor()
+        } else if (type == ProviderType.OIDC_OP) {
+            metadataProcessor = new OidcProviderMetadataProcessor();
+        }
+
+        return metadataProcessor;
+    }
+
+    // serialize
+    def serializeOidc(String oidcMetadata, Provider provider) {
+
+        final String OIDC_ENTITY_ATTRIBUTES              = "entity-attributes"
+        final String OIDC_SYSTEM_NAME                    = "system-name"
+        final String OIDC_ENTITY_TAGS                    = "entity-tags"
+        final String OIDC_TRUTMARK_RECIPIENT_IDENTIFIERS = "trustmark-recipient-identifiers"
+        final String OIDC_PARTNER_SYSTEMS_TIPS           = "partner-systems-tips"
+        final String OIDC_TRUSTMARKS                     = "trustmarks"
+        final String OIDC_METADATA_URL                   = "oidcMetadataUrl"
+        final String OIDC_METADATA_UNIQUE_ID             = "uniqueId"
+
+        String jsonMetadata = ""
+
+        if (StringUtils.isNotEmpty(oidcMetadata)) {
+            OidcBaseMetadataProcessor metadataProcessor = createOidcMetadataProcessor(provider.providerType)
+            metadataProcessor.parseMetadata(oidcMetadata)
+
+            // add entity attributes
+            metadataProcessor.addStringParameter(OIDC_ENTITY_ATTRIBUTES, OIDC_SYSTEM_NAME, provider.name)
+
+            // add entity tags
+            if (provider.tags.size() > 0) {
+                List<String> tags = new ArrayList<>()
+                provider.tags.each { tag ->
+                    tags.add(tag)
+                }
+                metadataProcessor.addListParameters(OIDC_ENTITY_ATTRIBUTES, OIDC_ENTITY_TAGS, tags)
+            }
+
+
+            // add trustmark recipient identifier attributes for organizations and systems
+            if (provider.organization.trustmarkRecipientIdentifiers.size() > 0 || provider.trustmarkRecipientIdentifiers.size() > 0) {
+
+                List<String> trustmarkRecipientIdentifiers = new ArrayList<>()
+                provider.organization.trustmarkRecipientIdentifiers.each { orgTri ->
+                    trustmarkRecipientIdentifiers.add(orgTri.trustmarkRecipientIdentifierUrl)
+                }
+
+                provider.trustmarkRecipientIdentifiers.each { sysTri ->
+                    trustmarkRecipientIdentifiers.add(sysTri.trustmarkRecipientIdentifierUrl)
+                }
+
+                metadataProcessor.addListParameters(OIDC_ENTITY_ATTRIBUTES,
+                        OIDC_TRUTMARK_RECIPIENT_IDENTIFIERS, trustmarkRecipientIdentifiers)
+            }
+
+            // add Partner System TIPs
+            if (provider.partnerSystemsTips.size() > 0) {
+
+                List<String> partnerSystemsTips = new ArrayList<>()
+                provider.partnerSystemsTips.each { partnerSystemsTip ->
+                    partnerSystemsTips.add(partnerSystemsTip.partnerSystemsTipIdentifier)
+                }
+                metadataProcessor.addListParameters(OIDC_ENTITY_ATTRIBUTES,
+                        OIDC_PARTNER_SYSTEMS_TIPS, partnerSystemsTips)
+            }
+
+            // add trustmarks
+            if (provider.trustmarks.size() > 0) {
+                Map<String, String> trustmarksMap = new HashMap<>()
+                provider.trustmarks.each { tm ->
+                    trustmarksMap.put(tm.trustmarkDefinitionURL, tm.url)
+                }
+                metadataProcessor.addMapParameters(OIDC_ENTITY_ATTRIBUTES, OIDC_TRUSTMARKS, trustmarksMap)
+            }
+
+            // add metadata unique id
+            metadataProcessor.addStringValue(OIDC_METADATA_UNIQUE_ID, provider.oidcUniqueId)
+
+            // add metadata url
+            metadataProcessor.addStringValue(OIDC_METADATA_URL, provider.oidcMetadataUrl)
+
+            jsonMetadata = metadataProcessor.toString()
+        }
+
+        return jsonMetadata;
+    }
+
 
     def deserialize(Element rootNode, Provider provider)  {
 
@@ -1047,23 +1218,26 @@ class DeserializeService {
             }
 
             // singning key
-            Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "signing")
+            if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+                Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "signing")
 
-            Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.signingCertificate)
+                Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.signingCertificate)
+            }
 
             // encrypting key
-            Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "encryption")
+            if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+                Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "encryption")
 
-            Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.encryptionCertificate)
-
+                Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.encryptionCertificate)
+            }
 
             // endpoints
 
@@ -1148,22 +1322,26 @@ class DeserializeService {
             }
 
             // singning key
-            Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "signing")
+            if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+                Element signingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "signing")
 
-            Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.signingCertificate)
+                Element signingKeyInfo = signingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.signingCertificate)
+            }
 
             // encrypting key
-            Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
-                    .addAttribute("use", "encryption")
+            if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+                Element encryptingKey = roleDescriptor.addElement(new QName("KeyDescriptor", saml2MetadataNs))
+                        .addAttribute("use", "encryption")
 
-            Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
-                    .addElement(new QName("X509Data", digitalSignatureNs))
-                    .addElement(new QName("X509Certificate", digitalSignatureNs))
-                    .setText(provider.encryptionCertificate)
+                Element encryptingKeyInfo = encryptingKey.addElement(new QName("KeyInfo", digitalSignatureNs))
+                        .addElement(new QName("X509Data", digitalSignatureNs))
+                        .addElement(new QName("X509Certificate", digitalSignatureNs))
+                        .setText(provider.encryptionCertificate)
+            }
 
             // endpoints
             Integer artifactResolutionServiceCounter = 0 // base
@@ -1282,7 +1460,7 @@ class DeserializeService {
         provider.saml2MetadataXml = signedSamlMetadata
 
         // save the metadata url
-        String saml2MetadataUrl = getMetadataUrl(provider.id)
+        String saml2MetadataUrl = getMetadataUrl(provider.id, SAML2_VIEW_RELATIVE_PATH)
         provider.saml2MetadataUrl = saml2MetadataUrl
 
         saveProvider(provider)
@@ -1399,11 +1577,11 @@ class DeserializeService {
         return result
     }
 
-    private String getMetadataUrl(int id) {
+    private String getMetadataUrl(int id, String relativePath) {
         StringBuilder sb = new StringBuilder()
         def baseAppUrl = TBRProperties.getProperties().getProperty("tf.base.url")
         sb.append(baseAppUrl)
-        sb.append("/system/saml2Metadata/${id}")
+        sb.append("/system/" + relativePath + "/${id}")
 
         return sb.toString()
     }
