@@ -117,6 +117,9 @@ class DeserializeService {
 
     public static final String SAML2_ATTRIBUTE_NAME_FORMAT_URI = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
+    public static final String SAML2_VIEW_RELATIVE_PATH = "saml2Metadata"
+    public static final String OIDC_VIEW_RELATIVE_PATH = "oidcMetadata"
+
     ContactService contactService
 
     LinkGenerator grailsLinkGenerator
@@ -262,6 +265,16 @@ class DeserializeService {
                     checkForExistingOidcRPContact(contact, provider)
                 });
             }
+
+            provider.oidcMetadataUrl = getMetadataUrl(provider.id, OIDC_VIEW_RELATIVE_PATH)
+
+            if (provider.providerType == ProviderType.OIDC_RP) {
+                Optional<List<String>> redirectUris  = metadataProcessor.getMetadataParameterValues("redirect_uris")
+                provider.oidcUniqueId = redirectUris.isPresent() ? redirectUris.get().get(0) : ""
+            } else if (provider.providerType == ProviderType.OIDC_OP) {
+                Optional<String> issuer  = metadataProcessor.getValue("issuer")
+                provider.oidcUniqueId = issuer.isPresent() ? issuer.get() : ""
+            }
         }
 
         return messageMap
@@ -313,6 +326,8 @@ class DeserializeService {
         final String OIDC_TRUTMARK_RECIPIENT_IDENTIFIERS = "trustmark-recipient-identifiers"
         final String OIDC_PARTNER_SYSTEMS_TIPS           = "partner-systems-tips"
         final String OIDC_TRUSTMARKS                     = "trustmarks"
+        final String OIDC_METADATA_URL                   = "oidcMetadataUrl"
+        final String OIDC_METADATA_UNIQUE_ID             = "uniqueId"
 
         String jsonMetadata = ""
 
@@ -321,7 +336,6 @@ class DeserializeService {
             metadataProcessor.parseMetadata(oidcMetadata)
 
             // add entity attributes
-
             metadataProcessor.addStringParameter(OIDC_ENTITY_ATTRIBUTES, OIDC_SYSTEM_NAME, provider.name)
 
             // add entity tags
@@ -369,6 +383,12 @@ class DeserializeService {
                 }
                 metadataProcessor.addMapParameters(OIDC_ENTITY_ATTRIBUTES, OIDC_TRUSTMARKS, trustmarksMap)
             }
+
+            // add metadata unique id
+            metadataProcessor.addStringValue(OIDC_METADATA_UNIQUE_ID, provider.oidcUniqueId)
+
+            // add metadata url
+            metadataProcessor.addStringValue(OIDC_METADATA_URL, provider.oidcMetadataUrl)
 
             jsonMetadata = metadataProcessor.toString()
         }
@@ -1440,7 +1460,7 @@ class DeserializeService {
         provider.saml2MetadataXml = signedSamlMetadata
 
         // save the metadata url
-        String saml2MetadataUrl = getMetadataUrl(provider.id)
+        String saml2MetadataUrl = getMetadataUrl(provider.id, SAML2_VIEW_RELATIVE_PATH)
         provider.saml2MetadataUrl = saml2MetadataUrl
 
         saveProvider(provider)
@@ -1557,11 +1577,11 @@ class DeserializeService {
         return result
     }
 
-    private String getMetadataUrl(int id) {
+    private String getMetadataUrl(int id, String relativePath) {
         StringBuilder sb = new StringBuilder()
         def baseAppUrl = TBRProperties.getProperties().getProperty("tf.base.url")
         sb.append(baseAppUrl)
-        sb.append("/system/saml2Metadata/${id}")
+        sb.append("/system/" + relativePath + "/${id}")
 
         return sb.toString()
     }

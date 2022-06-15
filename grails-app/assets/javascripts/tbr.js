@@ -119,6 +119,11 @@ let drawOidcDetails = function(obj, entry)  {
     html += "</tr>";
 
     html += "<tr>";
+    html += "<td style='width: auto;'><b>Unique ID</b></td>";
+    html += "<td style='width: auto;'>" + entry.uniqueId + "</td>";
+    html += "</tr>";
+
+    html += "<tr>";
     html += "<td style='width: auto;'><b>" + entry.systemType + " Metadata</b></td>";
     html += "<td style='width: auto;'>";
     if (entry.hasOidcMetadata) {

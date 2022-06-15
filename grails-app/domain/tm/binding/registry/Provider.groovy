@@ -22,6 +22,8 @@ class Provider {
     Date         lastTimeSAMLMetadataGeneratedDate
 
     String       openIdConnectMetadata
+    String       oidcUniqueId
+    String       oidcMetadataUrl
 
     static belongsTo = [
         organization: Organization
@@ -50,6 +52,8 @@ class Provider {
         conformanceTargetTips nullable: true
         lastTimeSAMLMetadataGeneratedDate nullable: true
         openIdConnectMetadata nullable: true, blank: true, maxSize: 65535
+        oidcMetadataUrl nullable: true
+        oidcUniqueId nullable: true
     }
 
     static hasMany = [
@@ -78,6 +82,8 @@ class Provider {
         saml2MetadataXml column: 'saml2_metadata_xml', type: 'text'
         saml2MetadataUrl column: 'saml2_metadata_url', type: 'text'
         openIdConnectMetadata column: 'openid_connect_metadata', type: 'text'
+        oidcMetadataUrl column: 'oidc_metadata_url', type: 'text'
+        oidcUniqueId column: 'oidc_unique_id', type: 'text'
         endpoints cascade: "all-delete-orphan"
         attributes cascade: "all-delete-orphan"
         idpAttributes cascade: "all-delete-orphan"
@@ -100,7 +106,7 @@ class Provider {
         def json = [
                 id : this.id,
                 name : this.name,
-                organization: this.organization.toJsonMap(),
+                organization: this.organization.toJsonMap(false),
                 providerType : this.providerType.toString(),
                 trustmarks : this.trustmarks,
                 conformanceTargetTips : this.conformanceTargetTips
@@ -126,7 +132,9 @@ class Provider {
                 // quotes will be introduced. To avoid that, convert the JSON string to a map that can be
                 // safely serialized to JSON.
                 JSONObject jsonObject = new JSONObject(this.openIdConnectMetadata)
+                json.put("uniqueId", this.oidcUniqueId)
                 json.put("openIdConnectMetadata", jsonObject.toMap())
+                json.put("oidcMetadataUrl", this.oidcMetadataUrl)
             }
         }
 

@@ -354,6 +354,7 @@ class ProviderController {
 
         def oidcMetadata = [
                 systemType: provider.providerType.name,
+                uniqueId: provider.oidcUniqueId,
                 openIdConnectMetadata: metadata,
                 viewOidcMetadataLink: viewMetadataUrl,
                 hasOidcMetadata: hasOidcMetadata

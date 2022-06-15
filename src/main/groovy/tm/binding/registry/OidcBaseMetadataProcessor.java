@@ -94,8 +94,21 @@ public abstract class OidcBaseMetadataProcessor {
         return Optional.of(resultMap);
     }
 
+    public Optional<String> getValue(String key) {
+        if (metadata.has(key)) {
+            return Optional.of(metadata.getString(key));
+        }
+
+        return Optional.empty();
+    }
 
     // add methods
+    public void addStringValue(String key, String value) {
+        if (metadata != null) {
+            metadata.put(key, value);
+        }
+    }
+
     public void addStringParameter(String keyParent, String keyChild, String parameter) {
         if (metadata != null) {
 

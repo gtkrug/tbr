@@ -7,4 +7,6 @@ databaseChangeLog = {
     include file: 'add-system-certificate-filename-and-url.groovy'
     include file: 'incorrect-blob-type.groovy'
     include file: 'add-oidc-metadata.groovy'
+    include file: 'add-oidc-metadata-url.groovy'
+    include file: 'add-oidc-metadata-unique-id.groovy'
 }
