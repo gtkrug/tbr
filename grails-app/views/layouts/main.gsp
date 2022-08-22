@@ -1,68 +1,41 @@
-<!doctype html>
-<html lang="en" class="no-js">
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <title>${grailsApplication.config.tbr.org.title}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-    <asset:stylesheet src="application.css"/>
-    <asset:javascript src="application.js"/>
-    <g:layoutHead/>
-</head>
+        <asset:stylesheet src="application.css"/>
+        <script>
+            const LOGGED_IN = <sec:ifLoggedIn>true</sec:ifLoggedIn><sec:ifNotLoggedIn>false</sec:ifNotLoggedIn>
+        </script>
+        <asset:javascript src="application.js"/>
 
-<body>
-<tmpl:/layouts/menu />
+        <title>${grailsApplication.config.tbr.org.title}</title>
 
-<a name="top"></a>
-<div class="container" style="margin-top: 5em; margin-bottom: 5em;">
-    <div class="row header">
-        <div class="col-md-2 headerTopLeft">
-            <div id="header-logo">
-                <asset:image height="90em" src="${grailsApplication.config.tbr.org.banner}" />
+        <g:layoutHead/>
+    </head>
+
+    <body>
+
+        <main>
+            <tmpl:/layouts/menu/>
+
+            <div class="container pt-4" id="top">
+                <div class="row">
+                    <div class="col-12">
+                        <asset:image src="tmi-header.png" height="90em"/>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    <div class="content row">
-        <div class="col-md-12">
+
             <g:layoutBody/>
-        </div>
-    </div>
+        </main>
 
-    <div style="margin-bottom: 4em;">&nbsp;</div>
-</div>
-
-<div id="footerContainer">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
-                <div>Copyright &copy; 2013-2022, Georgia Tech Research Institute</div>
-                <div>
-                    v.<g:meta name="info.app.version"/>,
-                    Build Date: <g:meta name="info.app.buildDate"/>
-                </div>
-                <div>
-                    Your IP: ${request.remoteAddr}
+        <footer class="navbar navbar-expand-lg navbar-dark bg-dark mt-4 p-2">
+            <div class="container">
+                <div class="navbar-nav mx-auto">
+                    <a class="nav-link">Version <g:meta name="info.app.version"/>; Build Date <g:meta name="info.app.buildDate"/></a>
                 </div>
             </div>
-        </div>
-    </div>
-
-</div>
-
-%{--<footer>--}%
-%{--    <div class="container-fluid">--}%
-%{--        <div class="row">--}%
-%{--            <div class="col-md-6">--}%
-%{--                <span class="text-muted">&copy;2021 Georgia Tech Research Institute</span>--}%
-%{--            </div>--}%
-%{--            <div>--}%
-%{--                v.<g:meta name="info.app.version"/>,--}%
-%{--                Build Date: <g:meta name="info.app.buildDate"/>--}%
-%{--            </div>--}%
-%{--        </div>--}%
-%{--    </div>--}%
-%{--</footer>--}%
-
-</body>
+        </footer>
+    </body>
 </html>

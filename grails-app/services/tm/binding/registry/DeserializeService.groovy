@@ -111,14 +111,17 @@ class DeserializeService {
 
     // schemas
     public static final String SAML2_METADATA_SCHEMA = "xml-schema/saml-schema-metadata-2.0.xsd";
-    public static final String SAML2_ATTRIBUTE_SCHEMA = "xml-schema/saml-schema-metadata-2.0.xsd";
-    public static final String DIGITAL_SIGNATURE_SCHEMA = "xml-schema/saml-schema-metadata-2.0.xsd";
-    public static final String ENCRYPTION_SCHEMA = "xml-schema/saml-schema-metadata-2.0.xsd";
+    public static final String SAML2_ATTRIBUTE_SCHEMA = "xml-schema/saml-schema-assertion-2.0.xsd";
+    public static final String DIGITAL_SIGNATURE_SCHEMA = "xml-schema/xmldsig-core-schema.xsd";
+    public static final String ENCRYPTION_SCHEMA = "xml-schema/xenc-schema.xsd";
 
     public static final String SAML2_ATTRIBUTE_NAME_FORMAT_URI = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
     public static final String SAML2_VIEW_RELATIVE_PATH = "saml2Metadata"
     public static final String OIDC_VIEW_RELATIVE_PATH = "oidcMetadata"
+
+    public static final String OIDC_RP_REDIRECT_URIS_PARAM = "redirect_uris"
+    public static final String OIDC_OP_ISSUER_PARAM = "issuer"
 
     ContactService contactService
 
@@ -239,11 +242,13 @@ class DeserializeService {
 
         if (StringUtils.isNotEmpty(json)) {
 
-            provider.openIdConnectMetadata = json
+            messageMap = deserializeOidcMetadata(json, provider)
 
-            deserializeOidcMetadata(json, provider)
+            if (!StringUtils.isNotEmpty(messageMap["ERROR"])) {
+                provider.openIdConnectMetadata = json
 
-            saveProvider(provider)
+                saveProvider(provider)
+            }
         }
 
         return messageMap
@@ -256,6 +261,30 @@ class DeserializeService {
             OidcBaseMetadataProcessor metadataProcessor = createOidcMetadataProcessor(provider.providerType)
             metadataProcessor.parseMetadata(json)
 
+            if (provider.providerType == ProviderType.OIDC_RP) {
+                Optional<List<String>> redirectUris  = metadataProcessor.getMetadataParameterValues(OIDC_RP_REDIRECT_URIS_PARAM)
+
+                if (!redirectUris.isPresent() || redirectUris.get().empty) {
+                    messageMap["ERROR"] = "Error parsing OIDC RP metadata..."
+                    return messageMap
+                } else {
+                    messageMap["SUCCESS"] = "Successfully uploaded ${provider.providerType.name} metadata."
+                }
+
+                provider.oidcUniqueId = redirectUris.isPresent() ? redirectUris.get().get(0) : ""
+            } else if (provider.providerType == ProviderType.OIDC_OP) {
+                Optional<String> issuer  = metadataProcessor.getValue(OIDC_OP_ISSUER_PARAM)
+
+                if (!issuer.isPresent() || !StringUtils.isNotEmpty(issuer.get())) {
+                    messageMap["ERROR"] = "Error parsing OIDC OP metadata..."
+                    return messageMap
+                } else {
+                    messageMap["SUCCESS"] = "Successfully uploaded ${provider.providerType.name} metadata."
+                }
+
+                provider.oidcUniqueId = issuer.isPresent() ? issuer.get() : ""
+            }
+
             Optional<List<String>> contacts = metadataProcessor.getMetadataParameterValues("contacts");
 
             if (provider.providerType == ProviderType.OIDC_RP && contacts.isPresent()) {
@@ -267,18 +296,11 @@ class DeserializeService {
             }
 
             provider.oidcMetadataUrl = getMetadataUrl(provider.id, OIDC_VIEW_RELATIVE_PATH)
-
-            if (provider.providerType == ProviderType.OIDC_RP) {
-                Optional<List<String>> redirectUris  = metadataProcessor.getMetadataParameterValues("redirect_uris")
-                provider.oidcUniqueId = redirectUris.isPresent() ? redirectUris.get().get(0) : ""
-            } else if (provider.providerType == ProviderType.OIDC_OP) {
-                Optional<String> issuer  = metadataProcessor.getValue("issuer")
-                provider.oidcUniqueId = issuer.isPresent() ? issuer.get() : ""
-            }
         }
 
         return messageMap
     }
+
 
     /**
      * parse out the Contact based from the RP Metadata
@@ -295,11 +317,12 @@ class DeserializeService {
 
     def checkForExistingOidcRPContact(Contact contact, Provider provider)  {
         Contact existingContact = Contact.findByEmailAndType(contact.email, contact.type)
-        if(existingContact)  {
-            existingContact.organization = provider.organization
+        if(existingContact && existingContact.organization.id == provider.organization.id)  {
             provider.contacts.add(existingContact)
         }  else {
             contact.organization = provider.organization
+            contact.save(true)
+
             provider.contacts.add(contact)
         }
     }
@@ -711,13 +734,21 @@ class DeserializeService {
             return null
         }
 
+        // encrypting certificate
+        provider.encryptionCertificate = ""
         Element elem = findElementByAttributeName(rootNode, USE, ENCRYPTION, CERTIFICATE)
-        if(elem)
-            provider.encryptionCertificate = elem.text
+        if(elem) {
+            // make sure to remove any whitespace
+            provider.encryptionCertificate = elem.text.replaceAll("[\\n\t ]", "")
+        }
 
+        // signing certificate
+        provider.signingCertificate = ""
         elem = findElementByAttributeName(rootNode, USE, SIGNING, CERTIFICATE)
-        if(elem)
-            provider.signingCertificate = elem.text
+        if(elem) {
+            // make sure to remove any whitespace
+            provider.signingCertificate = elem.text.replaceAll("[\\n\t ]", "")
+        }
 
         // remove previous protocols
         if (provider.protocols) {
@@ -1068,12 +1099,15 @@ class DeserializeService {
      * @return
      */
     def checkForExistingContact(Contact contact, Provider provider)  {
+        // Need check in the organization contacts
         Contact existingContact = contactService.get(contact)
-        if(existingContact)  {
-            existingContact.organization = provider.organization
+
+        if(existingContact && existingContact.organization.id == provider.organization.id)  {
             provider.contacts.add(existingContact)
         }  else {
             contact.organization = provider.organization
+            contact.save(true)
+
             provider.contacts.add(contact)
         }
     }

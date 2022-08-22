@@ -1,63 +1,64 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta name="layout" content="main"/>
-    <title>Login</title>
+    <head>
+        <meta name="layout" content="main"/>
 
-    <r:require modules="application" />
-</head>
-<body>
-<h2>Binding Registry Tool Login</h2>
+        <asset:javascript src="login_auth.js"/>
+    </head>
 
-<div class="pageContent">
+    <body>
+        <form action="${postUrl ?: "/login/authenticate"}" method="POST" autocomplete="off" role="form">
+            <div class="container container-narrow pt-4">
+                <div class="border rounded card">
+                    <div class="card-header fw-bold">
+                        <div class="row">
+                            <div class="col-12">
+                                <div>Login</div>
+                            </div>
+                        </div>
+                    </div>
 
-    <g:if test='${flash.message}'>
-        <div class="alert alert-danger" style="margin-top: 1em; width: 45%;">
-            <div style="font-weight: bold;">Authentication Failed!</div>
-            ${flash.message}
-        </div>
-    </g:if>
+                    <div class="card-body">
+                        <div class="row pb-2">
+                            <label class="col-3 col-form-label text-end" for="username">Username</label>
 
+                            <div class="col-9">
+                                <input type="text" id="username" name="username" class="form-control"/>
+                            </div>
+                        </div>
 
-    <form action="${postUrl ?: '/login/authenticate'}" method='POST' id='loginForm' class='form-horizontal' autocomplete='off' role="form">
+                        <div class="row pb-2">
+                            <label class="col-3 col-form-label text-end" for="password">Password</label>
 
-        <div class="form-group">
-            <label for="username" class="col-sm-1 control-label"><g:message code="springSecurity.login.username.label"/></label>
-            <div class="col-sm-3">
-                <input type="text" class="form-control" id="username" name="username" placeholder="Username">
-            </div>
-        </div>
+                            <div class="col-9">
+                                <input type="password" id="password" name="password" class="form-control">
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="form-group">
-            <label for="password" class="col-sm-1 control-label"><g:message code="springSecurity.login.password.label"/></label>
-            <div class="col-sm-3">
-                <input type="password" class="form-control" id="password" name="password" placeholder="Password">
-                <p class="help-block"><a href="${createLink(controller:'forgotPassword')}">Reset Password?</a></p>
-            </div>
-        </div>
+                    <div class="card-footer">
+                        <div class="row">
+                            <div class="col-3"></div>
 
-        <div class="form-group">
-            <div class="col-sm-offset-1 col-md-5">
-                <div class="checkbox">
-                    <label>
-                        <input type='checkbox' class='chk' name='${rememberMeParameter}' id='remember_me' <g:if test='${hasCookie}'>checked='checked'</g:if>/>
-                        <label for='remember_me'><g:message code="springSecurity.login.remember.me.label"/></label>
-                    </label>
+                            <div class="col-2 text-start">
+                                <input type="submit" class="btn btn-primary" value="Login">
+                            </div>
+
+                            <div class="col-7 d-flex justify-content-end align-items-center">
+                                <a href="${createLink(controller: "forgotPassword")}">Reset Password</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <div class="col-sm-offset-1 col-sm-2">
-                <input class="btn btn-default" type='submit' id="submit" value='${message(code: "springSecurity.login.button")}'/>
-            </div>
-        </div>
-
-    </form>
-
-</div>
-</div>
-
-<script>$(function () { $('#username').focus(); });</script>
-</body>
+            <g:if test="${flash.message}">
+                <div class="container container-narrow pt-4">
+                    <div class="alert alert-danger text-center">
+                        ${flash.message}
+                    </div>
+                </div>
+            </g:if>
+        </form>
+    </body>
 </html>

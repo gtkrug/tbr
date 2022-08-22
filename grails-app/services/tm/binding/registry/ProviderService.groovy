@@ -8,6 +8,7 @@ import edu.gatech.gtri.trustmark.v1_0.io.TrustInteroperabilityProfileResolver
 import edu.gatech.gtri.trustmark.v1_0.model.AbstractTIPReference
 import edu.gatech.gtri.trustmark.v1_0.model.TrustInteroperabilityProfile
 import grails.gorm.transactions.Transactional
+import grails.web.mapping.LinkGenerator
 import org.apache.commons.lang.StringUtils
 import org.json.JSONArray
 import org.json.JSONObject
@@ -20,8 +21,8 @@ import tm.binding.registry.util.UrlEncodingUtil
 class ProviderService {
 
     def deserializeService
-
-    public static final String TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT = "public/trustmarks/find-by-recipient/"
+    def emailService
+    def groovyPageRenderer
 
     // execution
     public static final String BIND_TRUSTMARKS_EXECUTING_VAR = ProviderService.class.simpleName + ".BIND_TRUSTMARKS_EXECUTING"
@@ -74,7 +75,6 @@ class ProviderService {
     void stopExecuting(String property) {
         setAttribute(property, "false");
     }
-
 
     def add(String... args) {
         log.info("add -> ${args[0]} ${args[1]} ${args[2]} ${args[3]}")
@@ -381,293 +381,23 @@ class ProviderService {
         long overallStopTime = System.currentTimeMillis()
         log.info("Successfully Executed ${this.getClass().getSimpleName()} in ${(overallStopTime - overallStartTime)}ms.")
 
-    }//end bindTrustmarksForAllProviders()
+    }
 
     def bindTrustmarks(Integer id, boolean monitoringProgress = true) {
-        log.info("** Starting bindTrustmarks: class: ${this.getClass().getSimpleName()}...")
-        long overallStartTime = System.currentTimeMillis()
 
-        try {
+        final Provider provider = Provider.get(id)
 
-            Provider provider = Provider.get(id)
+        TrustmarkBinder binder = new SystemTrustmarkBinder(this, emailService, groovyPageRenderer);
 
-            // remove previously bound trustmarks for this provider system
-            provider.trustmarks.clear()
+        binder.bindTrustmarks(provider, monitoringProgress)
 
-            Organization org = Organization.get(provider.organization.id)
+        Map status = ["SUCCESS": "Successfully finished the trustmark binding process."]
 
-            // Get the conformance targe tips
-            def conformanceTargetTips = provider.conformanceTargetTips
-
-            // The one and only TIP resolver
-            TrustInteroperabilityProfileResolver resolver = FactoryLoader.getInstance(TrustInteroperabilityProfileResolver.class)
-
-            // process each conformance target tip
-            if (conformanceTargetTips.size() > 0) {
-
-                if (monitoringProgress) {
-                    setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "0")
-                    setAttribute(BIND_TRUSTMARKS_STATUS_VAR, "PRE-PROCESSING")
-                }
-
-                // collection of unique TDs for all conformance target tips
-                Map<String, String> tdSet = new HashMap<String, String>()
-
-                // collect TDs recursively for all conformance target TIPS
-                conformanceTargetTips.each { conformanceTargetTip ->
-
-                    // operation has been cancelled
-                    if (monitoringProgress) {
-                        if (!isExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)) {
-                            // exit operation
-                            log.info("Bind trustmarks operation canceled...")
-                            return
-                        }
-                    }
-
-                    Set<String> processedTipsSet = new HashSet<String>()
-
-                    String conformanceTargetTipIdentifier = conformanceTargetTip.conformanceTargetTipIdentifier
-
-                    if (monitoringProgress) {
-                        setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Processing TIP: ${conformanceTargetTipIdentifier}")
-                    }
-
-                    // get all TDs  for the conformance target TIP
-                    resolveTip(resolver, conformanceTargetTipIdentifier, conformanceTargetTipIdentifier,
-                            tdSet, processedTipsSet, monitoringProgress)
-                }
-
-                log.info("** Numbers of TDs processed: ${tdSet.size()}")
-
-                // For each Assessment tool url,
-                //      for each recipient identifier,
-                //           get all trustmarks
-
-                // Get assessment tool URLs
-                def assessmentToolUrls = org.assessmentRepos
-
-                // Collect Trustmark Recipient Identifier urls
-                Set<String> recipientIdentifiers = new HashSet<String>()
-
-                // Get Trustmark Recipient Identifiers from parent organization
-                org.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
-                    recipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
-                }
-
-                // Add Trustmark Recipient Identifiers urls from this system provider
-                provider.trustmarkRecipientIdentifiers.each { trustmarkRecipientIdentifier ->
-                    if (!recipientIdentifiers.contains(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)) {
-                        recipientIdentifiers.add(trustmarkRecipientIdentifier.trustmarkRecipientIdentifierUrl)
-                    }
-                }
-
-                if (monitoringProgress) {
-                    setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Querying trustmarks for all registered trustmark recipients against all assessment tools registered for the organization: ${org.name}")
-                    setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "0")
-                    setAttribute(BIND_TRUSTMARKS_STATUS_VAR, "RUNNING")
-                }
-
-                ArrayList<JSONArray> trustmarks = new ArrayList<JSONArray>()
-
-                Integer totalTrustmarkQueries = assessmentToolUrls.size() + recipientIdentifiers.size()
-                Integer currentTrustmarkQueryIndex = 0
-
-                // collect total number of trustmarks
-                Integer totalNumberOfTrustmarksQueried = 0
-
-                assessmentToolUrls.each { assessmentToolUrl ->
-                    String tatUrl = ensureTrailingSlash(assessmentToolUrl.repoUrl)
-                    tatUrl += TRUSTMARKS_FIND_BY_RECIPIENT_TAT_ENDPOINT
-
-                    recipientIdentifiers.each { recipientIdentifierUrl ->
-                        if (monitoringProgress) {
-                            if (!isExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)) {
-                                // exit operation
-                                log.info("Bind trustmarks operation canceled...")
-                                return
-                            }
-                        }
-
-                        // encode the recipient id url
-                        String recipientId = recipientIdentifierUrl
-                        String recipientIdBase64 = Base64.getEncoder().encodeToString(recipientId.getBytes())
-                        String encodedRecipientId = UrlEncodingUtil.encodeURIComponent(recipientIdBase64)
-
-                        // append the recipient id encoded url
-                        String recipientIdentifierQueryUrl = tatUrl + encodedRecipientId
-
-                        // get the trustmarks from the TAT
-                        JSONObject trustmarksJson = IOUtils.fetchJSON(recipientIdentifierQueryUrl);
-                        JSONArray trustmarksJsonArray = trustmarksJson.getJSONArray("trustmarks");
-
-                        totalNumberOfTrustmarksQueried += trustmarksJsonArray.length()
-
-                        trustmarks.add(trustmarksJsonArray)
-
-                        // update progress percentage
-                        int percent = (int) Math.floor(((double) currentTrustmarkQueryIndex++ / (double) totalTrustmarkQueries) * 100.0d)
-
-                        if (monitoringProgress) {
-                            setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "" + percent)
-                        }
-                    }
-                }
-
-                // cross map the Conformance target TIP TDs to the collection of trustmarks
-                Map<JSONObject, String> bindingTrustmarks = new HashMap<JSONObject, String>();
-
-                if (monitoringProgress) {
-                    setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Identifying trustmarks to be bound...")
-                    setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "0")
-                }
-
-                Integer currentTrustmarkIndex = 0
-
-                // iterate through each TAT's json response
-                for (int i = 0; i < trustmarks.size(); i++) {
-                    JSONArray trustmarksJsonArray = trustmarks.get(i)
-                    for (int j = 0; j < trustmarksJsonArray.length(); j++) {
-                        if (monitoringProgress) {
-                            if (!isExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)) {
-                                // exit operation
-                                log.info("Bind trustmarks operation canceled...")
-                                return
-                            }
-                        }
-
-                        JSONObject trustmark = trustmarksJsonArray.getJSONObject(j);
-
-                        // add if trustmark definitions match
-                        if (tdSet.containsKey(trustmark.getString("trustmarkDefinitionURL")) == true) {
-                            bindingTrustmarks.put(trustmark, tdSet.get(trustmark.getString("trustmarkDefinitionURL")));
-                        }
-
-                        // update progress percentage
-                        int percent = (int) Math.floor(((double) currentTrustmarkIndex++ / (double) totalNumberOfTrustmarksQueried) * 100.0d)
-
-                        if (monitoringProgress) {
-                            setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "" + percent)
-                        }
-                    }
-                }
-
-                if (monitoringProgress) {
-                    setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Binding trustmarks...")
-                    setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "0")
-                }
-
-                currentTrustmarkIndex = 0
-                Integer totalToBeBoundTrustmarks = bindingTrustmarks.size()
-
-                Provider.withTransaction {
-                    Iterator i = bindingTrustmarks.entrySet().iterator()
-                    while (i.hasNext()) {
-                        Map.Entry pair = (Map.Entry) i.next()
-                        JSONObject trustmark = pair.getKey()
-
-                        // only bind trustmarks with the "ACTIVE" status
-                        if ("ACTIVE" == trustmark.get("trustmarkStatus")) {
-                            // save to db
-                            Trustmark tm = new Trustmark()
-                            tm.name = trustmark.get("name")
-
-                            ConformanceTargetTip tip = ConformanceTargetTip.findByConformanceTargetTipIdentifier(pair.getValue())
-                            tm.conformanceTargetTipId = tip.id
-                            tm.status = trustmark.get("trustmarkStatus")
-                            tm.url = trustmark.get("identifierURL")
-                            tm.trustmarkDefinitionURL = trustmark.getString("trustmarkDefinitionURL")
-                            tm.provisional = trustmark.get("hasExceptions")
-                            tm.assessorComments = trustmark.get("assessorComments")
-
-                            tm.save(failOnError: true, flush: true)
-
-                            provider.trustmarks.add(tm)
-
-                            // update progress percentage
-                            int percent = (int) Math.floor(((double) currentTrustmarkIndex++ / (double) totalToBeBoundTrustmarks) * 100.0d)
-
-                            if (monitoringProgress) {
-                                setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "" + percent)
-                            }
-                        }
-                    }
-
-                    provider.save(failOnError: true, flush: true)
-                }
-
-                log.info("Successfully bound " + bindingTrustmarks.size() + " trustmarks to provider: " + provider.name)
-            }
-        }
-        catch (Throwable t) {
-            log.error("Error encountered during the trustmark binding process: ${t.message}");
+        if (binder.hasRemoteArtifactsStalenessMessages()) {
+            status.put("WARNING", "Remote artifacts could not be downloaded, using cached artifacts. " +
+                    "An email has been sent to the TBR administrator(s) with more details.")
         }
 
-        long overallStopTime = System.currentTimeMillis()
-        log.info("** Successfully Executed ${this.getClass().getSimpleName()} in ${(overallStopTime - overallStartTime)}ms.")
-
-        if (monitoringProgress) {
-            stopExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)
-            setAttribute(BIND_TRUSTMARKS_PERCENT_VAR, "100")
-            setAttribute(BIND_TRUSTMARKS_MESSAGE_VAR, "Successfully bound trustmarks in ${(overallStopTime - overallStartTime)}ms.")
-            setAttribute(BIND_TRUSTMARKS_STATUS_VAR, "SUCCESS")
-        }
-
-    }//end bindTrustmarks()
-
-    private void resolveTip(TrustInteroperabilityProfileResolver resolver, String tipUri, String conformanceTargetTipUri,
-                            Map<String, String> tdSet, Set<String> processedTipsSet, boolean monitoringProgress) throws Exception {
-        log.info("** Resolving TIP: " + tipUri)
-
-        if (!processedTipsSet.contains(tipUri)) {
-
-            processedTipsSet.add(tipUri)
-
-            URL url = new URL(tipUri + "?format=xml");
-
-            TrustInteroperabilityProfile tip = resolver.resolve(url);
-
-            Integer numberOfReferences = tip.getReferences().size()
-
-            Integer currentTipReferenceIndex = 0;
-            for (AbstractTIPReference abstractRef : tip.getReferences()) {
-
-                if (monitoringProgress) {
-                    // operation has been cancelled
-                    if (!isExecuting(BIND_TRUSTMARKS_EXECUTING_VAR)) {
-                        // exit operation
-                        log.info("Bind trustmarks operation canceled...")
-                        return
-                    }
-                }
-
-                // Resolve contained TIPs
-                if (abstractRef.isTrustInteroperabilityProfileReference()) {
-                    TrustInteroperabilityProfileReferenceImpl tipRef = (TrustInteroperabilityProfileReferenceImpl) abstractRef;
-
-                    URI tipRefIdentifier = tipRef.getIdentifier();
-                    log.info("TIP Reference Identifier: " + tipRefIdentifier);
-
-                    URL tipRefIdentifierUrl = new URL(tipRefIdentifier.toString());
-
-                    // recurse over contained TIPs
-                    resolveTip(resolver, tipRefIdentifierUrl.toString(), conformanceTargetTipUri, tdSet, processedTipsSet, monitoringProgress);
-
-                    // Collect TDs
-                } else if (abstractRef.isTrustmarkDefinitionRequirement()) {
-
-                    TrustmarkDefinitionRequirementImpl tfReqImpl = (TrustmarkDefinitionRequirementImpl) abstractRef;
-
-                    URI childTipRefIdentifier = tfReqImpl.getIdentifier();
-
-                    tdSet.put(childTipRefIdentifier.toString(), conformanceTargetTipUri);
-                }
-            }
-        }
+        return status
     }
-
-    private String ensureTrailingSlash(String url) {
-        return url.endsWith("/") ? url : url + "/";
-    }
-
 }

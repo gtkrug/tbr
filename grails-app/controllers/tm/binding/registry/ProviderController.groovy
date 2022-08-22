@@ -10,11 +10,11 @@ import grails.web.mapping.LinkGenerator
 import sun.security.x509.X500Name
 import tm.binding.registry.util.TBRProperties
 
-import javax.xml.bind.DatatypeConverter
 import java.nio.charset.StandardCharsets
 import java.security.cert.X509Certificate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 
@@ -85,14 +85,42 @@ class ProviderController {
     def signCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
-        [provider: provider]
+
+        String text = ""
+        String contentType = ""
+
+        if (StringUtils.isNotEmpty(provider.signingCertificate)) {
+            text = "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
+                    provider.signingCertificate + System.lineSeparator() +
+                    "-----END CERTIFICATE-----"
+            contentType = 'text/plain'
+        } else {
+            text = "No signing certificate found!"
+            contentType = 'text/html'
+        }
+
+        return render(contentType: contentType, text: text)
     }
 
     @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
     def encryptCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
-        [provider: provider]
+
+        String text = ""
+        String contentType = ""
+
+        if (StringUtils.isNotEmpty(provider.encryptionCertificate)) {
+            text = "-----BEGIN CERTIFICATE-----" + System.lineSeparator() +
+                    provider.encryptionCertificate + System.lineSeparator() +
+                    "-----END CERTIFICATE-----"
+            contentType = 'text/plain'
+        } else {
+            text = "No encrypting certificate found!"
+            contentType = 'text/html'
+        }
+
+        return render(contentType: contentType, text: text)
     }
 
     // view metadata xml
@@ -125,11 +153,9 @@ class ProviderController {
 
         String metadataGeneratedDateString = ""
         if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
-            LocalDateTime metadataGeneratedDate =
-                    provider.lastTimeSAMLMetadataGeneratedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+            metadataGeneratedDateString = utcStringFromDate(provider.lastTimeSAMLMetadataGeneratedDate) + " UTC"
 
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
-            metadataGeneratedDateString = metadataGeneratedDate.format(fmt)
+            log.info("metadataGeneratedDateString: ${metadataGeneratedDateString.toString()}")
         }
 
         def model = [
@@ -454,11 +480,8 @@ class ProviderController {
 
         String metadataGeneratedDateString = ""
         if (StringUtils.isNotEmpty(provider.saml2MetadataXml)) {
-            LocalDateTime metadataGeneratedDate =
-                    provider.lastTimeSAMLMetadataGeneratedDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
+            metadataGeneratedDateString = utcStringFromDate(provider.lastTimeSAMLMetadataGeneratedDate) + " UTC"
 
-            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
-            metadataGeneratedDateString = metadataGeneratedDate.format(fmt)
             viewMetadataUrl = provider.saml2MetadataUrl
         }
 
@@ -477,6 +500,14 @@ class ProviderController {
         results.put("records", protocolDetails)
 
         render results as JSON
+    }
+
+    private String utcStringFromDate(Date date) {
+        LocalDateTime metadataGeneratedDate = LocalDateTime.ofInstant(
+                date.toInstant(), ZoneOffset.UTC)
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+        return metadataGeneratedDate.format(fmt)
     }
 
     def types()  {
@@ -744,6 +775,8 @@ class ProviderController {
 
         final Integer providerId = Integer.parseInt(params.id)
 
+        Map status = [:]
+
         // Do not start the bind trustmarks processing if it is already running
         if (!providerService.isExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)) {
 
@@ -752,12 +785,12 @@ class ProviderController {
             providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_PERCENT_VAR, "0")
             providerService.setExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)
 
-            providerService.bindTrustmarks(providerId)
+            status = providerService.bindTrustmarks(providerId)
         }
 
         Provider provider = Provider.get(providerId)
 
-        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+        Map jsonResponse = [status                       : status,
                             numberOfTrustmarksBound      : provider.trustmarks.size(),
                             numberOfConformanceTargetTIPs: provider.conformanceTargetTips.size()]
 

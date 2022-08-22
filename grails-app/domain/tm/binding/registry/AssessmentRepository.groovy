@@ -12,6 +12,10 @@ class AssessmentRepository {
         trustmark: Trustmark
     ]
 
+    static hasOne = [
+        trustmarkAssessmentToolUri: TrustmarkAssessmentToolUri
+    ]
+
     static constraints = {
         repoUrl nullable: false
         trustmark nullable: true

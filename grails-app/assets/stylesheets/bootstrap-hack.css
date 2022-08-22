@@ -1,0 +1,88 @@
+main {
+    min-height: calc(100vh - 70px);
+}
+
+html {
+    font-size: 14px !important;
+}
+
+th {
+    vertical-align: top;
+}
+
+.container-narrow {
+    max-width: 540px;
+}
+
+.card-hack {
+    border-bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0
+}
+
+.card-header ~ .card-header {
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.table-striped-hack > tbody > tr:nth-of-type(2n+1) {
+    background-color: rgba(0, 0, 0, .03);
+}
+
+td > div {
+    max-height: 1.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-required:after {
+    content: "*";
+    color: #dc3545;
+}
+
+td {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 0;
+}
+
+td.unhack {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    max-width: max-content;
+}
+
+td.unhack > div {
+    max-height: max-content;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.form-control:disabled, .form-control[readonly] {
+    background-color: rgba(0, 0, 0, .03);
+}
+
+.invalid-feedback ul, .invalid-feedback ol, .invalid-feedback dl {
+    margin-bottom: 0px;
+}
+
+[aria-expanded=false] .bi-dash-lg {
+    display: none;
+}
+
+[aria-expanded=false] .bi-plus-lg {
+    display: inline;
+}
+
+[aria-expanded=true] .bi-dash-lg {
+    display: inline;
+}
+
+[aria-expanded=true] .bi-plus-lg {
+    display: none;
+}
+
+.collapsing {
+    transition: none;
+}

@@ -1,137 +1,32 @@
-<%@ page contentType="text/html;charset=UTF-8" %>
+<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="layout" content="main"/>
-    <title>Contacts</title>
-    <script type="text/javascript">
-        var ORG_VIEW_BASE_URL = "${createLink(controller:'organization', action: 'view')}/";
+    <head>
+        <meta name="layout" content="main"/>
 
-        $(document).ready(function(){
-            listContacts([]);
-        });
+        <script type="text/javascript">
+            const ORGANIZATION_VIEW = "${createLink(controller: 'organization', action: 'view')}/"
+            const ORGANIZATION_LIST = "${createLink(controller: 'organization', action: 'list')}"
 
-        let selectOrganizations = function(id)  {
-            list("${createLink(controller:'organization', action: 'list')}"
-                , curriedSelectOrganizations('select-organization')(id)
-                , {name: 'ALL'});
-        }
+            const CONTACT_ADD = "${createLink(controller: 'contact', action: 'add')}"
+            const CONTACT_DELETE = "${createLink(controller: 'contact', action: 'delete')}"
+            const CONTACT_GET = "${createLink(controller: 'contact', action: 'get')}"
+            const CONTACT_LIST = "${createLink(controller: 'contact', action: 'list')}"
+            const CONTACT_TYPES = "${createLink(controller: 'contact', action: 'types')}"
+            const CONTACT_UPDATE = "${createLink(controller: 'contact', action: 'update')}"
+        </script>
+        <asset:javascript src="utility/utility_contact.js"/>
+        <asset:javascript src="contact_administer.js"/>
+    </head>
 
-        let selectContactTypes = function(id)  {
-            list("${createLink(controller:'contact', action: 'types')}"
-                , curriedContactTypes('select-contact-types')(id)
-                , {name: 'ALL'});
-        }
+    <body>
+        <div class="container pt-4">
+            <h2>Points of Contact</h2>
 
-        let listContacts = function(data)  {
-            list("${createLink(controller:'contact', action: 'list')}"
-                , renderResults
-                , {id: 0});
-        }
+            <div id="contact-message"></div>
 
-        let populateContactForm = function(contact) {
-            if(contact.id === 0)  {
-                selectOrganizations(0);
-                selectContactTypes('0');
-            } else {
-                selectContactTypes(contact.type.name)
-                selectOrganizations(contact.organization.id);
-                document.getElementById('lastName').value = contact.lastName;
-                document.getElementById('firstName').value = contact.firstName;
-                document.getElementById('emailAddr').value = contact.email;
-                document.getElementById('phoneNbr').value = contact.phone;
-            }
-            document.getElementById('lastName').focus();
-        }
+            <table class="table table-bordered table-striped-hack" id="contact-table"></table>
 
-        let getDetails = function(id)  {
-            get("${createLink(controller:'contact', action: 'get')}"
-                , contactDetail('contact-details')(populateContactForm)
-                (function(){updateContact(id, document.getElementById('lastName').value
-                    , document.getElementById('firstName').value
-                    , document.getElementById('emailAddr').value
-                    , document.getElementById('phoneNbr').value
-                    , document.getElementById('ctypes').options[document.getElementById('ctypes').selectedIndex].value
-                    , document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value);})
-                , { id: id }
-            );
-        }
-
-        let renderResults = function(results)  {
-            renderContactOffset = curriedContact('contacts-table')
-            ({
-                editable: true
-                , fnAdd: function(){renderContactForm('contact-details', populateContactForm
-                        , function(){updateContact(0, document.getElementById('lastName').value
-                            , document.getElementById('firstName').value
-                            , document.getElementById('emailAddr').value
-                            , document.getElementById('phoneNbr').value
-                            , document.getElementById('ctypes').options[document.getElementById('ctypes').selectedIndex].value
-                            , document.getElementById('orgs').options[document.getElementById('orgs').selectedIndex].value);}
-                        , {id:0});}
-                , fnRemove: removeContact
-                , fnDraw: drawContacts
-                , title: 'Points of Contact'
-                , hRef: 'javascript:getDetails'
-                , includeOrganizationColumn: true
-            })
-            (results);
-            renderContactOffset(0);
-        }
-
-        let removeContact = function()  {
-            if (confirm("The selected contact(s) may be in use by current systems. Do you wish to proceed?")) {
-                getCheckedIds('edit-contacts', function (list) {
-                    update("${createLink(controller:'contact', action: 'delete')}"
-                        , listContacts
-                        , {ids: list}
-                    );
-                });
-            }
-        }
-
-        let updateContact = function(id, lname, fname, email, phone, type, orgId)  {
-            if(checkContact(lname, fname, email, phone, type, orgId))  {
-                if(id === 0)  {
-                    add("${createLink(controller:'contact', action: 'add')}"
-                        , listContacts
-                        , { lname: lname
-                            , fname: fname
-                            , email: email
-                            , phone: phone
-                            , organizationId: orgId
-                            , type: type
-                        });
-                }  else {
-                    update("${createLink(controller:'contact', action: 'update')}"
-                        , listContacts
-                        , {
-                            id: id
-                            , lname: lname
-                            , fname: fname
-                            , email: email
-                            , phone: phone
-                            , organizationId: orgId
-                            , type: type
-                        });
-                }
-                clearForm();
-            } else {
-                scroll(0,0);
-            }
-        }
-
-        let clearForm = function()  {
-            setSuccessStatus("<b>Successfully saved contact.</b>");
-            hideIt('contact-details');
-            scroll(0,0);
-        }
-    </script>
-</head>
-
-<body>
-<div id="status-header"></div>
-<div id="contacts-table"></div>
-<div id="contact-details"></div>
-</body>
+            <div class="pt-1" id="contact-form"></div>
+        </div>
+    </body>
 </html>

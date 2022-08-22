@@ -2,7 +2,7 @@
 
 <configuration>
 
-    <property name="LOG_HOME" value="/opt/assessment-tool/logs" />
+    <property name="LOG_HOME" value="/opt/tbr/logs" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <!-- encoders are  by default assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder -->
@@ -16,13 +16,13 @@
     </root>
 
 
-    <!--<logger name="org.grails.orm.hibernate" level="DEBUG" />-->
-    <!--<logger name="org.hibernate" level="DEBUG" />-->
-    <!--<logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" />-->
-    <!--<logger name="org.hibernate.SQL" level="TRACE" />-->
+    <logger name="org.grails.orm.hibernate" level="ERROR" />
+    <logger name="org.hibernate" level="ERROR" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="ERROR" />
+    <logger name="org.hibernate.SQL" level="ERROR" />
 
     <logger name="grails.app" level="DEBUG" />
-    <logger name="nstic" level="DEBUG" />
+    <logger name="tm.binding.registry" level="DEBUG" />
 
     <logger name="edu.gatech.gtri.trustmark" level="WARN" />
 
