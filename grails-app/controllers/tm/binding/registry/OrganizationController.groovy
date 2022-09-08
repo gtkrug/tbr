@@ -359,11 +359,13 @@ class OrganizationController {
 
         final Integer organizationId = Integer.parseInt(params.id)
 
-        organizationService.bindTrustmarksToOrganization(organizationId)
+        Map status = [:]
+
+        status = organizationService.bindTrustmarksToOrganization(organizationId)
 
         Organization organization = Organization.get(organizationId)
 
-        Map jsonResponse = [status                       : 'SUCCESS', message: 'Successfully finished trustmark binding process.',
+        Map jsonResponse = [status                       : status,
                             numberOfTrustmarksBound      : organization.trustmarks.size()]
 
         render jsonResponse as JSON

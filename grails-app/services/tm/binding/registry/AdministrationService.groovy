@@ -1,12 +1,15 @@
 package tm.binding.registry
 
 import edu.gatech.gtri.trustmark.v1_0.FactoryLoader
-import edu.gatech.gtri.trustmark.v1_0.io.ParseException
+import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import edu.gatech.gtri.trustmark.v1_0.io.TrustInteroperabilityProfileResolver
 import edu.gatech.gtri.trustmark.v1_0.model.TrustInteroperabilityProfile
 import grails.gorm.transactions.Transactional
+import org.json.JSONObject
 
 import javax.servlet.ServletException
+import java.time.LocalDateTime
+import tm.binding.registry.util.UrlUtilities
 
 @Transactional
 class AdministrationService {
@@ -73,6 +76,9 @@ class AdministrationService {
         String tipName = tipNameFromUri(tip.conformanceTargetTipIdentifier)
 
         tip.name = tipName
+
+        saveTpatUri(tip.conformanceTargetTipIdentifier)
+
         tip.provider = provider
 
         provider.conformanceTargetTips.add(tip)
@@ -93,6 +99,8 @@ class AdministrationService {
         organization.partnerSystemsTips.add(tip)
         organization.save(true)
 
+        saveTpatUri(tip.partnerSystemsTipIdentifier)
+
         return args[0]
     }
 
@@ -110,7 +118,20 @@ class AdministrationService {
         provider.partnerSystemsTips.add(tip)
         provider.save(true)
 
+        saveTpatUri(tip.partnerSystemsTipIdentifier)
+
         return args[0]
+    }
+
+    private void saveTpatUri(String tipUri) {
+        String tpatBaseUrl = UrlUtilities.artifactBaseUrl(tipUri)
+
+        if (UrlUtilities.checkTPATStatusUrl(tpatBaseUrl)) {
+            TrustPolicyAuthoringToolUri tpatUri = new TrustPolicyAuthoringToolUri(uri: tpatBaseUrl,
+                    statusSuccessTimestamp: LocalDateTime.now())
+
+            tpatUri.save(true)
+        }
     }
 
     private String tipNameFromUri(String tipUri) {

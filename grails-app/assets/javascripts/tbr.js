@@ -1,1173 +1,84 @@
-/**
- * common pagination function
- * @param offset
- * @param totalCount
- * @param fnName
- * @returns {string}
- */
-let renderPagination = function(offset, totalCount, fnName)  {
-    if (totalCount > MAX_DISPLAY)  {
-        return buildPagination(offset, MAX_DISPLAY, totalCount, fnName);
+let renderPagination = function (offset, totalCount, fnName) {
+    if (totalCount > MAX_DISPLAY) {
+        return buildPagination(offset, MAX_DISPLAY, totalCount, fnName)
     }
-    return "";
+    return ""
 }
 
-let renderCertificateDetailsOffset = function(){};
-/**
- * renders a table of Certificate Details
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderCertificateDetails = function(target, obj, data, offset) {
+let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, columnNameArray, entityName) {
+    let html = renderPagination(offset, tableData.length, fnName)
 
-    let html = renderPagination(offset, data.records.length, 'renderCertificateDetailsOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='2' style='text-align: center'>";
+    html += `<thead>`
+    html += `<tr>`
+    html += LOGGED_IN && tableMetadata.editable ? `<th scope="col"><a href="javascript:" id="plus-${tableId}" class="bi-plus-lg"></a></th>` : ``
+    html += LOGGED_IN && tableMetadata.editable ? `<th scope="col"><a href="javascript:" id="minus-${tableId}" class="bi-trash"></a></th>` : ``
+    columnNameArray.forEach(columnName => {
+        html += `<th scope="col" style="width: ${100 / (columnNameArray.length + (tableMetadata.includeOrganizationColumn ? 1 : 0))}%">${columnName}</th>`
+    })
 
-    html += "<b>" + obj.title + "</b></td></tr>"
+    html += tableMetadata.includeOrganizationColumn ? `<th scope="col" style="width: ${100 / (columnNameArray.length + (tableMetadata.includeOrganizationColumn ? 1 : 0))}%">Organization</th>` : ``
+    html += `</tr>`
+    html += `</thead>`
+    html += `<tbody>`
 
-    if (data.records.length === 0) {
-        html += '<tr><td colspan="2"><em>There are no Certificate Details.</em></td></tr>';
+    if (tableData.length === 0) {
+        html += `<tr><td colspan="${columnNameArray.length + (LOGGED_IN && tableMetadata.editable ? 2 : 0) + (tableMetadata.includeOrganizationColumn ? 1 : 0)}">There are no ${entityName}.</td></tr>`
     } else {
-        html += obj.fnDraw(obj, data.records);
-    }
-    html += "</table>";
-
-    // The element might be hidden due to logged in and/or roles privileges
-    if (document.getElementById(target) != null) {
-        document.getElementById(target).innerHTML = html;
-    }
-}
-
-let drawCertificateDetails = function(obj, entry)  {
-    let html = "<tr>";
-    html += "<td style='width: auto;'><b>System Type</b></td>";
-    html += "<td style='width: auto;'>" + entry.systemType + "</td>";
-    html += "</tr>";
-
-    if (entry.subject && entry.subject.length > 0) {
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Subject</b></td>";
-        html += "<td style='width: auto;'>" + entry.subject + "</td>";
-        html += "</tr>";
-
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Issuer</b></td>";
-        html += "<td style='width: auto;'>" + entry.issuer + "</td>";
-        html += "</tr>";
-
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Valid Not Before</b></td>";
-        html += "<td style='width: auto;'>" + entry.notBefore + "</td>";
-        html += "</tr>";
-
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Valid Not After</b></td>";
-        html += "<td style='width: auto;'>" + entry.notAfter + "</td>";
-        html += "</tr>";
-
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>X509 Certificate</b></td>";
-        html += "<td style='width: auto;'>";
-        html += " <a href='" + entry.systemCertificateUrl + "' id='systemCertificateUrl'>download</a>";
-        html += "</td>";
-        html += "</tr>";
-    }
-
-    return html;
-}
-
-// OpenId Connect
-let renderOidcDetailsOffset = function(){};
-/**
- * renders a table of Certificate Details
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderOidcDetails = function(target, obj, data, offset) {
-
-    let html = renderPagination(offset, data.records.length, 'renderOidcDetailsOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='2' style='text-align: center'>";
-
-    html += "<b>" + obj.title + "</b></td></tr>"
-
-    if (data.records.length === 0) {
-        html += '<tr><td colspan="2"><em>There are no OpenId Connect Details.</em></td></tr>';
-    } else {
-        html += obj.fnDraw(obj, data.records);
-    }
-    html += "</table>";
-
-    // The element might be hidden due to logged in and/or roles privileges
-    if (document.getElementById(target) != null) {
-        document.getElementById(target).innerHTML = html;
-    }
-}
-
-let drawOidcDetails = function(obj, entry)  {
-
-    let html = "<tr>";
-    html += "<td style='width: auto;'><b>System Type</b></td>";
-    html += "<td style='width: auto;'>" + entry.systemType + "</td>";
-    html += "</tr>";
-
-    html += "<tr>";
-    html += "<td style='width: auto;'><b>Unique ID</b></td>";
-    html += "<td style='width: auto;'>" + entry.uniqueId + "</td>";
-    html += "</tr>";
-
-    html += "<tr>";
-    html += "<td style='width: auto;'><b>" + entry.systemType + " Metadata</b></td>";
-    html += "<td style='width: auto;'>";
-    if (entry.hasOidcMetadata) {
-        html += " <a href='" + entry.viewOidcMetadataLink + "' id='viewOidcMetadataLink' target='_blank'>view</a>";
-    } else {
-        html += " <a href='" + entry.viewOidcMetadataLink + "' id='viewOidcMetadataLink' target='_blank' class='disabledLink'>view</a>";
-    }
-    html += "</td>";
-    html += "</tr>";
-
-    if (entry.openIdConnectMetadata) {
-
-        for (const [key, value] of Object.entries(entry.openIdConnectMetadata)) {
-            console.log(key, value);
-
-            html += "<tr>";
-            html += "<td style='width: auto;'><b>"+ key +"</b></td>";
-            if (Array.isArray(value)) {
-                let names = "";
-                value.forEach(a => { names += a+"<br>";});
-                html += "<td style='width: auto;'>" + names + "</td>";
-            } else {
-                html += "<td style='width: auto;'>" + value + "</td>";
+        tableData.forEach((c, index) => {
+            if (index >= offset && index < offset + MAX_DISPLAY) {
+                html += tableMetadata.fnDraw(tableMetadata, c)
             }
-            html += "</tr>";
-        }
+        })
     }
 
-    return html;
-}
+    html += `</tbody>`
 
-let renderProtocolDetailsOffset = function(){};
-/**
- * renders a table of Protocol Details
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderProtocolDetails = function(target, obj, data, offset) {
+    document.getElementById(tableId).innerHTML = html
 
-    let html = renderPagination(offset, data.records.length, 'renderProtocolDetailsOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='2' style='text-align: center'>";
-
-    html += "<b>" + obj.title + "</b></td></tr>"
-
-    if (data.records.length === 0) {
-        html += '<tr><td colspan="2"><em>There are no Protocol Details.</em></td></tr>';
-    } else {
-        html += obj.fnDraw(obj, data.records);
-    }
-    html += "</table>";
-
-    // The element might be hidden due to logged in and/or roles privileges
-    if (document.getElementById(target) != null) {
-        document.getElementById(target).innerHTML = html;
+    if (LOGGED_IN && tableMetadata.editable) {
+        document.getElementById(`plus-${tableId}`).onclick = tableMetadata.fnAdd
+        document.getElementById(`minus-${tableId}`).onclick = tableMetadata.fnRemove
     }
 }
 
-let drawProtocolDetails = function(obj, entry)  {
-    let html = "<tr>";
-    html += "<td style='width: auto;'><b>System Type</b></td>";
-    html += "<td style='width: auto;'>" + entry.systemType + "</td>";
-    html += "</tr>";
+let drawTr = function (tableMetadata, rowData, inputId, removeClassName, rowDataArray, attributeObject) {
+    let html = `<tr>`
 
-    if (entry.entityId && entry.entityId.length > 0) {
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Entity ID</b></td>";
-        html += "<td style='width: auto;'>" + entry.entityId + "</td>";
-        html += "</tr>";
+    html += LOGGED_IN && tableMetadata.editable ? `<td><a href="${tableMetadata.hRef === undefined ? "javascript:getDetails" : tableMetadata.hRef}(${rowData.id})"><span class="bi bi-pencil"></span></a></td>` : ``
+    html += LOGGED_IN && tableMetadata.editable ? `<td><input id="${inputId}" class="${removeClassName} form-check-input" type="checkbox" value="${rowData.id}" ${Object.keys(attributeObject).map(attributeName => `${attributeName}="${attributeObject[attributeName]}"`).join(" ")}></td>` : ``
 
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Name ID Format</b></td>";
-        html += "<td style='width: auto;'>"
-        for (var i = 0; i< entry.nameIdFormats.length; i++) {
-            html += entry.nameIdFormats[i]+"<br/>";
-        }
-        html += "</td>";
-        html += "</tr>";
+    rowDataArray.forEach(rowData => html += `<td>${rowData}</td>`)
 
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Signing Certificate</b></td>";
-        html += "<td style='width: auto;'><a href='" + entry.signingCertificateLink + "' target='_blank'>view</a></td>";
-        html += "</tr>";
+    html += tableMetadata.includeOrganizationColumn ? `<td><a href="${ORGANIZATION_VIEW + rowData.organization.id}">${rowData.organization.name}</a></td>` : ``
+    html += `</tr>`
 
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>Encrypting Certificate</b></td>";
-        html += "<td style='width: auto;'><a href='" + entry.encryptionCertificateLink + "' target='_blank'>view</a></td>";
-        html += "</tr>";
-
-        html += "<tr>";
-        html += "<td style='width: auto;'><b>SAML 2 Metadata</b></td>";
-
-        html += "<td style='width: auto;'>";
-        if (obj.editable) {
-            html += "<a href='javascript:generateSaml2Metadata(" + entry.providerId + ")'>generate</a>";
-            html += "<span id='saml2-metadata-generation_status' style='width:10%;'></span>"
-        }
-        if (entry.hasSamlMetadataGenerated) {
-            html += " <a href='" + entry.viewSamlMetadataLink + "' id='viewMetadataLink' target='_blank'>view</a>";
-        } else {
-            html += " <a href='" + entry.viewSamlMetadataLink + "' id='viewMetadataLink' target='_blank' class='disabledLink'>view</a>";
-        }
-
-        if (entry.hasSamlMetadataGenerated) {
-            html += "<div id='saml2-metadata-generation_date' class='alert alert-success' style='padding: 0px 10px;'>Generated at " + entry.lastTimeSAMLMetadataGeneratedDate + "</div>";
-        } else {
-            html += "<div id='saml2-metadata-generation_date' class='alert alert-success' style='padding: 0px 10px;></div>";
-        }
-
-        html += "</td>";
-
-        html += "</tr>";
-    }
-
-    return html;
+    return html
 }
 
-let renderTagOffset = function(){};
-/**
- * renders a table of tags
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderTags = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderTagOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='1' style='text-align: center'>";
-    if(obj.editable)  {
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Tag'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Removed Checked Tags'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>";
-    if (data.records.length === 0)  {
-        html += "<tr><td colspan='1'><em>There are no tags.</em></td></tr>";
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
+let drawTrWithoutEdit = function (tableMetadata, rowData, inputId, removeClassName, rowDataArray, attributeObject) {
+    let html = `<tr>`
 
-            html += "<tr>";
-            if(obj.editable) {
-                html += "<td><input type='checkbox' class='edit-tags' value='" + o + "'>&nbsp;" + o + "</td>";
-            } else {
-                html += "<td><span>&nbsp;" + o + "</span></td>";
-            }
-            html += "</tr>";
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable) {
-        document.getElementById('plus-' + target).onclick = obj.fnAdd;
-        document.getElementById('minus-' + target).onclick = obj.fnRemove;
-    }
-}
+    html += LOGGED_IN && tableMetadata.editable ? `<td></td>` : ``
+    html += LOGGED_IN && tableMetadata.editable ? `<td><input id="${inputId}" class="${removeClassName} form-check-input" type="checkbox" value="${rowData.id}" ${Object.keys(attributeObject).map(attributeName => `${attributeName}="${attributeObject[attributeName]}"`).join(" ")} ${rowData.checked ? "checked" : ""}></td>` : ``
 
-let renderTrustmarkOffset = function(){};
-/**
- * renders a table of trustmarks
- * @param target
- * @param data
- * @param offset
- */
-let renderTrustmarks = function(target, data, offset)  {
-    let html = renderPagination(offset, data.length, 'renderTrustmarkOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><td colspan='3' style='text-align: center'><b>Trustmarks</b></td></tr>"
-    html += "<tr><td style='width: auto;'><b>Name</b></td><td style='width: auto;'><b>Provisional</b></td><td style='width: auto;'><b>Status</b></td></tr>";
-    if (data.length === 0)  {
-        html += '<tr><td colspan="3"><em>There are no trustmarks.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += "<tr>";
-                html += "<td><a href='" + o.url +"' target='_blank'>"+ o.name +"</a></td>";
-                html += "<td>" + (o.provisional ? "<a href='javascript:;' title='"+o.assessorComments+"'>YES</a>" : "NO") + "</td>";
-                html += "<td>" + o.status + "</td>";
-                html += "</tr>";
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-}
+    rowDataArray.forEach(rowData => html += `<td>${rowData}</td>`)
 
-let renderContactOffset = function(){};
-/**
- * renders a table of contacts
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderContacts = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderContactOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
+    html += tableMetadata.includeOrganizationColumn ? `<td><a href="${ORGANIZATION_VIEW + rowData.organization.id}">${rowData.organization.name}</a></td>` : ``
+    html += `</tr>`
 
-    if(obj.editable)  {
-        if (obj.includeOrganizationColumn) {
-            html += "<tr><td colspan='6' style='text-align: center'>";
-        } else {
-            html += "<tr><td colspan='5' style='text-align: center'>";
-        }
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Contact'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Contacts'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        if (obj.includeOrganizationColumn) {
-            html += "<tr><td colspan='5' style='text-align: center'>";
-        } else {
-            html += "<tr><td colspan='4' style='text-align: center'>";
-        }
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.records.length === 0)  {
-        if(obj.editable) {
-            if (obj.includeOrganizationColumn) {
-                html += '<tr><td colspan="6"><em>There are no contacts.</em></td></tr>';
-            } else {
-                html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
-            }
-        } else {
-            if (obj.includeOrganizationColumn) {
-                html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
-            } else {
-                html += '<tr><td colspan="4"><em>There are no contacts.</em></td></tr>';
-            }
-        }
-    }  else {
-        // table header
-        if(obj.editable) {
-            html += "<tr><th style='width: auto;'></th>";
-        }
-        html += "<th style='width: auto;'>Last Name</th>";
-        html += "<th style='width: auto;'>First Name</th>";
-        html += "<th style='width: auto;'>Email</th>";
-        html += "<th style='width: auto;'>Phone</th>";
-
-        if (obj.includeOrganizationColumn) {
-            html += "<th style='width: auto;'>Organization</th>";
-        }
-
-        html += "</tr>";
-
-        let idx = 0;
-        data.records.forEach(c => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY)  {
-                html += obj.fnDraw(obj, c);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawContacts = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input class='edit-contacts' type='checkbox' value='" + entry.id + "'><a class='tm-right' href='" + obj.hRef + "(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    }
-
-    html += "<td>"+ entry.lastName + "</td>";
-    html += "<td>" + entry.firstName + "</td>";
-    html += "<td>" + entry.email + "</td>";
-    html += "<td>" + (entry.phone != null ? entry.phone : "") + "</td>";
-
-    if (obj.includeOrganizationColumn) {
-        html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id + ">" + entry.organization.name + "</a></td>";
-    }
-
-    html += "</tr>";
-    return html;
-}
-
-
-let renderSystemContactsOffset = function(){};
-/**
- * renders a table of contacts
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderSystemContacts = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderSystemContactsOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if (obj.editable) {
-        html += "<tr><td colspan='5' style='text-align: center'><b>" + obj.title + "</b></td></tr>";
-    } else {
-        html += "<tr><td colspan='4' style='text-align: center'><b>" + obj.title + "</b></td></tr>";
-    }
-
-    if (data.records.length === 0)  {
-        if (obj.editable) {
-            html += '<tr><td colspan="5"><em>There are no contacts.</em></td></tr>';
-        } else {
-            html += '<tr><td colspan="4"><em>There are no contacts.</em></td></tr>';
-        }
-    }  else {
-        // table header
-        html += "<tr>";
-        if (obj.editable) {
-            html += "<th style='width: auto;'>Link to System</th>";
-        }
-
-        html += "<th style='width: auto;'>Last Name</th>";
-        html += "<th style='width: auto;'>First Name</th>";
-        html += "<th style='width: auto;'>Email</th>";
-        html += "<th style='width: auto;'>Phone</th>";
-
-        html += "</tr>";
-
-        let idx = 0;
-        data.records.forEach(c => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY)  {
-                if(obj.editable || c.inSystem) {
-                    html += obj.fnDraw(obj, c);
-                }
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-}
-
-let drawSystemContact = function(obj, entry)  {
-
-    let html = "<tr>";
-
-    if(obj.editable) {
-        if (entry.inSystem) {
-            html += "<td><input class='add-remove-system-contact' type='checkbox' checked onclick='addOrRemoveSystemContact(this)' value='" + entry.contact.id + "' providerId='" + obj.providerId + "'></td>";
-        } else {
-            html += "<td><input class='add-remove-system-contact' type='checkbox' onclick='addOrRemoveSystemContact(this)' value='" + entry.contact.id + "' providerId='" + obj.providerId + "'></td>";
-        }
-    }
-
-    html += "<td>"+ entry.contact.lastName + "</td>";
-    html += "<td>" + entry.contact.firstName + "</td>";
-    html += "<td>" + entry.contact.email + "</td>";
-    html += "<td>" + (entry.contact.phone != null ? entry.contact.phone : "") + "</td>";
-
-    html += "</tr>";
-    return html;
-}
-
-
-let renderDocumentOffset = function(){};
-/**
- * renders a table of documents
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderDocuments = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderDocumentOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='6' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Document'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Documents'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='5' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.records.length === 0)  {
-        if(obj.editable) {
-            html += '<tr><td colspan="6"><em>There are no documents.</em></td></tr>';
-        } else {
-            html += '<tr><td colspan="5"><em>There are no documents.</em></td></tr>';
-        }
-    }  else {
-        // Table header
-        html += "<th></th>";
-        html += "<th>Document Name</th>";
-        html += "<th>URL</th>";
-        html += "<th>Description</th>";
-        html += "<th>Public</th>";
-
-        let idx = 0;
-        data.records.forEach(c => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY)  {
-                html += obj.fnDraw(obj, c);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawDocuments = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input id='edit-document' class='edit-documents' type='checkbox' value='" + entry.id + "' binaryUrl='" + obj.binaryUrl + "'>" +
-            "<a class='tm-right' href='" + obj.hRef + "(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    }
-
-    html += "<td>"+ entry.filename + "</td>";
-    html += "<td><a href=" + entry.url + "><span>" + entry.url + "</span></a></td>";
-    html += "<td>" + entry.description + "</td>";
-    if (entry.publicDocument) {
-        html += "<td><span class='glyphicon glyphicon-ok'></span></td>";
-    } else {
-        html += "<td><span class='glyphicon glyphicon-remove'></span></td>";
-    }
-    html += "</tr>";
-    return html;
-}
-
-let renderOrganizationOffset = function(){};
-/**
- * renders a table of organizations
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderOrganizations = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.length, 'renderOrganizationOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable && LOGGED_IN)  {
-        html += "<tr><td colspan='4' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add an Organization'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Organizations'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='3' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.length === 0)  {
-        if(obj.editable && LOGGED_IN) {
-            html += '<tr><td colspan="4"><em>There are no organizations.</em></td></tr>';
-        } else {
-            html += '<tr><td colspan="3"><em>There are no organizations.</em></td></tr>';
-        }
-    }  else {
-        // table header
-        if(obj.editable && LOGGED_IN) {
-            html += "<tr><th style='width: auto;'></th>";
-        }
-        html += "<th style='width: auto;'>Name</th>";
-        html += "<th style='width: auto;'>URL</th>";
-        html += "<th style='width: auto;'>System Count</th></tr>";
-
-        let idx = 0;
-        data.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable && LOGGED_IN)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawOrganizations = function(obj, entry)  {
-    let html = "<tr>";
-
-    if(obj.editable && LOGGED_IN) {
-        html += "<td style='width:min-content;white-space:nowrap;'>";
-        if (LOGGED_IN) {
-            html += "<input type='checkbox' class='edit-organizations' value='" + entry.id + "'>" +
-                "<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a>";
-        }
-
-        html += "</td>";
-    }
-
-    html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.id+">" + entry.name + "</a></td>";
-    html += "<td><a href='" + entry.siteUrl + "' target='_blank'>" + entry.siteUrl + "</a></td>";
-    html += "<td id='system_count'>" + entry.providers.length + "</td>";
-    html += "</tr>";
-
-    return html;
-}
-
-let renderRegistrantOffset = function(){};
-/**
- * renders a table of registrants
- *
- * @param target
- * @param fnAdd
- * @param fnRemove
- * @param data
- * @param offset
- */
-let renderRegistrants = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.length, 'renderRegistrantOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-    html += "<tr><th colspan='6' style='text-align: center'>";
-    if(obj.editable)  {
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Registrant'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Registrants'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    }
-    html += "<b>"+obj.title+"</b></th></tr>";
-    html += "<tr><th style='width: auto;'></th><th style='width: auto;'>Name</th><th style='width: auto;'>Email</th>" +
-        "<th style='width: auto;'>Phone</th><th style='width: auto;'>Role</th><th style='width: auto;'>Organization</th></tr>";
-    if (data.length === 0)  {
-        html += '<tr><td colspan="5"><em>There are no registrants.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.forEach(r => {
-            if( idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, r);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawRegistrants = function(obj, entry)  {
-    let html = "<tr>";
-
-    html += "<td style='width:auto;'><input type='checkbox' class='deactivate' value='" + entry.id + "'>" +
-        "<a class='tm-right' href='javascript:getDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-
-    html += "<td>" + entry.user.contact.lastName + ", " + entry.user.contact.firstName + "</td>";
-
-    html += "<td><a href='mailto:"+ entry.user.contact.email +"'>" + entry.user.contact.email + "</a></td>";
-    html += "<td>" + (entry.user.contact.phone != null ? entry.user.contact.phone : "") + "</td>";
-    html += "<td>" + entry.user.role + "</td>";
-
-    html += "<td><a href=" + ORG_VIEW_BASE_URL + entry.organization.id + ">" + entry.organization.name + "</a></td>";
-
-    html += "</tr>";
-
-    return html;
-}
-
-let renderEndpointOffset = function(){};
-/**
- * renders a table of endpoints
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderEndpoints = function(target, obj, data, offset)  {
-    if (data.length > 0) {
-        let html = renderPagination(offset, data.length, 'renderEndpointtOffset');
-        html += "<table class='table table-condensed table-striped table-bordered'>";
-        html += "<tr><td colspan='3' style='text-align: center'>";
-
-        html += "<b>" + obj.title + "</b></td></tr>"
-        if (data.length === 0) {
-            html += '<tr><td colspan="3"><em>There are no endpoints.</em></td></tr>';
-        } else {
-            let idx = 0;
-            data.forEach(o => {
-                if (idx >= offset && idx < offset + MAX_DISPLAY) {
-                    html += obj.fnDraw(obj, o);
-                }
-                ++idx;
-            });
-        }
-        html += "</table>";
-
-        // The element might be hidden due to logged in and/or roles privileges
-        if (document.getElementById(target) != null) {
-            document.getElementById(target).innerHTML = html;
-        }
-    }
-}
-
-let drawEndpoints = function(obj, entry)  {
-    let html = "<tr>";
-    if(entry.name === "Attribute Consuming Service")  {
-        html += "<td>" + entry.name + "</td>";
-        html += "<td>" + entry.serviceName + "</td>";
-        let names = "";
-        entry.attributes.forEach(a => { if(a.name !== 'ServiceName') names += a.name+"<br>";});
-        html += "<td>" + names + "</td>";
-    }  else  {
-        html += "<td>" + entry.name + "</td>";
-        html += "<td>" + entry.binding.substring(entry.binding.lastIndexOf(":")+1) + "</td>";
-        html += "<td>" + entry.url + "</td>";
-    }
-    html += "</tr>";
-    return html;
-}
-
-let renderAttributeOffset = function(){};
-/**
- * renders a table of attributes
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderAttributes = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderAttributeOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='3' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add an Attribute'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Attributes'><span class='glyphicon glyphicon-minus'></span></a></div>"
-    } else {
-        html += "<tr><td colspan='2' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>";
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="3"><em>There are no attributes.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawAttribute = function (obj, entry)  {
-    let html = "<tr>";
-    if (obj.editable) {
-        html += "<td><input type='checkbox' class='edit-attributes' value='" + entry.id + "'></td>";
-    }
-    html += "<td><b>" + entry.name + "</b></td>";
-    html += "<td>" + entry.value + "</td>";
-    html += "</tr>";
-    return html;
-}
-
-let renderIdpAttributeOffset = function(){};
-/**
- * renders a table of Idp attributes
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderIdpAttributes = function(target, obj, data, offset)  {
-    console.log("renderIdpAttributes target: " + target);
-
-    if (data.length > 0)  {
-        let html = renderPagination(offset, data.length, 'renderIdpAttributeOffset');
-        html += "<table class='table table-condensed table-striped table-bordered'>";
-        html += "<tr><td colspan='3' style='text-align: center'>";
-
-        html += "<b>"+obj.title+"</b></td></tr>";
-        let idx = 0;
-        data.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-
-        html += "</table>";
-
-        document.getElementById(target).innerHTML = html;
-    }
-}
-
-let drawIdpAttribute = function (obj, entry)  {
-    let html = "<tr>";
-    html += "<td><b>" + entry + "</b></td>";
-    html += "</tr>";
-    return html;
-}
-
-let renderProviderOffset = function(){};
-/**
- * renders a table of provider systems
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-
-let renderProviders = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderProviderOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='3' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add System'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked System'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='2' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="3"><em>There are no provider systems.</em></td></tr>';
-    }  else {
-        // table header
-        if(obj.editable) {
-            html += "<tr><th style='width: auto;'></th>";
-        }
-        html += "<th style='width: auto;'>Name</th>";
-        html += "<th style='width: auto;'>Type</th></tr>";
-
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o, data.providerBaseUrl);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawProvider = function(obj, entry, baseHref)  {
-    let html = "<tr>";
-
-
-    if (obj.editable) {
-        html += "<td style='width:min-content;white-space:nowrap;'>";
-        html += "<input type='checkbox' class='edit-providers' value='" + entry.id + "'>";
-        html += "</td>";
-    }
-
-    html += "<td><a href=" + baseHref + "/" + entry.id+">" + entry.name + "</a></td>";
-    html += "<td>" + entry.providerType + "</td>";
-    html += "</tr>";
-
-    return html;
-}
-
-let renderRepoOffset = function(){};
-/**
- * render the repos in a tabular form
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderRepos = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderRepoOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='2' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add Repo'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Repo'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='1' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="2"><em>There are no Assessment Tool URLs.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawRepos = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input type='checkbox' id='edit-assessmentToolRepo' class='edit-assessmentToolRepo' value='" + entry.id + "'>" +
-            "<a class='tm-right' href='javascript:getRepoDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    }
-
-    html += "<td>" + entry.repoUrl + "</td>";
-    html += "</tr>";
-
-    return html;
-}
-
-
-let renderTrustmarkRecipientIdentifiersOffset = function(){};
-/**
- * render the trustmark recipient identifiers in a tabular form
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderTrustmarkRecipientIdentifiers = function(target, obj, data, offset)  {
-    let html = renderPagination(offset, data.records.length, 'renderTrustmarkRecipientIdentifiersOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='2' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add Trustmark Recipient Identifier'><span class='glyphicon glyphicon-plus'></span></a> / " +
-            "<a id='minus-"+target+"' title='Remove Checked Trustmark Recipient Identifier'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='1' style='text-align: center'>";
-    }
-    html += "<b>"+obj.title+"</b></td></tr>"
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="2"><em>There are no Trustmark Recipient Identifiers.</em></td></tr>';
-    }  else {
-
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawTrustmarkRecipientIdentifier = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input type='checkbox' id='edit-trustmarkRecipientIdentifier' class='edit-trustmarkRecipientIdentifier' value='" + entry.id + "'>" +
-            "<a class='tm-right' href='javascript:getTrustmarkRecipientIdentifierDetails(" + entry.id + ");'><span class='glyphicon glyphicon-pencil'></span></a></td>";
-    }
-
-    html += "<td>" + entry.trustmarkRecipientIdentifierUrl + "</td>";
-    html += "</tr>";
-
-    return html;
-}
-
-let renderTabs = function(data)  {
-    let html = "<ul class='nav nav-tabs' id='org-tab-list' role='tablist'>";
-    data.forEach(pr => {
-        html += "<li class='nav-item'>";
-        html += "<a class='nav-link' onclick='showProvider('"+pr.id+"');' id='"+pr.id+"-tab' data-toggle='tab' role='tab' href='#"+pr.id+"' aria-controls='"+pr.id+"'>"+pr.name+"</a>";
-        html += "</li>";
-    });
-    html += "<li class='nav-item'>";
-    html += "<a class='nav-link' id='plus-tab' onclick='addProvider('#new-provider');' data-toggle='tab' role='tab' href='#plus-id aria-controls='plus-id'>+</a>";
-    html += "</li></ul>";
-    return html;
-}
-
-let renderConformanceTargetTipOffset = function(){};
-/**
- * renders a table of Conformance Target Tips
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderConformanceTargetTips = function(target, obj, data, offset)  {
-
-    let html = renderPagination(offset, data.records.length, 'renderConformanceTargetTipOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='5' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Conformance Target TIP Identifier'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Conformance Target TIP Identifiers'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='4' style='text-align: center'>";
-    }
-    html += "<span data-toggle=‘tooltip’ data-placement=‘bottom’ title='" + obj.titleTooltip + "'><b>"+obj.title+"</b></span></td></tr>"
-
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="5"><em>There are no Conformance Target TIP Identifiers.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawConformanceTargetTips = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input type='checkbox' class='edit-conformanceTargetTips' value='" + entry.id + "'></td>";
-    }
-    html += "<td style='width:auto;'>";
-    html += "<a href='" + entry.conformanceTargetTipIdentifier + "' target='_blank'>" + entry.name + "</a>";
-    html += "</td>";
-    html += "</tr>";
-
-    return html;
-}
-
-let renderPartnerOrganizationTipOffset = function(){};
-/**
- * renders a table of Partner Organization Tips
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderPartnerOrganizationTips = function(target, obj, data, offset)  {
-
-    let html = renderPagination(offset, data.records.length, 'renderPartnerOrganizationTipOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='5' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Partner Organization TIP Identifier'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Partner Organization TIP Identifiers'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='4' style='text-align: center'>";
-    }
-    html += "<span data-toggle=‘tooltip’ data-placement=‘bottom’ title='" + obj.titleTooltip + "'><b>"+obj.title+"</b></span></td></tr>"
-
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="5"><em>There are no Partner Organization TIP Identifiers.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let renderPartnerSystemsTipOffset = function(){};
-/**
- * renders a table of Partner Systems Tips
- *
- * @param target
- * @param obj
- * @param data
- * @param offset
- */
-let renderPartnerSystemsTips = function(target, obj, data, offset)  {
-
-    let html = renderPagination(offset, data.records.length, 'renderPartnerSystemsTipOffset');
-    html += "<table class='table table-condensed table-striped table-bordered'>";
-
-    if(obj.editable)  {
-        html += "<tr><td colspan='5' style='text-align: center'>";
-        html += "<div class='tm-left'><a id='plus-"+target+"' title='Add a Partner System TIP Identifier'><span class='glyphicon glyphicon-plus'></span></a> / <a id='minus-"+target+"' title='Remove Checked Partner System TIP Identifiers'><span class='glyphicon glyphicon-minus'></span></a></div>";
-    } else {
-        html += "<tr><td colspan='4' style='text-align: center'>";
-    }
-    html += "<span data-toggle=‘tooltip’ data-placement=‘bottom’ title='" + obj.titleTooltip + "'><b>"+obj.title+"</b></span></td></tr>"
-
-    if (data.records.length === 0)  {
-        html += '<tr><td colspan="5"><em>There are no Partner System TIP Identifiers.</em></td></tr>';
-    }  else {
-        let idx = 0;
-        data.records.forEach(o => {
-            if(idx >= offset && idx < offset+MAX_DISPLAY) {
-                html += obj.fnDraw(obj, o);
-            }
-            ++idx;
-        });
-    }
-    html += "</table>";
-
-    document.getElementById(target).innerHTML = html;
-    if(obj.editable)  {
-        document.getElementById('plus-'+target).onclick = obj.fnAdd;
-        document.getElementById('minus-'+target).onclick = obj.fnRemove;
-    }
-}
-
-let drawPartnerSystemsTips = function(obj, entry)  {
-    let html = "<tr>";
-    if(obj.editable) {
-        html += "<td><input type='checkbox' class='edit-partnerSystemsTips' value='" + entry.id + "'></td>";
-    }
-    html += "<td style='width:auto;'>";
-    html += "<a href='" + entry.partnerSystemsTipIdentifier + "' target='_blank'>" + entry.name + "</a>";
-    html += "</td>";
-    html += "</tr>";
-
-    return html;
+    return html
 }
 
 /**
  * hide the passed in div
  * @param target
  */
-let hideIt = function(target)  {
+let hideIt = function (target) {
 
     // make sure the target is visible since some elements might be
     // filtered out based on logged-in user and/or roles
 
-    if(target.startsWith('#'))  {
+    if (target.startsWith('#')) {
         if (document.getElementById(target.substring(1)) != null) {
             document.getElementById(target.substring(1)).style.display = 'none';
         }
@@ -1182,8 +93,8 @@ let hideIt = function(target)  {
  * hide the passed in div
  * @param target
  */
-let showIt = function(target)  {
-    if(target.startsWith('#'))  {
+let showIt = function (target) {
+    if (target.startsWith('#')) {
         document.getElementById(target.substring(1)).style.display = 'block';
     } else {
         document.getElementById(target).style.display = 'block';
@@ -1195,11 +106,11 @@ let showIt = function(target)  {
  * @param target
  * @returns {boolean}
  */
-let toggleIt = function(target)  {
-    if(target.startsWith('#')) {
+let toggleIt = function (target) {
+    if (target.startsWith('#')) {
         target = document.getElementById(target.substring(1));
     }
-    if(document.getElementById(target).style.display === 'none')  {
+    if (document.getElementById(target).style.display === 'none') {
         document.getElementById(target).style.display = 'block';
     } else {
         document.getElementById(target).style.display = 'none';
@@ -1207,511 +118,154 @@ let toggleIt = function(target)  {
     return false;
 }
 
-/**
- * render a form for adding a tag
- */
-let renderTagForm = function(target, fn)  {
+let decorateForm = function (title, aId, cardBodyContent, buttonId, buttonText, hide, status) {
+    let html = ``
 
-    let html = "";
+    html += `<div class="border rounded card">`
 
-    html += "<div class='form-group'>";
-        html += "<label for='tagName' class='col-sm-2 control-label tm-margin'>Name</label>";
-        html += "<input id='tagName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Tag Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
+    html += `<div class="card-header fw-bold">`
+    html += `<div class="row">`
+    html += hide === undefined || hide ? `<div class="col-11">${title}</div>` : `<div class="col-12">${title}</div>`
+    html += hide === undefined || hide ? `<div class="col-1 text-end"><a id="${aId}" class="btn btn-close p-0 align-middle"></a></div>` : ``
+    html += `</div>`
+    html += `</div>`
 
-    html += "<div class='form-group'>";
-        html += "<div class='col-sm-offset-2 col-sm-10'>";
-            html += "<button id='tagOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-        html += "</div>";
-    html += "</div>";
+    html += `<div class="card-body">`
+    html += cardBodyContent
+    html += `</div>`
 
-    renderDialogForm(target, html);
-    document.getElementById('tagOk').onclick = fn;
-    document.getElementById('tagName').focus();
-}
+    if (buttonId !== undefined) {
+        html += `<div class="card-footer text-start">`
+        html += `<div class="row">`
+        html += `<div class="col-3"></div>`
+        html += `<div class="col-9"><button id="${buttonId}" type="button" class="btn btn-primary">${buttonText}</button>`
 
-/**
- * render a form for adding an attribute
- */
-let renderAttributeForm = function(target, fn)  {
-    let html = "";
-
-    html += "<div class='form-group'>";
-        html += "<label for='attrName' class='col-sm-2 control-label tm-margin'>Name</label>";
-        html += "<input id='attrName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Attribute Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<label for='attrValue' class='col-sm-2 control-label tm-margin'>Value</label>";
-        html += "<input id='attrValue' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Attribute Value'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<div class='col-sm-offset-2 col-sm-10'>";
-            html += "<button id='attrOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-        html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('attrOk').onclick = fn;
-    document.getElementById('attrName').focus();
-}
-
-/**
- * render a form for adding an endpoint
- */
-let renderEndpointForm = function(target, fn)  {
-    let html = "<input id='endptName' size='40' type='text' class='form-control tm-margin' placeholder='Enter Name' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
-    html += "<input id='endptType' size='40' type='text' class='form-control tm-margin' placeholder='Enter Type' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
-    html += "<input id='endptUrl' size='40' type='text' class='form-control tm-margin' placeholder='Enter URL' /><span style='color:red;'>&nbsp;&nbsp;*</span><br>";
-    html += "<button id='endptOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-    renderDialogForm(target, html);
-    document.getElementById('endptOk').onclick = fn;
-    document.getElementById('endptName').focus();
-}
-
-/**
- * render a form for adding a conformance target tip
- */
-let renderConformanceTargetTipForm = function(target, fn)  {
-
-    let html = "";
-
-    html += "<div class='form-group'>";
-        html += "<label for='conformanceTargetTipIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
-        html += "<input id='conformanceTargetTipIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Conformance Target TIP Identifier'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<div class='col-sm-offset-2 col-sm-10'>";
-            html += "<button id='conformanceTargetTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-        html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('conformanceTargetTipIdentifierOk').onclick = fn;
-    document.getElementById('conformanceTargetTipIdentifier').focus();
-}
-
-/**
- * render a form for adding a partner organization tip
- */
-let renderPartnerOrganizationTipForm = function(target, fn)  {
-
-    let html = "";
-
-    html += "<div class='form-group'>";
-    html += "<label for='partnerSystemsTipIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
-    html += "<input id='partnerSystemsTipIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Partner Organization TIP Identifier'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
-    document.getElementById('partnerSystemsTipIdentifier').focus();
-}
-
-/**
- * render a form for adding a partner systems tip
- */
-let renderPartnerSystemTipForm = function(target, fn)  {
-
-    let html = "";
-
-    html += "<div class='form-group'>";
-    html += "<label for='partnerSystemsTipIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
-    html += "<input id='partnerSystemsTipIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Partner System TIP Identifier'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='partnerSystemsTipIdentifierOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('partnerSystemsTipIdentifierOk').onclick = fn;
-    document.getElementById('partnerSystemsTipIdentifier').focus();
-}
-
-/**
- * render a form for adding an endpoint
- */
-let renderProviderForm = function(target, fn)  {
-
-    let html = "";
-
-    html += "<div class='form-group'>";
-        html += "<label style='margin-top: 10px;' for='select-provider-types' class='col-sm-2 control-label'>Types</label>";
-        html += "<div class='col-sm-10' id='select-provider-types'></div>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<label for='providerName' class='col-sm-2 control-label tm-margin'>System Name</label>";
-        html += "<input id='providerName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter System Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<div class='col-sm-offset-2 col-sm-10'>";
-            html += "<button id='providerOk' type='button' class='btn btn-info tm-margin'>Add</button>";
-        html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('providerOk').onclick = fn;
-}
-
-/**
- * render a form for entering an organization
- * @param target
- * @param fn
- */
-let renderOrganizationForm = function(target, fn, org)  {
-
-    let html = "";
-
-    html += "<div class='form-group'>";
-    html += "<label for='org_name' class='col-sm-2 control-label tm-margin'>Full Name</label>";
-    html += "<input class='col-sm-10 form-control tm-margin' style='width: 70%;' name='org_name' id='org_name' placeholder='Enter Organization Full Name' data-toggle=‘tooltip’ data-placement=‘bottom’ title='Enter the organization full name.'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='org_display' class='col-sm-2 control-label tm-margin'>Abbreviation</label>";
-    html += "<input type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' name='org_display' id='org_display' placeholder='Enter Organization Abbreviation or Acronym' data-toggle=‘tooltip’ data-placement=‘bottom’ title='Enter the organization abbreviation or acronym.'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='org_url' class='col-sm-2 control-label tm-margin'>URL</label>";
-    html += "<input type='url' class='col-sm-10 form-control tm-margin' style='width: 70%;' name='org_url' id='org_url' placeholder='Enter Organization URL' data-toggle=‘tooltip’ data-placement=‘bottom’ title='Enter the organization URL.'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='org_desc' class='col-sm-2 control-label tm-margin'>Description</label>";
-    html += "<textarea class='col-sm-10 form-control tm-margin' style='width: 70%;' name='org_desc' id='org_desc' placeholder='Enter Organization Description'></textarea><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // An organization id of zero means add a new organization
-    let addOrSave = "Add";
-    if(org.id !== 0) {
-        addOrSave = "Save";
+        // render status near button
+        if (status !== undefined) {
+            html += status
+        }
+        html += `</div>`
+        html += `</div>`
+        html += `</div>`
     }
 
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='orgOk' type='button' class='btn btn-info tm-margin'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
+    html += `</div>`
 
-    renderDialogForm(target, html);
-    document.getElementById('org_name').focus();
-    document.getElementById('orgOk').onclick = fn;
-    if(org.id !== 0)  {
-        document.getElementById('org_name').value = org.name;
-        document.getElementById('org_display').value = org.displayName;
-        document.getElementById('org_url').value = org.siteUrl;
-        document.getElementById('org_desc').value = org.description;
-    }
-    document.getElementById('org_name').focus();
+    return html
 }
 
-/**
- * render a form for adding a contact
- */
+let renderSelectHelper = function (labelRequired, labelContent, divId) {
+    let html = ``
 
-// TODO: in system view, the contact form renders the org label
-let renderContactForm = function(target, preFn, fn, contact)  {
-    let html = "";
+    html += `<div class="row pb-2">`
+    html += `<label for="${divId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9" id="${divId}"></div>`
+    html += `</div>`
 
-    html += "<div class='form-group'>";
-        html += "<label style='margin-top: 10px;' id='select-organization-label' for='select-organization' class='col-sm-2 control-label'>Organization</label>";
-        html += "<div class='col-sm-10' id='select-organization'></div>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-        html += "<label for='select-contact-types' class='col-sm-2 control-label'>Type</label>";
-        html += "<div class='col-sm-10' id='select-contact-types'></div>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='lastName' class='col-sm-2 control-label tm-margin'>Last Name</label>";
-    html += "<input id='lastName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Last Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='firstName' class='col-sm-2 control-label tm-margin'>First Name</label>";
-    html += "<input id='firstName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter First Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='phoneNbr' class='col-sm-2 control-label tm-margin'>Phone</label>";
-    html += "<input id='phoneNbr' type='text' size='16' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Phone Number'/><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='emailAddr' class='col-sm-2 control-label tm-margin'>Email</label>";
-    html += "<input id='emailAddr' type='text' size='40' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Email Address'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // A contact id of zero means add a new contact
-    let addOrSave = "Add";
-    if(contact.id !== 0) {
-        addOrSave = "Save";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='contactOk' type='button' class='btn btn-info tm-margin'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('contactOk').onclick = fn;
-    preFn(contact);
+    return html
 }
 
-/**
- * render a form for adding an assessment tool repo
- */
-let renderAssessmentToolReposForm = function(target, preFn, fn, repo)  {
+let renderSelectHelperWithOptionList = function (labelRequired, labelContent, divId, optionList) {
+    let html = ``
 
-    let html = "";
+    html += `<div class="row pb-2">`
+    html += `<label for="${divId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9">`
+    html += `<select class="form-select" id="${divId}">`
+    optionList.forEach(option => html += `<option value="${option}">${option}</option>`)
+    html += `</select>`
+    html += `</div>`
+    html += `</div>`
 
-    html += "<div class='form-group'>";
-    html += "<label for='assessmentToolUrlRepo' class='col-sm-2 control-label tm-margin'>URL</label>";
-    html += "<input id='assessmentToolUrlRepo' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter the Assessment Tool URL'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // A repo id of zero means add a new assessment tool repo
-    let addOrSave = "Add";
-    if(repo.id !== 0) {
-        addOrSave = "Save";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='assessmentToolUrlRepoOk' type='button' class='btn btn-info tm-margin'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('assessmentToolUrlRepoOk').onclick = fn;
-    document.getElementById('assessmentToolUrlRepo').focus();
-
-    preFn(repo);
+    return html
 }
 
-/**
- * render a form for adding a trustmark recipient identifier
- */
-let renderTrustmarkRecipientIdentifiersForm = function(target, preFn, fn, trustmarkRecipientIdentifier)  {
+let renderInputHelper = function (inputId, labelRequired, labelContent, placeholderText, inputValue, readonly) {
+    let html = ``
 
-    let html = "";
+    html += `<div class="row pb-2">`
+    html += `<label for="${inputId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9"><input id="${inputId}" type="text" class="form-control" placeholder="${placeholderText}" value="${inputValue === undefined ? "" : inputValue}" ${readonly ? "readonly" : ""}/></div>`
+    html += `</div>`
 
-    html += "<div class='form-group'>";
-    html += "<label for='trustmarkRecipientIdentifier' class='col-sm-2 control-label tm-margin'>Identifier</label>";
-    html += "<input id='trustmarkRecipientIdentifier' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter the Trustmark Recipient Identifier URI'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // A trustmark recipient identifier id of zero means add a new trustmark recipient identifier
-    let addOrSave = "Add";
-    if(trustmarkRecipientIdentifier.id !== 0) {
-        addOrSave = "Save";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='trustmarkRecipientIdentifierOk' type='button' class='btn btn-info tm-margin'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('trustmarkRecipientIdentifierOk').onclick = fn;
-    document.getElementById('trustmarkRecipientIdentifier').focus();
-
-    preFn(trustmarkRecipientIdentifier);
+    return html
 }
 
-/**
- * render a form for adding a document
- */
-let renderDocumentForm = function(target, binaryUrl, preFn, fn, doc)  {
+let renderFileHelper = function (labelContent) {
+    let html = ``
 
-    let html = "";
+    html += `<input type="hidden" id="binaryId1" name="binaryObject" value="-1">`
+    html += `<div class="row pb-2">`
+    html += `<label for="fileUploadName" class="col-3 col-form-label">${labelContent}</label>`
+    html += `<div class="col-9" id="fileUpload">`
+    html += `<div class="input-group" id="fileUploadName">`
+    html += `<a href="#" id="fileUploadButton1" class="btn btn-primary">Browse...</a>`
+    html += `<span type="text" class="form-control" id="fileName1">No file selected.</span>`
+    html += `</div>`
+    html += `<div class="progress" id="fileUploadStatus1">`
+    html += `<div class="progress-bar" id="fileUploadProgressBar1" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>`
+    html += `</div>`
+    html += `</div>`
+    html += `</div>`
 
-    html += "<input type='hidden' id='binaryId1' name='binaryObject' value='-1'>";
-
-    // upload button
-    html += "<div class='form-group'>";
-    html += "<label for='fileUploadName' class='col-sm-2 control-label'  style='margin-top: 13px; padding: 7px 10px 0px 15px'>Document File</label>";
-    html += "<div class='col-sm-10'>";
-    html += "<p id='fileUploadName'>" +
-        "<a href='#' id='fileUploadButton1' class='btn btn-default'><span class='glyphicon glyphicon-upload'></span>Upload</a>" +
-        "<span id='fileName1'>Select a File...</span><div id='fileUploadStatus1'></div>" +
-        "</p>";
-    html += "</div>";
-    html += "</div>";
-
-    // filename input
-    html += "<div class='form-group'>";
-    html += "<label for='filename' class='col-sm-2 control-label tm-margin'>File Name</label>";
-    html += "<input name='filename' id='filename' class='col-sm-10 form-control tm-margin' style='width: 70%;' /><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // description input
-    html += "<div class='form-group'>";
-    html += "<label for='description' class='col-sm-2 control-label tm-margin'>Description</label>";
-    html += "<textarea name='description' id='description'  class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Document Description'></textarea><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    // public document checkbox
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<div class='checkbox'>";
-    html += "<label>";
-    html += "<input type='checkbox' id='publicDocument' value='true' checked> Public Document";
-    html += "</label>";
-    html += "</div>";
-    html += "</div>";
-    html += "</div>";
-
-    // A document id of zero means add a new document
-    let addOrSave = "Add";
-    if(doc.id !== 0) {
-        addOrSave = "Save";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='documentOk' type='button' class='btn btn-info'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
-
-    renderDialogForm(target, html);
-    document.getElementById('documentOk').onclick = fn;
-
-    preFn(doc);
-
-    // initializes plupload for the document form
-    createPlupload1(binaryUrl);
+    return html
 }
 
-/**
- * renders a form for updating a registrant's data
- * @param target
- * @param fn
- * @param registrant
- */
-let renderRegistrantFormControls = function(registrant, contactInfoOnly) {
+let renderTextareaHelper = function (inputId, labelRequired, labelContent, placeholderText) {
+    let html = ``
 
-    let html = "<br>";
+    html += `<div class="row pb-2">`
+    html += `<label for="${inputId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9"><textarea id="${inputId}" type="text" class="form-control" placeholder="${placeholderText}"></textarea></div>`
+    html += `</div>`
 
-    if (!contactInfoOnly) {
-        html += "<div id='select-organization-group' class='form-group'>";
-        html += "<label style='margin-top: 10px;' id='select-organization-label' for='select-organization' class='col-sm-2 control-label'>Organization</label>";
-        html += "<div class='col-sm-10' id='select-organization'></div>";
-        html += "</div>";
-
-        html += "<div class='form-group'>";
-        html += "<label style='margin-top: 10px;' id='select-role-label' for='select-role' class='col-sm-2 control-label'>Role</label>";
-        html += "<div class='col-sm-10' id='select-role'></div>";
-        html += "</div>";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<label for='detail_lastName' class='col-sm-2 control-label tm-margin'>Last Name</label>";
-    html += "<input id='detail_lastName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Last Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='detail_firstName' class='col-sm-2 control-label tm-margin'>First Name</label>";
-    html += "<input id='detail_firstName' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter First Name'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='detail_email' class='col-sm-2 control-label tm-margin'>Email</label>";
-    html += "<input id='detail_email' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Email Address'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-    html += "<div class='form-group'>";
-    html += "<label for='detail_phone' class='col-sm-2 control-label tm-margin'>Phone</label>";
-    html += "<input id='detail_phone' type='text' class='col-sm-10 form-control tm-margin' style='width: 70%;' placeholder='Enter Phone Number'/><span style='color:red;'>*</span><br>";
-    html += "</div>";
-
-
-    // A registrant id of zero means add a new registrant
-    let addOrSave = "Save";
-    if(registrant.id === 0) {
-        addOrSave = "Add";
-
-        html += "<div class='form-group'>";
-        html += "<label for='notify_registrant' class='col-sm-2 form-check text-right'>Notify</label>";
-        html += "<div class='col-sm-10'>";
-        html += "<input id='notify_registrant' name='notify_registrant' class='form-check-input tm-margin' type='checkbox' data-toggle='tooltip' data-placement='bottom' " +
-            "title='Notify registrant via email to reset their password.'  />";
-        html += "</div>";
-        html += "</div>";
-    }
-
-    html += "<div class='form-group'>";
-    html += "<div class='col-sm-offset-2 col-sm-10'>";
-    html += "<button id='registrantOk' type='button' class='btn btn-info tm-margin'>" + addOrSave + "</button>";
-    html += "</div>";
-    html += "</div>";
-
-    return html;
+    return html
 }
 
-/**
- * renders a form for updating a registrant's data
- * @param target
- * @param fn
- * @param registrant
- */
-let renderRegistrantFormDialog = function(target, fn, registrant) {
+let renderRadioHelper = function (inputId, labelRequired, labelContent) {
+    let html = ``
 
-    let html = renderRegistrantFormControls(registrant, false);
+    html += `<div class="row pb-2">`
+    html += `<label for="${inputId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9 col-form-label"><div class="form-check form-switch"><input id="${inputId}" type="checkbox" class="form-check-input"/></div></div>`
+    html += `</div>`
 
-    renderDialogForm(target, html);
-    document.getElementById('registrantOk').onclick = fn;
-    if(registrant.id === 0)  {
-        selectOrganizations(0);
-        selectRoles(0);
-    } else {
-        selectOrganizations(registrant.organization.id);
-        selectRoles(registrant.user.roles[0].id);
-
-        document.getElementById('detail_lastName').value = registrant.user.contact.lastName;
-        document.getElementById('detail_firstName').value = registrant.user.contact.firstName;
-        document.getElementById('detail_email').value = registrant.user.contact.email;
-        document.getElementById('detail_phone').value = registrant.user.contact.phone;
-    }
-    document.getElementById('detail_lastName').focus();
+    return html
 }
 
-/**
- * renders a form for updating a registrant's data
- * @param target
- * @param fn
- * @param registrant
- */
-let renderRegistrantForm = function(target, title, fn, registrant) {
+let renderTextHelper = function (inputId, labelRequired, labelContent, content) {
+    let html = ``
 
-    let html = renderRegistrantFormControls(registrant, true);
+    html += `<div class="row pb-2">`
+    html += `<label for="${inputId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
+    html += `<div class="col-9">`
+    html += `<div class="form-control" style="background-color: rgba(0, 0, 0, .03)">${content}</div>`
+    html += `</div>`
+    html += `</div>`
 
-    renderForm(target, title, html);
+    return html
+}
 
-    document.getElementById('registrantOk').onclick = fn;
-    document.getElementById('detail_lastName').value = registrant.user.contact.lastName;
-    document.getElementById('detail_firstName').value = registrant.user.contact.firstName;
-    document.getElementById('detail_email').value = registrant.user.contact.email;
-    document.getElementById('detail_phone').value = registrant.user.contact.phone;
+let renderHiddenHelper = function (inputId, inputValue) {
+    let html = ``
 
-    document.getElementById('detail_lastName').focus();
+    html += `<input id="${inputId}" type="hidden" value="${inputValue === undefined ? "" : inputValue}"/>`
+
+    return html
+}
+
+let renderHeaderHelper = function (content) {
+    let html = ``
+
+    html += `</div>`
+    html += `<div class="card-header fw-bold">`
+    html += `<div class="row">`
+    html += `<div class="col-12">${content}</div>`
+    html += `</div>`
+    html += `</div>`
+    html += `<div class="card-body">`
+
+    return html
 }
 
 /**
@@ -1719,35 +273,9 @@ let renderRegistrantForm = function(target, title, fn, registrant) {
  * @param target
  * @param content
  */
-let renderDialogForm = function(target, content)  {
-    let html = "<form class='form-horizontal'>";
-    html += "<div class='full-width-form'>";
-    html += "<a class='tm-margin tm-right' href=\"javascript:hideIt('"+target+"');\"><span class='glyphicon glyphicon-remove'></span></a><br>";
-    html += content;
-    html += "</div></form>";
-
-    html += "<p><span style='color:red;'>*</span> - Indicates required field.</p>"
-
-    document.getElementById(target).innerHTML = html;
-    showIt(target);
-}
-
-/**
- * renders content into a standard dialog with a close X
- * @param target
- * @param content
- */
-let renderForm = function(target, title, content)  {
-    let html = "<h2>" + title + "</h2>";
-    html += "<form class='form-horizontal'>";
-    html += "<div class='full-width-form'>";
-    html += content;
-    html += "</div></form>";
-
-    html += "<p><span style='color:red;'>*</span> - Indicates required field.</p>"
-
-    document.getElementById(target).innerHTML = html;
-    showIt(target);
+let renderDialogForm = function (target, content) {
+    document.getElementById(target).innerHTML = content
+    showIt(target)
 }
 
 /**
@@ -1755,23 +283,27 @@ let renderForm = function(target, title, content)  {
  * @param target: container div for message
  * @param data: content of the message
  */
-let setStatusMessage = function(target, data) {
+let setStatusMessage = function (target, data) {
     let html = "";
+
     if (!isEmtpy(data.status['SUCCESS'])) {
-        html += "<div id='status-message' class='alert alert-success' class='glyphicon glyphicon-ok-circle'>" + data.status['SUCCESS'] + "</div>";
+        html += `<div class="alert alert-primary" class="bi bi-check-circle">${data.status["SUCCESS"]}</div>`;
     }
 
     if (!isEmtpy(data.status['WARNING'])) {
-        html += "<div id='status-message' class='alert alert-warning' class='glyphicon glyphicon-warning-sign'>" + data.status['WARNING'] + "</div>";
+        html += `<div class="alert alert-warning" class="bi bi-exclamation-triangle">${data.status["WARNING"]}</div>`;
     }
 
     if (!isEmtpy(data.status['ERROR'])) {
-        html += "<div id='status-message' class='alert alert-danger' class='glyphicon glyphicon-exclamation-sign'>" + data.status['ERROR'] + "</div>";
+        html += `<div class="alert alert-danger" class="bi bi-exclamation-circle">${data.status["ERROR"]}</div>`;
     }
 
     if (!isEmtpy(html)) {
-        $('#'+target).html(html);
-        $('#'+target).fadeTo(200, 1);
-        $('#'+target).delay(3000).fadeTo(300, 0);
+        document.getElementById(target).classList.remove("d-none")
+        document.getElementById(target).innerHTML = html
     }
+}
+
+function isEmtpy(str) {
+    return (!str || str.length === 0);
 }

@@ -12,6 +12,8 @@ public static final String BUNDLE_NAME = "tbr_config.properties"
 
 final static String BASE_URL = "tf.base.url"
 
+final static String NAME = "tbr.org.title"
+
 private static Properties RESOURCES = new Properties()
 static {
     try {
@@ -60,6 +62,10 @@ static Properties getProperties(){return RESOURCES;}
 
     static String getBaseUrl(){
         return getString(BASE_URL, "http://localhost:8082/tbr")
+    }
+
+    static String getTbrName() {
+        return getString(NAME, "Trustmark Binding Registry")
     }
 
     static URL getRegistryUrl(){

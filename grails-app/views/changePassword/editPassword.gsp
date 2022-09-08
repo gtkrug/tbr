@@ -1,88 +1,74 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta name="layout" content="main"/>
-		<title>Change Existing Password</title>
-	</head>
-	<body>
+    <head>
+        <meta name="layout" content="main"/>
 
-        <h1>Change Existing Password</h1>
+        <asset:javascript src="changePassword_editPassword.js"/>
+        <script type="text/javascript">
+            initialize("${createLink(controller: "changePassword", action: "changeExistingPassword")}")
+        </script>
+    </head>
 
-        <sec:ifLoggedIn>
-            <div class="col-md-12" style="margin-top: 2em;">
-
-                <form class="form-horizontal">
-                    <div class="form-group">
-                        <label for="existingPassword" class="col-sm-2 control-label">Existing Password</label>
-                        <div class="col-sm-10">
-                            <input type="password" class="form-control" id="existingPassword" name="existingPassword" placeholder="Existing Password">
+    <body>
+        <div class="container container-narrow pt-4">
+            <div class="border rounded card">
+                <div class="card-header fw-bold">
+                    <div class="row">
+                        <div class="col-12">
+                            <div>Change Password</div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="newPassword" class="col-sm-2 control-label">New Password</label>
-                        <div class="col-sm-10">
-                            <input type="password" class="form-control" id="newPassword" name="newPassword" placeholder="New Password">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirmPassword" class="col-sm-2 control-label">Confirm Password</label>
-                        <div class="col-sm-10">
-                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" placeholder="Confirm Password">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="col-sm-offset-2 col-sm-10">
-                            <a href="javascript:changePasswordRequest()" class="btn btn-default">Submit</a>
-                        </div>
-                    </div>
-                </form>
+                </div>
+                <sec:ifLoggedIn>
+                    <div class="card-body">
+                        <div class="row pb-2">
+                            <label class="col-5 col-form-label text-end" for="existingPassword">Current Password</label>
 
-                <div id="messageFeedbackWindow" style="margin-top: 2em;">&nbsp;</div>
+                            <div class="col-7">
+                                <input type="password" id="existingPassword" name="existingPassword" class="form-control"/>
+                            </div>
+                        </div>
 
+                        <div class="row pb-2">
+                            <label class="col-5 col-form-label text-end" for="newPassword">New Password</label>
+
+                            <div class="col-7">
+                                <input type="password" id="newPassword" name="newPassword" class="form-control"/>
+                            </div>
+                        </div>
+
+                        <div class="row pb-2">
+                            <label class="col-5 col-form-label text-end" for="confirmPassword">Confirm New Password</label>
+
+                            <div class="col-7">
+                                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer text-start">
+                        <div class="row">
+                            <div class="col-5"></div>
+
+                            <div class="col-7">
+                                <a id="button" class="btn btn-primary">Change Password</a>
+                            </div>
+                        </div>
+                    </div>
+                </sec:ifLoggedIn>
+
+                <sec:ifNotLoggedIn>
+                    <div class="card-body">
+                        <div class="row pb-2">
+                            <div class="col-12">
+                                You are not logged in.
+                            </div>
+                        </div>
+                    </div>
+                </sec:ifNotLoggedIn>
             </div>
+        </div>
 
-            <script type="text/javascript">
-                function changePasswordRequest() {
-
-                    var existingPassword = $('#existingPassword').val();
-                    var newPassword = $('#newPassword').val();
-                    var confirmPassword = $('#confirmPassword').val();
-
-                    if (newPassword != confirmPassword) {
-                        $("#messageFeedbackWindow").html("<div class=\"alert alert-danger\">Passwords don't match!</div>");
-                    } else {
-                        $('#messageFeedbackWindow').html('<div><asset:image src="spinner.gif" /> Changing password... </div>');
-
-                        $.ajax({
-                            url: '${createLink(controller:'changePassword', action: 'changeExistingPassword')}',
-                            data: {
-                                existingPassword: existingPassword,
-                                newPassword: newPassword,
-                                confirmPassword: confirmPassword,
-                                format: 'json',
-                                now: new Date().toString()
-                            },
-                            dataType: 'json',
-                            success: function (data, status, xhr) {
-                                if (data.status == "SUCCESS") {
-                                    $('#messageFeedbackWindow').html("<div class=\"alert alert-success\">" + data.message + "</div>")
-                                } else {
-                                    $('#messageFeedbackWindow').html("<div class=\"alert alert-danger\">" + data.message + "</div>")
-                                }
-                            },
-                            error: function (xhr, statusText, errorThrown) {
-                                console.log("Error: " + statusText + ", Error: " + errorThrown);
-                            }
-                        })
-                    }
-
-                }//end sendNewPasswordRequest()
-
-                function isEmpty(str) {
-                    return (!str || str.length === 0);
-                }
-            </script>
-
-        </sec:ifLoggedIn>
-	</body>
+        <div class="container container-narrow pt-4 d-none" id="message"></div>
+    </body>
 </html>
