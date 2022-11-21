@@ -70,7 +70,11 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
                     providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "RUNNING");
                 }
 
-                List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(assessmentToolUrls, recipientIdentifiers, monitoringProgress);
+                // Filter out trustmarks not in current TD set
+                SystemTrustmarkDefinitionUriFilter tdFilter = new SystemTrustmarkDefinitionUriFilter(tdSet);
+
+                List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(
+                        tdFilter, assessmentToolUrls, recipientIdentifiers, monitoringProgress);
 
                 log.info("##### trustmarks TOTAL size: ${trustmarks.size()}")
 
@@ -104,7 +108,7 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
             Runnable remoteArtifactsStaleness = new Runnable() {
                 @Override
                 void run() {
-                    sendRemoteArtivactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
+                    sendRemoteArtifactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
                 }
             };
             executor.execute(remoteArtifactsStaleness);

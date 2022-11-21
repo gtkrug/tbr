@@ -11,4 +11,5 @@ databaseChangeLog = {
     include file: 'add-oidc-metadata-unique-id.groovy'
     include file: 'add-remote-artifacts-uri-data-model.groovy'
     include file: 'remove-orphan-records-from-provider_contact.groovy'
+    include file: 'ensure-tat-and-tpat-uris-end-with-backslash.groovy'
 }

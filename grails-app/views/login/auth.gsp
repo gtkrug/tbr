@@ -4,6 +4,13 @@
         <meta name="layout" content="main"/>
 
         <asset:javascript src="login_auth.js"/>
+
+        <style type="text/css">
+            .disabled-link {
+                pointer-events: none;
+                color: #c0c0c0;
+            }
+        </style>
     </head>
 
     <body>
@@ -45,7 +52,9 @@
                             </div>
 
                             <div class="col-7 d-flex justify-content-end align-items-center">
-                                <a href="${createLink(controller: "forgotPassword")}">Reset Password</a>
+                                <g:isMailEnabled>
+                                    <a href="${createLink(controller: "forgotPassword")}">Reset Password</a>
+                                </g:isMailEnabled>
                             </div>
                         </div>
                     </div>

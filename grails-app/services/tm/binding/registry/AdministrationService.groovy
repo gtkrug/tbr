@@ -127,10 +127,16 @@ class AdministrationService {
         String tpatBaseUrl = UrlUtilities.artifactBaseUrl(tipUri)
 
         if (UrlUtilities.checkTPATStatusUrl(tpatBaseUrl)) {
-            TrustPolicyAuthoringToolUri tpatUri = new TrustPolicyAuthoringToolUri(uri: tpatBaseUrl,
-                    statusSuccessTimestamp: LocalDateTime.now())
 
-            tpatUri.save(true)
+            TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = TrustPolicyAuthoringToolUri.findByUri(tpatBaseUrl)
+
+            // Only add the TPAT URI iff it does not already exists
+            if (!trustPolicyAuthoringToolUri) {
+                TrustPolicyAuthoringToolUri tpatUri = new TrustPolicyAuthoringToolUri(uri: tpatBaseUrl,
+                        statusSuccessTimestamp: LocalDateTime.now())
+
+                tpatUri.save(true)
+            }
         }
     }
 

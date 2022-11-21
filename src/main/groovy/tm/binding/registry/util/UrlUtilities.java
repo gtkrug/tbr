@@ -34,6 +34,7 @@ public class UrlUtilities {
 
             if (json!= null) {
                 String baseUrl = (String)json.getString("baseUrl");
+                baseUrl = ensureTrailingSlash(baseUrl);
                 if (baseUrl.equals(tpatBaseUrl)) {
                     return true;
                 }
@@ -56,7 +57,8 @@ public class UrlUtilities {
 
         URL tpatBaseUrl = new URL(url.getProtocol(), url.getHost(), url.getPort(), ensureLeadingSlash(firstFolder));
 
-        return tpatBaseUrl.toString();
+        // For consistency ensure that the url path end with a slash
+        return ensureTrailingSlash(tpatBaseUrl.toString());
     }
 
     private static String ensureLeadingSlash(String url) {

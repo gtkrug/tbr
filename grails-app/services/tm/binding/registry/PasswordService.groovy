@@ -93,21 +93,30 @@ class PasswordService {
                 }
 
                 if (user) {
-                    log.debug("Sending confirmation email to ${email}...")
 
-                    Organization organization = Organization.get(Long.parseLong(organizationId))
+                    if (emailService.mailEnabled()) {
 
-                    if (!organization) {
-                        throw new ServletException("Missing organization [${organizationId}]")
+
+                        log.debug("Sending confirmation email to ${email}...")
+
+                        Organization organization = Organization.get(Long.parseLong(organizationId))
+
+                        if (!organization) {
+                            throw new ServletException("Missing organization [${organizationId}]")
+                        }
+
+                        def model = ["organizationName": organization.name]
+
+                        sendEmail(user, email, 'new.registrant.subject', '[Trustmark Binding Registry Tool] New Registrant Account Successful',
+                                "/templates/newRegistrantEmail", model)
+
+                        result.status = "SUCCESS"
+                        result.message = "Your registrant acoount has been successfully created, please check your email to create a new password."
+                    } else {
+                        log.warn("Email is disabled.")
+                        result.status = "FAILURE"
+                        result.message = "Email is disabled."
                     }
-
-                    def model = ["organizationName": organization.name]
-
-                    sendEmail(user, email, 'new.registrant.subject', '[Trustmark Binding Registry Tool] New Registrant Account Successful',
-                            "/templates/newRegistrantEmail", model)
-
-                    result.status = "SUCCESS"
-                    result.message = "Your registrant acoount has been successfully created, please check your email to create a new password."
                 } else {
                     log.warn("No such user ${params.email}")
                     result.status = "FAILURE"

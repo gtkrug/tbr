@@ -40,7 +40,9 @@ public class OrganizationTrustmarkBinder extends TrustmarkBinder {
             // Collect Trustmark Recipient Identifiers
             Set<TrustmarkRecipientIdentifier> recipientIdentifiers = getOrganizationRecipientIdentifiers(organization);
 
-            List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(
+            OrganizationTrustmarkDefinitionUriFilter tdFilter = new OrganizationTrustmarkDefinitionUriFilter();
+
+            List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(tdFilter,
                     assessmentToolUrls, recipientIdentifiers, false);
 
             saveTrustmarks(trustmarks, organization);
@@ -65,7 +67,7 @@ public class OrganizationTrustmarkBinder extends TrustmarkBinder {
                 @Override
                 void run() {
                     // create
-                    sendRemoteArtivactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
+                    sendRemoteArtifactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
                 }
             };
             executor.execute(remoteArtifactsStaleness);
