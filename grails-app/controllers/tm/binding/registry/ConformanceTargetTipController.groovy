@@ -1,20 +1,23 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
+import org.gtri.fj.data.Option
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
+
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 class ConformanceTargetTipController {
-
-    def springSecurityService
 
     AdministrationService administrationService
 
     def index() { }
 
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         log.info("add conformance target tip id -> ${params.identifier}")
 
@@ -53,11 +56,6 @@ class ConformanceTargetTipController {
     }
 
     def delete() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
-
         Provider provider = administrationService.deleteConformanceTargetTips(params.ids, params.pid)
 
         withFormat  {
@@ -67,12 +65,8 @@ class ConformanceTargetTipController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 

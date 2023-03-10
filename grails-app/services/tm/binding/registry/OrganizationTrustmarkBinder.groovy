@@ -1,19 +1,19 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.grails.email.service.EmailService
+import edu.gatech.gtri.trustmark.v1_0.impl.io.json.TrustmarkStatusReportJsonDeserializer
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusCode
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusReport
 import grails.gsp.PageRenderer
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import shared.views.EmailService
 
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors;
-
+import java.util.concurrent.Executors
 
 public class OrganizationTrustmarkBinder extends TrustmarkBinder {
-    private static final Logger log = LoggerFactory.getLogger(TrustmarkBinder.class);
+    private static final Logger log = LoggerFactory.getLogger(OrganizationTrustmarkBinder.class);
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors();
     private static final Executor executor = Executors.newFixedThreadPool(2 * NUMBER_OF_EXECUTOR_THREADS)
@@ -50,7 +50,7 @@ public class OrganizationTrustmarkBinder extends TrustmarkBinder {
             log.info("Successfully bound " + trustmarks.size() + " trustmarks to organization: " + organization.name)
         }
         catch (Throwable t) {
-            log.error("Error encountered during the trustmark binding process: ${t.message}");
+            log.error("Error encountered during the trustmark binding process for organizations: ${t.message}", t);
         }
 
         long overallStopTime = System.currentTimeMillis()
@@ -76,17 +76,22 @@ public class OrganizationTrustmarkBinder extends TrustmarkBinder {
 
     private void saveTrustmarks(final List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> bindingTrustmarks,
                                 final Organization organization) {
-        Integer currentTrustmarkIndex = 0;
-        Integer totalToBeBoundTrustmarks = bindingTrustmarks.size();
+//        Integer currentTrustmarkIndex = 0
+//        Integer totalToBeBoundTrustmarks = bindingTrustmarks.size()
+
+        TrustmarkStatusReportJsonDeserializer deserializer = new TrustmarkStatusReportJsonDeserializer()
 
         Organization.withTransaction {
             bindingTrustmarks.forEach(trustmark -> {
 
-                TrustmarkStatusReport tsr = resolveTrustmarkStatusReport(trustmark)
+                // retrieve TSR
+                TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(trustmark.statusURL.toString())
+
+                TrustmarkStatusReport tsr = deserializer.deserialize(trustmarkStatusReportUri.content)
 
                 if (tsr.status == TrustmarkStatusCode.ACTIVE) {
                     // save to db
-                    Trustmark tm = new Trustmark();
+                    Trustmark tm = new Trustmark()
                     tm.name = trustmark.getTrustmarkDefinitionReference().name
 
                     tm.conformanceTargetTipId = -1;
@@ -105,14 +110,14 @@ public class OrganizationTrustmarkBinder extends TrustmarkBinder {
                         tm.assessorComments = getProviderExtension(trustmark, "exception-details")
                     }
 
-                    tm.save(failOnError: true, flush: true);
+                    tm.save(failOnError: true, flush: true)
 
-                    organization.trustmarks.add(tm);
+                    organization.trustmarks.add(tm)
                 }
             })
         }
 
-        organization.save(failOnError: true, flush: true);
+        organization.save(failOnError: true, flush: true)
     }
 
 }

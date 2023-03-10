@@ -28,5 +28,5 @@ let renderOidcForm = function (target, oidc) {
             }
         }
     }
-    renderDialogForm(target, decorateForm("OpenID Connect Details", "oidcFormId", html, undefined, oidc.records.id === 0 ? "Add" : "Save", false))
+    renderDialogForm(target, decorateForm("OpenID Connect Details", "oidcFormId", html, undefined, oidc.records.id === 0 ? "Add" : "Save", undefined, 'false'))
 }

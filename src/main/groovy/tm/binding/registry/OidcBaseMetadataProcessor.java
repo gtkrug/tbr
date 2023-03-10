@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public abstract class OidcBaseMetadataProcessor {
-    private static final Logger log = LoggerFactory.getLogger(UserPasswordEncoderListener.class);
+    private static final Logger log = LoggerFactory.getLogger(OidcBaseMetadataProcessor.class);
 
     private JSONObject metadata = null;
 

@@ -9,7 +9,7 @@ class UrlMappings {
             }
         }
 
-        "/" (controller: 'index', view:'/index')
+        "/" (controller: 'index', action:'index')
 
         "/public/systems/$type" (controller: 'public', action: 'listByType')
         "/public/certificates/$filename"(controller:'public', action: 'download', id: '$filename')

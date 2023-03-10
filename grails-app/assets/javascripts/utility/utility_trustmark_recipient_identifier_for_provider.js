@@ -55,7 +55,7 @@ let renderTrustmarkRecipientIdentifierForm = function (target, preFn, fn, trustm
     let html = ``
     html += renderInputHelper("trustmarkRecipientIdentifier", true, "Identifier", "Enter the Trustmark Recipient Identifier URI")
 
-    renderDialogForm(target, decorateForm("Trustmark Recipient Identifier", "trustmarkRecipientIdentifierFormId", html, "trustmarkRecipientIdentifierOk", trustmarkRecipientIdentifier.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Trustmark Recipient Identifier", "trustmarkRecipientIdentifierFormId", html, "trustmarkRecipientIdentifierOk", trustmarkRecipientIdentifier.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("trustmarkRecipientIdentifierFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("trustmarkRecipientIdentifierOk").addEventListener("click", fn)

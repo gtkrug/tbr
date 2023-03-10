@@ -1,57 +1,102 @@
 package tm.binding.registry
 
-import grails.plugin.springsecurity.SpringSecurityService
+import org.apache.commons.lang.StringUtils
+import org.gtri.fj.data.Option
+import org.json.JSONArray
+import java.util.stream.Collectors
+
+import static org.gtri.fj.data.Option.fromNull
 
 class User {
 
-    transient SpringSecurityService springSecurityService;
 
     String username
-    String password
-    String name
-    boolean enabled = true
-    boolean accountExpired
-    boolean accountLocked
-    boolean passwordExpired
-    Contact contact
+    String nameFamily
+    String nameGiven
+    String contactEmail
+    String roleArrayJson
 
-    static transients = ['springSecurityService']
+    String name // ???
+
+    Contact contact
 
     static constraints = {
         username blank: false, unique: true
         name blank: false
-        password blank: false, password: true
-        contact nullable: false
+        contact nullable: true
+        roleArrayJson nullable: true, maxSize: 2048
     }
 
     static mapping = {
         table name: 'user'
-        password column: '`pass_hash`'
         contact column: 'contact_ref', fetch: 'join'
     }
 
-    Boolean isAdmin() {
-        Set<UserRole> roles = UserRole.findAllByUser(this)
-        boolean hasRole = false
-        roles.each { UserRole role ->
-            if( role.role.authority == Role.ROLE_ADMIN )
-                hasRole = true
+    static final Option<User> findByUsernameHelper(final String username) {
+        fromNull(findByUsername(username))
+    }
+
+    User saveAndFlushHelper() {
+        User.withTransaction {
+            save(flush: true, failOnError: true)
         }
-        return hasRole
+    }
+
+    Boolean isAdmin() {
+
+        if (StringUtils.isNotEmpty(this.roleArrayJson)) {
+            JSONArray rolesJsonArray = new JSONArray(this.roleArrayJson);
+
+            return rolesJsonArray.toList()
+                    .stream()
+                    .filter(role -> Role.fromValue((String) role).isPresent())
+                    .map(role -> Role.fromValue((String) role).get())
+                    .anyMatch(role -> Role.ROLE_ADMIN == role)
+        }
+
+        return false
     }
 
     Boolean isOrgAdmin() {
-        Set<UserRole> roles = UserRole.findAllByUser(this)
-        boolean hasRole = false
-        roles.each { UserRole role ->
-            if( role.role.authority == Role.ROLE_ORG_ADMIN )
-                hasRole = true
+
+        if (StringUtils.isNotEmpty(this.roleArrayJson)) {
+            JSONArray rolesJsonArray = new JSONArray(this.roleArrayJson);
+
+            return rolesJsonArray.toList()
+                    .stream()
+                    .filter(role -> Role.fromValue((String) role).isPresent())
+                    .map(role -> Role.fromValue((String) role).get())
+                    .anyMatch(role -> Role.ROLE_ORG_ADMIN == role)
         }
-        return hasRole
+
+        return false
+    }
+
+    Boolean hasNoTbrRoles() {
+
+        if (StringUtils.isNotEmpty(this.roleArrayJson)) {
+            JSONArray rolesJsonArray = new JSONArray(this.roleArrayJson);
+            Set<Role> roles = rolesJsonArray.toList()
+                    .stream()
+                    .filter(role -> Role.fromValue((String) role).isPresent())
+                    .map(role -> Role.fromValue((String) role).get())
+                    .collect(Collectors.toSet());
+
+            return roles.isEmpty();
+        }
+
+        return true
     }
 
     Set<Role> getAuthorities() {
-        UserRole.findAllByUser(this).collect { it.role } as Set<Role>
+        JSONArray rolesJsonArray = new JSONArray(roleArrayJson);
+
+        Set<Role> rolesSet = rolesJsonArray.toList()
+                .stream()
+                .map(role -> Role.fromValue((String)role).get())
+                .collect(Collectors.toSet());
+
+        return rolesSet
     }
 
     String toString() {
@@ -62,10 +107,11 @@ class User {
         def json = [
                 id: this.id,
                 username: this.username,
-                enabled: this.enabled,
+                nameFamily: this.nameFamily,
+                nameGiven: this.nameGiven,
+                contactEmail: this.contactEmail,
                 contact: this.contact?.toJsonMap(true),
-                role: RoleName.valueOf(getAuthorities().toList().head().authority).getName(),
-                roles: getAuthorities(),
+                roles: this.roleArrayJson,
                 admin: this.isAdmin(),
                 orgAdmin: this.isOrgAdmin()
         ]

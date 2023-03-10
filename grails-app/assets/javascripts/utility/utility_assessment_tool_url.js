@@ -55,7 +55,7 @@ let renderAssessmentToolUrlForm = function (target, preFn, fn, repo) {
     let html = ``
     html += renderInputHelper("assessmentToolUrlRepo", true, "URL", "Enter the Assessment Tool URL")
 
-    renderDialogForm(target, decorateForm("Assessment Tool URL", "repoFormId", html, "repoOk", repo.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Assessment Tool URL", "repoFormId", html, "repoOk", repo.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("repoFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("repoOk").addEventListener("click", fn)

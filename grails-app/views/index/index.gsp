@@ -1,7 +1,23 @@
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <!DOCTYPE html>
 <html>
     <head>
         <meta name="layout" content="main"/>
+
+        <style type="text/css">
+            .mustLoginDetails {
+                text-align: center;
+                margin-top: 5em;
+            }
+
+            .mustLoginText {
+                margin-bottom: 1em;
+            }
+
+            .searchFormContainer {
+                margin-bottom: 0.5em;
+            }
+        </style>
 
         <script type="text/javascript">
             const ORGANIZATION_VIEW = "${createLink(controller:'organization', action: 'view')}/"
@@ -17,19 +33,34 @@
 
     <body>
         <div class="container pt-4">
-            <h2>Organizations</h2>
 
-            <div id="organization-message"></div>
+            <g:if test="${showOrganizations}">
+                <h2>Organizations</h2>
 
-            <table id="organization-table" class="table table-condensed table-striped table-bordered"></table>
+                <div id="organization-message"></div>
 
-            <div class="pt-1" id="organization-form"></div>
+                <table id="organization-table" class="table table-condensed table-striped table-bordered"></table>
 
-            <g:if test='${flash.message}'>
-                setDangerStatus("Authentication Failed! ${flash.message}");
+                <div class="pt-1" id="organization-form"></div>
+
+                <g:if test='${flash.message}'>
+                    setDangerStatus("Authentication Failed! ${flash.message}");
+                </g:if>
             </g:if>
+            <g:else>
+                <div class="h-100 d-flex align-item-center justify-content-center">
+                    <div class="mustLoginDetails alert alert-warning">
+                        <div class="mustLoginText">
+                            This page requires authentication.  Please click below to start the process.
+                        </div>
+                        <a href="oauth2/authorize-client/keycloak" class="btn btn-primary">Login &raquo;</a>
+                    </div>
+                </div>
 
-            <sec:ifNotLoggedIn>
+                <div style="height: 600px;">&nbsp;</div>
+            </g:else>
+
+            <sec:authorize access="!isAuthenticated()">
                 <g:if test="${firstTimeLogin}">
                     <script type="text/javascript">
                         $(document).ready(function () {
@@ -282,7 +313,7 @@
                         </form>
                     </div>
                 </g:if>
-            </sec:ifNotLoggedIn>
+            </sec:authorize>
         </div>
     </body>
 </html>

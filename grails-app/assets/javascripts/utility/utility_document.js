@@ -63,7 +63,7 @@ let renderDocumentForm = function (target, preFn, fn, doc) {
     html += renderTextareaHelper("description", true, "Description", "Enter Document Description")
     html += renderRadioHelper("publicDocument", false, "Public Document")
 
-    renderDialogForm(target, decorateForm("Document", "documentFormId", html, "documentOk", doc.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Document", "documentFormId", html, "documentOk", doc.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("documentFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("documentOk").addEventListener("click", fn)

@@ -67,7 +67,7 @@ let renderRegistrantForm = function (target, preFn, fn, registrant) {
         html += renderRadioHelper("notify_registrant", false, "Notify")
     }
 
-    renderDialogForm(target, decorateForm("Registrant", "registrantFormId", html, "registrantOk", registrant.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Registrant", "registrantFormId", html, "registrantOk", registrant.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("registrantFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("registrantOk").addEventListener("click", fn)

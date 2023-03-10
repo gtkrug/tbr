@@ -56,7 +56,7 @@ let renderProviderForm = function (target, preFn, fn, provider) {
     html += renderSelectHelper(true, "Types", "select-provider-types")
     html += renderInputHelper("providerName", true, "System Name", "Enter System Name")
 
-    renderDialogForm(target, decorateForm("System", "providerFormId", html, "providerOk", provider.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("System", "providerFormId", html, "providerOk", provider.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("providerFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("providerOk").addEventListener("click", fn)

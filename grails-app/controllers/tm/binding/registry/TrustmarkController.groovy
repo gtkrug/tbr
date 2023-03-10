@@ -1,22 +1,16 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
+import org.springframework.security.access.prepost.PreAuthorize
 
 class TrustmarkController {
-
-    def springSecurityService
 
     AdministrationService administrationService
 
     def index() { }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         def trustmarks = administrationService.listTrustmarks(params.id)
 
@@ -32,14 +26,10 @@ class TrustmarkController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def listbyOrganization() {
         log.info("listbyOrganization for organization id: " + params.id)
 
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         def trustmarks = administrationService.listTrustmarksByOrganization(params.id)
 

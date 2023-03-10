@@ -10,8 +10,7 @@ class Organization {
     String description
 
     static hasMany = [
-        registrants: Registrant
-      , contacts: Contact
+        contacts: Contact
       , providers: Provider
       , assessmentRepos: AssessmentRepository
       , trustmarkRecipientIdentifiers: TrustmarkRecipientIdentifier
@@ -24,9 +23,7 @@ class Organization {
         siteUrl nullable: false
         displayName nullable: false
         description nullable: true
-        registrants nullable: true
         providers nullable: true
-        registrants cascade: "all-delete-orphan"
         contacts cascade: "all-delete-orphan"
         providers cascade: "all-delete-orphan"
         assessmentRepos cascade: "all-delete-orphan"
@@ -55,7 +52,6 @@ class Organization {
         if (shallow) {
             json.put("providers", this.providers)
             json.put("assessmentRepos", this.assessmentRepos)
-            json.put("registrants", this.registrants)
         }
 
         if (this.trustmarkRecipientIdentifiers && this.trustmarkRecipientIdentifiers.size() > 0) {

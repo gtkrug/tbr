@@ -1,5 +1,6 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.grails.email.service.EmailService
 import edu.gatech.gtri.trustmark.v1_0.FactoryLoader;
 import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import edu.gatech.gtri.trustmark.v1_0.impl.io.json.TrustInteroperabilityProfileJsonDeserializer
@@ -23,13 +24,11 @@ import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkDefinition;
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkDefinitionRequirement
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusReport;
 import edu.gatech.gtri.trustmark.v1_0.service.RemoteException
-import grails.gorm.transactions.Transactional
 import grails.gsp.PageRenderer
 import org.dom4j.Element
 import org.dom4j.tree.DefaultElement
 import org.springframework.security.crypto.codec.Hex
 import org.springframework.web.multipart.MultipartFile
-import shared.views.EmailService
 import tm.binding.registry.util.TBRProperties;
 import tm.binding.registry.util.UrlEncodingUtil
 import org.json.JSONArray;
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import tm.binding.registry.util.UrlUtilities
-
 
 public abstract class TrustmarkBinder {
     private static final Logger log = LoggerFactory.getLogger(TrustmarkBinder.class);
@@ -187,12 +185,12 @@ public abstract class TrustmarkBinder {
             mostRecentlyCachedTrustmarkUris.add(trustmarkUri)
         })
 
-        TrustmarkResolver resolver = FactoryLoader.getInstance(TrustmarkResolver.class);
+        TrustmarkJsonDeserializer deserializer = new TrustmarkJsonDeserializer()
 
         mostRecentlyCachedTrustmarkUris.forEach(tmUri -> {
 
-            Trustmark trustmark = resolveTrustmark(resolver, tmUri.uri, assessmentToolUrl,
-                    recipientIdentifier)
+            // create TM from content
+            Trustmark trustmark = deserializer.deserialize(tmUri.content)
 
             trustmarks.add(trustmark)
         })
@@ -206,7 +204,7 @@ public abstract class TrustmarkBinder {
 
         final List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = new ArrayList<>();
 
-        TrustmarkResolver trustmarkpResolver = FactoryLoader.getInstance(TrustmarkResolver.class);
+        TrustmarkResolver trustmarkResolver = FactoryLoader.getInstance(TrustmarkResolver.class);
 
         trustmarksJsonArray.forEach(tm -> {
             JSONObject json = (JSONObject)tm
@@ -216,7 +214,12 @@ public abstract class TrustmarkBinder {
             // add if trustmark definition is present in current TD set
             if (tdFilter.filter(trustmarkDefinitionUrl)) {
                 String trustmarkIdentifier = json.get("identifierURL")
-                Trustmark trustmark = resolveTrustmark(trustmarkpResolver, trustmarkIdentifier, assessmentRepository, trustmarkRecipientIdentifier)
+
+                // Resolve TM
+                Trustmark trustmark = resolveTrustmark(trustmarkResolver, trustmarkIdentifier, assessmentRepository, trustmarkRecipientIdentifier)
+
+                // Resolve TSR
+                TrustmarkStatusReport tsr = resolveTrustmarkStatusReport(trustmark)
 
                 trustmarks.add(trustmark)
             }
@@ -236,7 +239,7 @@ public abstract class TrustmarkBinder {
         final Trustmark trustmark = resolver.resolve(
                 uri,
                 (tmUri, tm) -> {
-                    log.info("Repo Online, trustmark OK: ${tm.name}...");
+                    log.info("Repo Online, trustmark OK: ${tm.identifier.toString()}...");
 
                     Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
 
@@ -858,11 +861,19 @@ public abstract class TrustmarkBinder {
                     HashFactory hasher = FactoryLoader.getInstance(HashFactory.class);
                     String hash = new String(Hex.encode(hasher.hash(tsr)));
 
-                    if (!trustmarkStatusReportUri || !trustmarkStatusReportUri.hash.equals(hash)) {
-                        // TSR changed, save new tsr uri
-                        log.info("TSR has changed, caching new TSR...")
+                    if (!trustmarkStatusReportUri) {
 
-                        if (trustmarkStatusReportUri) {
+                        TrustmarkStatusReportUri newCachedTsrUri =  createTrustmarkStatusReportUri(tsr, statusUrl.toString(),
+                                hash, LocalDateTime.now())
+
+                        newCachedTsrUri.save(failOnError: true, flush: true)
+
+                    } else {
+
+                        if (!trustmarkStatusReportUri.hash.equals(hash)) {
+
+                            // TSR changed, save new tsr uri
+
                             Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
                             StringWriter jsonWriter = new StringWriter();
                             jsonSerializer.serialize(tsr, jsonWriter);
@@ -873,11 +884,6 @@ public abstract class TrustmarkBinder {
                             trustmarkStatusReportUri.retrievalTimestamp = LocalDateTime.now()
 
                             trustmarkStatusReportUri.save(failOnError: true, flush: true)
-                        } else {
-                            TrustmarkStatusReportUri newCachedTsrUri =  createTrustmarkStatusReportUri(tsr, statusUrl.toString(),
-                                    hash, LocalDateTime.now())
-
-                            newCachedTsrUri.save(failOnError: true, flush: true)
                         }
                     }
 
@@ -959,6 +965,8 @@ public abstract class TrustmarkBinder {
 
                     return null;
                 });
+
+
 
         return trustmarkStatusReport
     }

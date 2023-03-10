@@ -81,7 +81,7 @@ let renderContactForm = function (target, preFn, fn, contact) {
     html += renderInputHelper("phoneNbr", false, "Phone", "Enter Phone Number")
     html += renderInputHelper("emailAddr", true, "Email", "Enter Email Address")
 
-    renderDialogForm(target, decorateForm("Point of Contact", "contactFormId", html, "contactOk", contact.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Point of Contact", "contactFormId", html, "contactOk", contact.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("contactFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("contactOk").addEventListener("click", fn)

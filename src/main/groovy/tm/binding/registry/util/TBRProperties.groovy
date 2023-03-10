@@ -60,6 +60,22 @@ static Properties getProperties(){return RESOURCES;}
         }
     }
 
+    private static boolean getBoolean(String property){
+        return getBoolean(property, null);
+    }
+    private static boolean getBoolean(String property, boolean defaultValue){
+        String value = getString(property, null);
+        if( value ){
+            try{
+                return Boolean.parseBoolean(value);
+            }catch(Throwable T){
+                return defaultValue;
+            }
+        }else{
+            return defaultValue;
+        }
+    }
+
     static String getBaseUrl(){
         return getString(BASE_URL, "http://localhost:8082/tbr")
     }
@@ -98,6 +114,10 @@ static Properties getProperties(){return RESOURCES;}
 
     static String getPublicDocumentApi()  {
         return getProperties().getProperty(BASE_URL)+"/public/documents"
+    }
+
+    static boolean getIsApiClientAuthorizationRequired() {
+        return getBoolean("api_client_authorization_required", false)
     }
 }
 

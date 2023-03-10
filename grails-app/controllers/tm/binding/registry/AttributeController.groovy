@@ -1,20 +1,23 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
+import org.gtri.fj.data.Option
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
+
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 class AttributeController {
-
-    def springSecurityService
 
     AdministrationService administrationService
 
     def index() { }
 
     def add() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         def attributes = []
         attributes.add(administrationService.addAttribute(params.name, params.value, params.pId))
@@ -27,8 +30,9 @@ class AttributeController {
     }
 
     def delete() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Provider provider = administrationService.deleteAttributes(params.ids, params.pid)
 
@@ -39,12 +43,8 @@ class AttributeController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 

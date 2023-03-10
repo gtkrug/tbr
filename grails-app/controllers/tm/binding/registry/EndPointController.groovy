@@ -1,44 +1,28 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
-
-import java.nio.charset.StandardCharsets
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
 class EndPointController {
 
-    def springSecurityService
-
     EndpointService endpointService
 
-    RegistrantService registrantService
-
-    DeserializeService deserializeService
-
     def index() {
-        User user = springSecurityService.currentUser
-        log.info("index user -> ${user.name}")
+
     }
 
     def administer() {
-        User user = springSecurityService.currentUser
-        log.info("administer user -> ${user.name}")
-    }
 
-    def manage() {
-        User user = springSecurityService.currentUser
-        log.info("manage user -> ${user.name}")
-        [
-         user: user,
-         registrant: registrantService.findByUser(user)
-        ]
     }
 
     /**
      * list of endpoints related to a specific organization
      * @return
      */
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list()  {
 
         def endpoints = endpointService.list(params.id)
@@ -55,8 +39,9 @@ class EndPointController {
      * @return
      */
     def get()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Endpoint endpoint = endpointService.get(params.id)
         withFormat {
@@ -71,8 +56,9 @@ class EndPointController {
      * @return
      */
     def delete()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Provider provider = endpointService.delete(params.ids, params.pid)
         withFormat {
@@ -87,8 +73,9 @@ class EndPointController {
      * @return
      */
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Endpoint endpoint = endpointService.add(params.name
                                                , params.url
@@ -107,8 +94,9 @@ class EndPointController {
      * @return
      */
     def update()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Endpoint endpoint = endpointService.update(params.name
                 , params.url
@@ -127,8 +115,9 @@ class EndPointController {
      * @return
      */
     def etypes()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         List<EndpointType> types = EndpointType.values().toList()
         withFormat {

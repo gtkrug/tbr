@@ -2,9 +2,12 @@ package tm.binding.registry
 
 import grails.converters.JSON
 import grails.converters.XML
-import grails.plugin.springsecurity.SpringSecurityUtils
 import grails.web.mapping.LinkGenerator
 import org.apache.commons.lang.StringUtils
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import tm.binding.registry.util.TBRProperties
 import tm.binding.registry.util.UrlEncodingUtil
 
@@ -12,6 +15,7 @@ import javax.servlet.ServletException
 
 class PublicApiController {
 
+    def administrationService
     LinkGenerator grailsLinkGenerator
 
     final String STATUS = "/status/"
@@ -45,8 +49,14 @@ class PublicApiController {
             throw new ServletException("No such binary object: ${doc.binaryObjectId}")
         }
 
-        boolean  isAdmin = SpringSecurityUtils.ifAllGranted("ROLE_ADMIN")
         boolean isPublic = doc.publicDocument
+
+        boolean  isAdmin = false
+        if (administrationService.isLoggedIn()) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            isAdmin = userOption.isSome() && userOption.some().isAdmin()
+        }
 
         if (isAdmin || isPublic) {
             response.setHeader("Content-length", binaryObject.fileSize.toString())
@@ -108,6 +118,7 @@ class PublicApiController {
      * find public documents
      * @return
      */
+    @PreAuthorize('permitAll()')
     def findSigningCertificates() {
         log.info("Finding signing certificates ...")
 
@@ -153,8 +164,14 @@ class PublicApiController {
     def status() {
         log.info("TBR status ...")
 
+        String email = TBRProperties.getAdminEmail()
+
         def tbrStatus = [
-                status : "OK"
+                status: "OK",
+                api_client_authorization_required:
+                        TBRProperties.getIsApiClientAuthorizationRequired() ? "true" : "false",
+                client_authorization_configuration_help_hint: "contact the administrator of this tool at ${email} for help in getting your " +
+                        "client authorized."
         ]
 
         withFormat {

@@ -55,7 +55,7 @@ let renderPartnerOrganizationTipForm = function (target, preFn, fn, partnerOrgan
     let html = ``
     html += renderInputHelper("partnerSystemsTipIdentifier", true, "Identifier", "Enter Partner Organization TIP Identifier")
 
-    renderDialogForm(target, decorateForm("Partner Organization TIP Identifier", "partnerOrganizationTipFormId", html, "partnerOrganizationTipOk", partnerOrganizationTip.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Partner Organization TIP Identifier", "partnerOrganizationTipFormId", html, "partnerOrganizationTipOk", partnerOrganizationTip.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("partnerOrganizationTipFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("partnerOrganizationTipOk").addEventListener("click", fn)

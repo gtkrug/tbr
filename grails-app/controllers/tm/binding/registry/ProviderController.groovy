@@ -2,11 +2,14 @@ package tm.binding.registry
 
 import grails.converters.JSON
 import grails.gorm.transactions.Transactional
-import grails.plugin.springsecurity.annotation.Secured
 import org.apache.commons.lang.StringUtils
 import org.dom4j.DocumentException
 import org.grails.web.json.JSONArray
 import grails.web.mapping.LinkGenerator
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import sun.security.x509.X500Name
 import tm.binding.registry.util.TBRProperties
 
@@ -18,13 +21,11 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 @Transactional
 class ProviderController {
 
     LinkGenerator grailsLinkGenerator
-
-    def springSecurityService
 
     def deserializeService
 
@@ -40,7 +41,8 @@ class ProviderController {
 
     def index() { }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+
+    @PreAuthorize('permitAll()')
     def view()  {
         log.info("** ProviderController::view id -> ${params.id}")
         log.info(params.id)
@@ -78,10 +80,10 @@ class ProviderController {
 
         [provider: provider, successMessage: messageMap["SUCCESS"],
          warningMessage: messageMap["WARNING"], errorMessage: messageMap["ERROR"],
-         isLoggedIn: springSecurityService.isLoggedIn()]
+         isLoggedIn: SecurityContextHolder.getContext().getAuthentication().authenticated]
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def signCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
@@ -102,7 +104,7 @@ class ProviderController {
         return render(contentType: contentType, text: text)
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def encryptCertificate()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
@@ -124,7 +126,7 @@ class ProviderController {
     }
 
     // view metadata xml
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def saml2Metadata()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
@@ -167,8 +169,9 @@ class ProviderController {
     }
 
     def upload() {
-        User user = springSecurityService.currentUser
-        log.info("upload user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("upload user -> ${userOption.some().name}")
 
         Provider provider = providerService.get(params.providerId)
 
@@ -207,8 +210,9 @@ class ProviderController {
     }
 
     def uploadCertificate() {
-        User user = springSecurityService.currentUser
-        log.info("upload user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("upload user -> ${userOption.some().name}")
 
         Provider provider = providerService.get(params.providerId)
 
@@ -261,12 +265,8 @@ class ProviderController {
         render jsonResponse as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def certificateDetails() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 
@@ -314,8 +314,9 @@ class ProviderController {
     }
 
     def uploadOidcMetadata() {
-        User user = springSecurityService.currentUser
-        log.info("upload user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("upload user -> ${userOption.some().name}")
 
         Provider provider = providerService.get(params.providerId)
 
@@ -395,7 +396,7 @@ class ProviderController {
     }
 
     // view oidc metadata json
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def oidcMetadata()  {
         log.info(params.id)
         Provider provider = providerService.get(params.id)
@@ -412,27 +413,25 @@ class ProviderController {
     }
 
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Provider provider = providerService.add(params.type, params.name, params.entity, params.orgid)
         render provider as JSON
     }
 
     def delete()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Organization organization = providerService.delete(params.ids, params.oid)
         render organization as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list()  {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 
@@ -447,12 +446,9 @@ class ProviderController {
         render results as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+
+    @PreAuthorize('permitAll()')
     def listIdpAttributes() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Provider provider = Provider.get(params.id)
 
@@ -461,12 +457,8 @@ class ProviderController {
         render idpAttributes as JSON
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def protocolDetails() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 
@@ -511,10 +503,6 @@ class ProviderController {
     }
 
     def types()  {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         def providerTypes = providerService.types()
 
@@ -526,6 +514,7 @@ class ProviderController {
         render jsonArray as JSON
     }
 
+    @PreAuthorize('permitAll()')
     def trustmarkRecipientIdentifiers() {
         log.debug("trustmarkRecipientIdentifiers -> ${params.pid}")
 
@@ -585,8 +574,9 @@ class ProviderController {
     }
 
     def updateTrustmarkRecipientIdentifier() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         TrustmarkRecipientIdentifier trid = providerService.updateTrustmarkRecipientIdentifier(params.id, params.trustmarkRecipientIdentifier, params.providerId)
 
@@ -598,7 +588,7 @@ class ProviderController {
     }
 
     // partner systems tips
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def partnerSystemsTips()  {
         log.debug("partnerSystemsTips -> ${params.pid}")
 
@@ -619,8 +609,9 @@ class ProviderController {
     }
 
     def addPartnerSystemsTip() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         log.info("add partner systems tip identifier -> ${params.identifier}")
 
@@ -681,19 +672,14 @@ class ProviderController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def listContacts()  {
 
-        boolean isAdmin = false
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-
-            isAdmin = user.isAdmin()
-        }
+        // compute editable based on current user role and whether the use is assigned an organization
+        boolean isReadOnly = administrationService.isReadOnly( Long.parseLong(params.id))
 
         Map results = [:]
-        results.put("editable", isAdmin)
+        results.put("editable", !isReadOnly)
 
         def orgContacts = []
 
@@ -766,7 +752,6 @@ class ProviderController {
     }
 
     def bindTrustmarks() {
-        User user = springSecurityService.currentUser
         log.info("** bindTrustmarks...")
 
         providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "About to start the trustmark binding process...")
@@ -798,7 +783,6 @@ class ProviderController {
     }
 
     def initTrustmarkBindingState() {
-        User user = springSecurityService.currentUser
 
         providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "About to start the trustmark binding process...")
         providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "RUNNING")
@@ -812,7 +796,6 @@ class ProviderController {
     }
 
     def cancelTrustmarkBindings() {
-        User user = springSecurityService.currentUser
 
         // Check if operation is active, interrupt operation and wait for the thread to finish
         if (providerService.isExecuting(ProviderService.BIND_TRUSTMARKS_EXECUTING_VAR)) {
@@ -834,7 +817,6 @@ class ProviderController {
     }
 
     def updateTrustmarkBindingDetails() {
-        User user = springSecurityService.currentUser
 
         Integer providerId = Integer.parseInt(params.id)
 

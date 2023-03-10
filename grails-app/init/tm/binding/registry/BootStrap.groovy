@@ -12,7 +12,6 @@ import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-import java.util.regex.Pattern
 
 class BootStrap {
 
@@ -66,32 +65,18 @@ class BootStrap {
     }
 
     private void checkSecurityInit() {
-        Role.withTransaction {
-            log.debug "Checking security..."
-            List<Role> roles = Role.findAll()
-            if (roles.size() == 0) {
-                log.info "Creating security roles..."
-                log.debug("Adding role[@|cyan ${Role.ROLE_ADMIN}|@]...")
-                new Role(authority: Role.ROLE_ADMIN).save(failOnError: true)
-                log.debug("Adding role[@|cyan ${Role.ROLE_ORG_ADMIN}|@]...")
-                new Role(authority: Role.ROLE_ORG_ADMIN).save(failOnError: true)
-            } else {
-                log.debug "Successfully found @|green ${roles.size()}|@ roles."
-            }
-        }
-
-        if (User.count() == 0) {
-            log.info "Creating default users..."
-            User.withTransaction {
-                createSingleUser()
+        if (Organization.count() == 0) {
+            log.info "Creating default organization..."
+            Organization.withTransaction {
+                createDefaultOrganization()
             }
         } else {
-            log.debug("Found @|green ${User.count()}|@ users in the database already.")
+            log.debug("Found @|green ${Organization.count()}|@ organizations in the database already.")
         }
     }
 
 
-    private void createSingleUser() {
+    private void createDefaultOrganization() {
         // organization
         Organization organization =  new Organization(
                 name: grailsApplication.config.org.name,
@@ -110,26 +95,6 @@ class BootStrap {
                 organization: organization
         )
         contact.save(true)
-
-        // user
-        User user = new User(
-                // user
-                username: grailsApplication.config.tbr.org.user,
-                password: grailsApplication.config.tbr.org.pswd,
-                name: grailsApplication.config.tbr.org.username,
-                accountExpired: false,
-                accountLocked: false,
-                passwordExpired: false,
-                contact: contact
-        )
-        user.save(failOnError: true)
-
-        String rolesForThisUser = "ROLE_ADMIN"
-
-        Role role = Role.findByAuthority(rolesForThisUser)
-        UserRole.create(user, role, true)
-
-        log.debug "Successfully created user: @|cyan " + user.name + "|@ <@|magenta " + user.username + "|@>"
     }
 
     private void createDefaultSigningCertificate (Properties props){

@@ -1,3 +1,4 @@
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <!DOCTYPE html>
 <html>
     <head>
@@ -144,63 +145,65 @@
                 </h2>
 
                 <div class="collapse" id="collapseProtocols">
-                    <sec:ifLoggedIn>
-                        <div id="uploadStatusMessage" class="pt-2">
-                            <g:if test="${successMessage != null && !successMessage.isEmpty()}">
-                                <div class="alert alert-primary">${successMessage}</div>
-                            </g:if>
-                            <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
-                                <div class="alert alert-warning">${warningMessage}</div>
-                            </g:if>
-                            <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
-                                <div class="alert alert-danger">${errorMessage}</div>
-                            </g:if>
-                        </div>
-
-                        <div class="border rounded card">
-
-                            <div class="card-header fw-bold">
-                                <div class="row">
-                                    <div class="col-12">Upload</div>
-                                </div>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="row pb-2">
-                                    <label for="filename" class="col-3 col-form-label">Metadata File</label>
-
-                                    <div class="col-9">
-                                        <form id="upload">
-                                            <input name="id" type="hidden" value="${provider.organization.id}"/>
-                                            <input name="providerId" type="hidden" value="${provider.id}"/>
-                                            <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
-                                            <input name="filename" type="file" class="form-control" accept=".xml"/>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <g:if test="${!provider.entityId.empty}">
-                                    <div class="row pb-2">
-                                        <div class="col-3 col-form-label"></div>
-
-                                        <div class="col-9">
-                                            <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="A metadata file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
-                                        </div>
-                                    </div>
+                    <sec:authorize access="isAuthenticated()">
+                        <sec:authorize access="hasAnyAuthority('tbr-admin', 'tbr-org-admin')">
+                            <div id="uploadStatusMessage" class="pt-2">
+                                <g:if test="${successMessage != null && !successMessage.isEmpty()}">
+                                    <div class="alert alert-primary">${successMessage}</div>
+                                </g:if>
+                                <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
+                                    <div class="alert alert-warning">${warningMessage}</div>
+                                </g:if>
+                                <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
+                                    <div class="alert alert-danger">${errorMessage}</div>
                                 </g:if>
                             </div>
 
-                            <div class="card-footer text-start">
-                                <div class="row">
-                                    <div class="col-3"></div>
+                            <div class="border rounded card">
 
-                                    <div class="col-9">
-                                        <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                <div class="card-header fw-bold">
+                                    <div class="row">
+                                        <div class="col-12">Upload</div>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="row pb-2">
+                                        <label for="filename" class="col-3 col-form-label">Metadata File</label>
+
+                                        <div class="col-9">
+                                            <form id="upload">
+                                                <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                                <input name="providerId" type="hidden" value="${provider.id}"/>
+                                                <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
+                                                <input name="filename" type="file" class="form-control" accept=".xml"/>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <g:if test="${!provider.entityId.empty}">
+                                        <div class="row pb-2">
+                                            <div class="col-3 col-form-label"></div>
+
+                                            <div class="col-9">
+                                                <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="A metadata file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
+                                            </div>
+                                        </div>
+                                    </g:if>
+                                </div>
+
+                                <div class="card-footer text-start">
+                                    <div class="row">
+                                        <div class="col-3"></div>
+
+                                        <div class="col-9">
+                                            <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </sec:ifLoggedIn>
+                        </sec:authorize>
+                    </sec:authorize>
 
                     <div id="protocol-form" class="pt-4"></div>
 
@@ -232,63 +235,65 @@
                 </h2>
 
                 <div class="collapse" id="collapseProtocols">
-                    <sec:ifLoggedIn>
-                        <div id="uploadStatusMessage" class="pt-2">
-                            <g:if test="${successMessage != null && !successMessage.isEmpty()}">
-                                <div class="alert alert-primary">${successMessage}</div>
-                            </g:if>
-                            <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
-                                <div class="alert alert-warning">${warningMessage}</div>
-                            </g:if>
-                            <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
-                                <div class="alert alert-danger">${errorMessage}</div>
-                            </g:if>
-                        </div>
-
-                        <div class="border rounded card">
-                            <div class="card-header fw-bold">
-                                <div class="row">
-                                    <div class="col-12">Upload</div>
-                                </div>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="row pb-2">
-
-                                    <label for="filename" class="col-3 col-form-label">Certificate File</label>
-
-                                    <div class="col-9">
-                                        <form id="upload">
-                                            <input name="id" type="hidden" value="${provider.organization.id}"/>
-                                            <input name="providerId" type="hidden" value="${provider.id}"/>
-                                            <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
-                                            <input name="filename" type="file" class="form-control" accept=".pem"/>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <g:if test="${provider.systemCertificate && !provider.systemCertificate.empty}">
-                                    <div class="row pb-2">
-                                        <div class="col-3 col-form-label"></div>
-
-                                        <div class="col-9">
-                                            <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="A certificate file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
-                                        </div>
-                                    </div>
+                    <sec:authorize access="isAuthenticated()">
+                        <sec:authorize access="hasAnyAuthority('tbr-admin', 'tbr-org-admin')">
+                            <div id="uploadStatusMessage" class="pt-2">
+                                <g:if test="${successMessage != null && !successMessage.isEmpty()}">
+                                    <div class="alert alert-primary">${successMessage}</div>
+                                </g:if>
+                                <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
+                                    <div class="alert alert-warning">${warningMessage}</div>
+                                </g:if>
+                                <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
+                                    <div class="alert alert-danger">${errorMessage}</div>
                                 </g:if>
                             </div>
 
-                            <div class="card-footer text-start">
-                                <div class="row">
-                                    <div class="col-3"></div>
+                            <div class="border rounded card">
+                                <div class="card-header fw-bold">
+                                    <div class="row">
+                                        <div class="col-12">Upload</div>
+                                    </div>
+                                </div>
 
-                                    <div class="col-9">
-                                        <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                <div class="card-body">
+                                    <div class="row pb-2">
+
+                                        <label for="filename" class="col-3 col-form-label">Certificate File</label>
+
+                                        <div class="col-9">
+                                            <form id="upload">
+                                                <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                                <input name="providerId" type="hidden" value="${provider.id}"/>
+                                                <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
+                                                <input name="filename" type="file" class="form-control" accept=".pem"/>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <g:if test="${provider.systemCertificate && !provider.systemCertificate.empty}">
+                                        <div class="row pb-2">
+                                            <div class="col-3 col-form-label"></div>
+
+                                            <div class="col-9">
+                                                <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="A certificate file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
+                                            </div>
+                                        </div>
+                                    </g:if>
+                                </div>
+
+                                <div class="card-footer text-start">
+                                    <div class="row">
+                                        <div class="col-3"></div>
+
+                                        <div class="col-9">
+                                            <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </sec:ifLoggedIn>
+                        </sec:authorize>
+                    </sec:authorize>
 
                     <div id="certificate-form" class="pt-4"></div>
                 </div>
@@ -316,63 +321,65 @@
                 </h2>
 
                 <div class="collapse" id="collapseProtocols">
-                    <sec:ifLoggedIn>
-                        <div id="uploadStatusMessage" class="pt-2">
-                            <g:if test="${successMessage != null && !successMessage.isEmpty()}">
-                                <div class="alert alert-primary">${successMessage}</div>
-                            </g:if>
-                            <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
-                                <div class="alert alert-warning">${warningMessage}</div>
-                            </g:if>
-                            <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
-                                <div class="alert alert-danger">${errorMessage}</div>
-                            </g:if>
-                        </div>
-
-                        <div class="border rounded card">
-                            <div class="card-header fw-bold">
-                                <div class="row">
-                                    <div class="col-12">Upload OIDC Metadata File</div>
-                                </div>
-                            </div>
-
-                            <div class="card-body">
-                                <div class="row pb-2">
-
-                                    <label for="filename" class="col-3 col-form-label">Metadata File</label>
-
-                                    <div class="col-9">
-                                        <form id="upload">
-                                            <input name="id" type="hidden" value="${provider.organization.id}"/>
-                                            <input name="providerId" type="hidden" value="${provider.id}"/>
-                                            <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
-                                            <input name="filename" type="file" class="form-control" accept=".json"/>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <g:if test="${provider.openIdConnectMetadata && !provider.openIdConnectMetadata.empty}">
-                                    <div class="row pb-2">
-                                        <div class="col-3 col-form-label"></div>
-
-                                        <div class="col-9">
-                                            <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="An OIDC metadata file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
-                                        </div>
-                                    </div>
+                    <sec:authorize access="isAuthenticated()">
+                        <sec:authorize access="hasAnyAuthority('tbr-admin', 'tbr-org-admin')">
+                            <div id="uploadStatusMessage" class="pt-2">
+                                <g:if test="${successMessage != null && !successMessage.isEmpty()}">
+                                    <div class="alert alert-primary">${successMessage}</div>
+                                </g:if>
+                                <g:if test="${warningMessage != null && !warningMessage.isEmpty()}">
+                                    <div class="alert alert-warning">${warningMessage}</div>
+                                </g:if>
+                                <g:if test="${errorMessage != null && !errorMessage.isEmpty()}">
+                                    <div class="alert alert-danger">${errorMessage}</div>
                                 </g:if>
                             </div>
 
-                            <div class="card-footer text-start">
-                                <div class="row">
-                                    <div class="col-3"></div>
+                            <div class="border rounded card">
+                                <div class="card-header fw-bold">
+                                    <div class="row">
+                                        <div class="col-12">Upload OIDC Metadata File</div>
+                                    </div>
+                                </div>
 
-                                    <div class="col-9">
-                                        <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                <div class="card-body">
+                                    <div class="row pb-2">
+
+                                        <label for="filename" class="col-3 col-form-label">Metadata File</label>
+
+                                        <div class="col-9">
+                                            <form id="upload">
+                                                <input name="id" type="hidden" value="${provider.organization.id}"/>
+                                                <input name="providerId" type="hidden" value="${provider.id}"/>
+                                                <input name="isIdp" type="hidden" value="${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}"/>
+                                                <input name="filename" type="file" class="form-control" accept=".json"/>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <g:if test="${provider.openIdConnectMetadata && !provider.openIdConnectMetadata.empty}">
+                                        <div class="row pb-2">
+                                            <div class="col-3 col-form-label"></div>
+
+                                            <div class="col-9">
+                                                <input type="text" class="form-control alert alert-warning" style="padding: 5.25px 10.25px; margin: 0px;" value="An OIDC metadata file has already been uploaded. Uploading again will overwrite the currently loaded data."/>
+                                            </div>
+                                        </div>
+                                    </g:if>
+                                </div>
+
+                                <div class="card-footer text-start">
+                                    <div class="row">
+                                        <div class="col-3"></div>
+
+                                        <div class="col-9">
+                                            <button class="btn btn-primary" id="uploadButton">Upload</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </sec:ifLoggedIn>
+                        </sec:authorize>
+                    </sec:authorize>
 
                     <div id="openid-connect-form" class="pt-4"></div>
                 </div>
@@ -436,7 +443,7 @@
                 </div>
             </g:if>
 
-            <sec:ifLoggedIn>
+            <sec:authorize access="isAuthenticated()">
                 <h2 class="pt-4">Trustmark Recipient Identifiers</h2>
 
                 <div id="trustmark-recipient-identifier-message"></div>
@@ -444,7 +451,7 @@
                 <table class="table table-condensed table-striped table-bordered my-0" id="trustmark-recipient-identifier-table"></table>
 
                 <div id="trustmark-recipient-identifier-form" class="pt-4" style="display:none"></div>
-            </sec:ifLoggedIn>
+            </sec:authorize>
 
             <h2 class="pt-4">Partner System Trust Interoperability Profiles</h2>
 
@@ -470,14 +477,16 @@
 
                     <div class="col-1 d-flex justify-content-end">
 
-                        <sec:ifLoggedIn>
-                            <g:if test="${provider.trustmarks.size() == 0}">
-                                <button class="btn btn-primary bind-trustmark-button" id="btn-bind-trustmarks" style="white-space: nowrap">Bind Trustmarks</button>
-                            </g:if>
-                            <g:else>
-                                <button class="btn btn-primary bind-trustmark-button" id="btn-refresh-trustmark-bindings" style="white-space: nowrap">Refresh Trustmark Bindings</button>
-                            </g:else>
-                        </sec:ifLoggedIn>
+                        <sec:authorize access="hasAnyAuthority('tbr-admin', 'tbr-org-admin')">
+                            <sec:authorize access="isAuthenticated()">
+                                <g:if test="${provider.trustmarks.size() == 0}">
+                                    <button class="btn btn-primary bind-trustmark-button" id="btn-bind-trustmarks" style="white-space: nowrap">Bind Trustmarks</button>
+                                </g:if>
+                                <g:else>
+                                    <button class="btn btn-primary bind-trustmark-button" id="btn-refresh-trustmark-bindings" style="white-space: nowrap">Refresh Trustmark Bindings</button>
+                                </g:else>
+                            </sec:authorize>
+                        </sec:authorize>
 
                         <button
                                 class="btn btn-primary ms-2"

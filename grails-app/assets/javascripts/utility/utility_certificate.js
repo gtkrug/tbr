@@ -20,5 +20,5 @@ let renderCertificateForm = function (target, certificate) {
             html += renderTextHelper("systemCertificateUrl", false, "X509 Certificate", `<a href = "${certificate.records.systemCertificateUrl}">${certificate.records.systemCertificateUrl}</a>`)
         }
     }
-    renderDialogForm(target, decorateForm("Certificate Details", "certificateFormId", html, undefined, certificate.records.id === 0 ? "Add" : "Save", false))
+    renderDialogForm(target, decorateForm("Certificate Details", "certificateFormId", html, undefined, certificate.records.id === 0 ? "Add" : "Save", false, 'false'))
 }

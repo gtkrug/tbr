@@ -1,19 +1,25 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
+import org.gtri.fj.data.Option
+
+//import grails.plugin.springsecurity.annotation.Secured
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
 class TagController {
 
-    def springSecurityService
+//    def springSecurityService
 
     AdministrationService administrationService
 
     def index() { }
 
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         def tags = []
         tags.add(administrationService.addTag(params.pId, params.tag))
@@ -26,8 +32,9 @@ class TagController {
     }
 
     def delete() {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Provider provider = administrationService.deleteTags(params.ids, params.pid)
 
@@ -38,12 +45,8 @@ class TagController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list() {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         Map results = [:]
 
