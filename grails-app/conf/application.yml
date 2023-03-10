@@ -115,8 +115,8 @@ dataSource:
     jmxExport: true
     driverClassName: com.mysql.cj.jdbc.Driver
     dialect: org.hibernate.dialect.MySQL5InnoDBDialect
-    username: admin
-    password: admin11!
+    username: tbr_user
+    password: tbr_pw_11
 
 ---
 
@@ -131,11 +131,11 @@ environments:
 
 #           During development need to specify the database host as 'localhost' since the database migration command scripts
 #           need access to the database server.
-            url: jdbc:mysql://localhost:3376/binding_registry?verifyServerCertificate=false&useSSL=false&allowPublicKeyRetrieval=true
+            url: jdbc:mysql://tbrDatabase:3306/tbr_db?verifyServerCertificate=false&useSSL=false&allowPublicKeyRetrieval=true
     production:
         dataSource:
             dbCreate: none
-            url: jdbc:mysql://tbr_database:3306/binding_registry?verifyServerCertificate=false&useSSL=false&allowPublicKeyRetrieval=true
+            url: jdbc:mysql://tbrDatabase:3306/tbr_db?verifyServerCertificate=false&useSSL=false&allowPublicKeyRetrieval=true
             properties:
                 jmxEnabled: true
                 initialSize: 5
