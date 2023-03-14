@@ -64,7 +64,7 @@ let renderOrganizationForm = function (target, preFn, fn, organization, hide, re
         document.getElementById("organizationFormId").addEventListener("click", () => hideIt(target))
     }
 
-    if (readOnly === 'false') {
+    if (readOnly === false) {
         document.getElementById("organizationOk").addEventListener("click", fn)
     }
 
