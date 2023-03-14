@@ -17,4 +17,5 @@ databaseChangeLog = {
     include file: 'allow-nullable-contacts.groovy'
     include file: 'remove-registrant-reference-from-organization.groovy'
     include file: 'add-client-registration-model.groovy'
+    include file: 'incorrect-blob-type-correction.groovy'
 }
