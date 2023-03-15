@@ -56,7 +56,7 @@ let renderAttributeForm = function (target, preFn, fn, attribute) {
     html += renderInputHelper("attrName", true, "Name", "Enter Attribute Name")
     html += renderInputHelper("attrValue", true, "Value", "Enter Attribute Value")
 
-    renderDialogForm(target, decorateForm("System", "attributeFormId", html, "attributeOk", attribute.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("System", "attributeFormId", html, "attributeOk", attribute.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("attributeFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("attributeOk").addEventListener("click", fn)

@@ -10,6 +10,7 @@
 //= require jquery-ui-1.12.1.min
 //= require plupload-2.1.1/js/plupload.full.min.js
 //= require plupload-2.1.1/js/moxie.min.js
+//= require moment-2.29.1/moment
 //= require pagination
 //= require tbr
 //= require utils

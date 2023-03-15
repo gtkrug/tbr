@@ -1,17 +1,15 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.SpringSecurityUtils
-import grails.plugin.springsecurity.annotation.Secured
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
-@Secured(["ROLE_ADMIN"])
+@PreAuthorize('hasAuthority("tbr-admin")')
 class ContactController {
 
-    def springSecurityService
-
     ContactService contactService
-
-    RegistrantService registrantService
 
     AdministrationService administrationService
 
@@ -19,16 +17,9 @@ class ContactController {
 
     def administer() { }
 
-    def manage() {
-        User user = springSecurityService.currentUser
-        log.info("manage user -> ${user.name}")
-
-        [registrant: registrantService.findByUser(user)]
-    }
-
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+        log.info("user -> ${userOption.some().name}")
 
         Contact contact = contactService.add(params.lname
                 , params.fname
@@ -50,8 +41,8 @@ class ContactController {
     }
 
     def get()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+        log.info("user -> ${userOption.some().name}")
 
         Contact contact = contactService.get(params.id)
 
@@ -63,8 +54,8 @@ class ContactController {
     }
 
     def delete()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+        log.info("user -> ${userOption.some().name}")
 
         Contact contact = contactService.delete(params.ids, params.pid)
 
@@ -76,8 +67,8 @@ class ContactController {
     }
 
     def update()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+        log.info("user -> ${userOption.some().name}")
 
         Contact contact = contactService.update(params.id, params.lname, params.fname, params.email, params.phone, params.type)
 
@@ -88,18 +79,14 @@ class ContactController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list()  {
-        boolean isAdmin = false
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
 
-            isAdmin = user.isAdmin()
-        }
+        // compute editable based on current user role and whether the use is assigned an organization
+        boolean isReadOnly = administrationService.isReadOnly( Long.parseLong(params.id))
 
         Map results = [:]
-        results.put("editable", isAdmin)
+        results.put("editable", !isReadOnly)
 
         def contacts = []
 
@@ -121,8 +108,8 @@ class ContactController {
     }
 
     def types()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+        log.info("user -> ${userOption.some().name}")
 
         def types = contactService.types()
 

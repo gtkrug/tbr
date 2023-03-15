@@ -1,3 +1,4 @@
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
 <!DOCTYPE html>
 <html>
     <head>
@@ -5,6 +6,8 @@
 
         <script type="text/javascript">
             const ORGANIZATION_ID = "${organization.id}"
+
+            const IS_READ_ONLY = "${isReadOnly}"
 
             const ORGANIZATION_VIEW = "${createLink(controller: 'organization', action: 'view')}/"
             const ORGANIZATION_GET = "${createLink(controller:'organization', action: 'get')}"
@@ -104,7 +107,7 @@
 
             <div id="contact-form" class="pt-4" style="display: none"></div>
 
-        <sec:ifLoggedIn>
+        <sec:authorize access="isAuthenticated()">
 
             <h2 class="pt-4">Assessment Tool URLs</h2>
 
@@ -130,7 +133,7 @@
 
             <div id="partner-organization-tip-form" class="pt-4" style="display: none"></div>
 
-        </sec:ifLoggedIn>
+        </sec:authorize>
 
         <h2 class="pt-4">Systems</h2>
 
@@ -148,14 +151,16 @@
 
                 <div class="col-1 d-flex justify-content-end">
 
-                    <sec:ifLoggedIn>
-                        <g:if test="${organization.trustmarks.size() == 0}">
-                            <button class="btn btn-primary bind-trustmark-button" id="btn-bind-trustmarks" style="white-space: nowrap">Bind Trustmarks</button>
-                        </g:if>
-                        <g:else>
-                            <button class="btn btn-primary bind-trustmark-button" id="btn-refresh-trustmark-bindings" style="white-space: nowrap">Refresh Trustmark Bindings</button>
-                        </g:else>
-                    </sec:ifLoggedIn>
+                    <sec:authorize access="isAuthenticated()">
+                        <sec:authorize access="hasAnyAuthority('tbr-admin', 'tbr-org-admin')">
+                            <g:if test="${organization.trustmarks.size() == 0}">
+                                <button class="btn btn-primary bind-trustmark-button" id="btn-bind-trustmarks" style="white-space: nowrap">Bind Trustmarks</button>
+                            </g:if>
+                            <g:else>
+                                <button class="btn btn-primary bind-trustmark-button" id="btn-refresh-trustmark-bindings" style="white-space: nowrap">Refresh Trustmark Bindings</button>
+                            </g:else>
+                        </sec:authorize>
+                    </sec:authorize>
 
                     <button
                             class="btn btn-primary ms-2"

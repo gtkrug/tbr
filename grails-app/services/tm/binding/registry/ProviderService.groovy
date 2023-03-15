@@ -1,20 +1,8 @@
 package tm.binding.registry
 
-import edu.gatech.gtri.trustmark.v1_0.FactoryLoader
-import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
-import edu.gatech.gtri.trustmark.v1_0.impl.model.TrustInteroperabilityProfileReferenceImpl
-import edu.gatech.gtri.trustmark.v1_0.impl.model.TrustmarkDefinitionRequirementImpl
-import edu.gatech.gtri.trustmark.v1_0.io.TrustInteroperabilityProfileResolver
-import edu.gatech.gtri.trustmark.v1_0.model.AbstractTIPReference
-import edu.gatech.gtri.trustmark.v1_0.model.TrustInteroperabilityProfile
 import grails.gorm.transactions.Transactional
-import grails.web.mapping.LinkGenerator
 import org.apache.commons.lang.StringUtils
-import org.json.JSONArray
-import org.json.JSONObject
-import tm.binding.registry.ProviderType
 import org.grails.web.util.WebUtils
-import tm.binding.registry.util.UrlEncodingUtil
 
 
 @Transactional
@@ -375,7 +363,7 @@ class ProviderService {
             }
         }
         catch (Throwable t) {
-            log.error("Error encountered during the trustmark bind all process: ${t.message}");
+            log.error("Error encountered during the trustmark bind all for systems process: ${t.message}", t);
         }
 
         long overallStopTime = System.currentTimeMillis()

@@ -1,13 +1,10 @@
 package tm.binding.registry
 
-
 class UrlPrintingInterceptor {
 
     UrlPrintingInterceptor(){
         matchAll()
     }
-
-    def springSecurityService
 
     boolean before(){
         try {

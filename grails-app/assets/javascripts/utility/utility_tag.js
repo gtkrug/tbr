@@ -56,7 +56,7 @@ let renderTagForm = function (target, preFn, fn, tag) {
     let html = ``
     html += renderInputHelper("tagName", true, "Name", "Enter Tag Name")
 
-    renderDialogForm(target, decorateForm("Keyword Tag", "tagFormId", html, "tagOk", tag.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Keyword Tag", "tagFormId", html, "tagOk", tag.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("tagFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("tagOk").addEventListener("click", fn)

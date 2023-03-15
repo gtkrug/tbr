@@ -3,23 +3,17 @@ package tm.binding.registry
 import grails.converters.JSON
 import grails.converters.XML
 import grails.gorm.transactions.Transactional
-import grails.plugin.springsecurity.SpringSecurityUtils
-import grails.plugin.springsecurity.annotation.Secured
 import org.apache.commons.lang.StringUtils
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import sun.security.x509.X500Name
-
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import javax.servlet.ServletException
-
-import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import java.security.cert.CertificateFactory
 
 @Transactional
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 class SigningCertificatesController {
 
     // certificate valid period in years
@@ -28,7 +22,7 @@ class SigningCertificatesController {
     // key length
     private static List<Integer> KEY_LENGTH = [2048, 4096]
 
-    def springSecurityService;
+    def administrationService
 
     def signingCertificateService
 
@@ -36,7 +30,7 @@ class SigningCertificatesController {
         redirect(action:'list')
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list(){
         log.debug("list -> ${params.name}")
 
@@ -49,13 +43,17 @@ class SigningCertificatesController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def administer() {
         log.debug("SigningCertificatesController::administer...")
 
-        // redirect to public view if org admin role
-        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
-            return redirect(controller:'publicApi', action:'signingCertificates')
+        if (administrationService.isLoggedIn()) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            // redirect to public view if org admin role
+            if (userOption.isSome() && SecurityContextHolder.getContext().getAuthentication().authenticated && userOption.some().isOrgAdmin()) {
+                return redirect(controller: 'publicApi', action: 'signingCertificates')
+            }
         }
 
         [certificateValidPeriodIntervalList: CERTIFICATE_VALID_PERIOD_INTERVALS, keyLengthList: KEY_LENGTH,]
@@ -95,13 +93,17 @@ class SigningCertificatesController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def view() {
         log.info("Viewing certificate: [${params.id}]...")
 
-        // redirect to public view if org admin role
-        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
-            return redirect(controller:'publicApi', action:'signingCertificates', id: params.id)
+        if (administrationService.isLoggedIn()) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            // redirect to public view if org admin role
+            if (userOption.isSome() && SecurityContextHolder.getContext().getAuthentication().authenticated && userOption.some().isOrgAdmin()) {
+                return redirect(controller: 'publicApi', action: 'signingCertificates', id: params.id)
+            }
         }
 
         // SigningCertificate domain object
@@ -194,7 +196,8 @@ class SigningCertificatesController {
      */
     @Transactional
     def revoke() {
-        User user = springSecurityService.currentUser
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
         if( StringUtils.isEmpty(params.id) )
             throw new ServletException("Missing required parameter 'id'.")
         if( StringUtils.isEmpty(params.reason) )
@@ -206,7 +209,7 @@ class SigningCertificatesController {
 
         certificate.status = SigningCertificateStatus.REVOKED
         certificate.revokedReason = params.reason
-        certificate.revokingUser = user
+        certificate.revokingUser = userOption.some()
         certificate.revokedTimestamp = Calendar.getInstance().getTime()
         certificate.save(failOnError: true, flush: true)
 
@@ -227,7 +230,7 @@ class SigningCertificatesController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def download() {
 
         if( StringUtils.isBlank(params.id) ){

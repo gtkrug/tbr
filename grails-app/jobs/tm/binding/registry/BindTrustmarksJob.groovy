@@ -5,8 +5,8 @@ import org.quartz.JobExecutionContext
 import tm.binding.registry.util.TBRCronJobPeriod
 
 /**
- * Binds trustmarks to registered system providers based on conformance target trust interoperability profiles
- * from registered assessment tools.
+ * Binds trustmarks to registered organizations and to system providers based on conformance target trust
+ * interoperability profiles from registered assessment tools.
  * Created by robert on 2/3/21.
  */
 @Transactional
@@ -27,13 +27,17 @@ class BindTrustmarksJob {
     //==================================================================================================================
     // Job Specifics
     //==================================================================================================================
+//    def sessionRequired = true
+
     static concurrent = false
-    def description = "Binds trustmarks to registered system providers based on conformance target trust" +
-            "interoperability profiles from registered assessment tools."
+    def description = "Binds trustmarks to registered organizations and to system providers based on conformance target " +
+            "trust interoperability profiles from registered assessment tools."
 
     def sessionFactory
 
     def providerService
+
+    def organizationService
 
     //==================================================================================================================
     // Execute entry point
@@ -42,6 +46,11 @@ class BindTrustmarksJob {
     def execute() {
         log.info("Starting ${this.getClass().getSimpleName()}...")
         long overallStartTime = System.currentTimeMillis()
+
+        // Serialize trustmark binding for organizations and systems to avoid GORM's optimistic locking issues related
+        // to updating cached trustmark status reports
+
+        organizationService.bindTrustmarksToAllOrganizations()
 
         providerService.bindTrustmarksForAllProviders()
 

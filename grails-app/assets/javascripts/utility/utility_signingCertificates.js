@@ -117,7 +117,7 @@ let renderSigningCertificateForm = function (target, preFn, fn, signingCertifica
     html += renderSelectHelperWithOptionList(false, "Period of Validity (years)", "validPeriod", VALID_PERIOD_FROM_LIST)
     html += renderSelectHelperWithOptionList(false, "Key Length (bits)", "keyLength", KEY_LENGTH_FROM_LIST)
 
-    renderDialogForm(target, decorateForm("Signing Certificate", "certificateFormId", html, "certificateOk", signingCertificate.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Signing Certificate", "certificateFormId", html, "certificateOk", signingCertificate.id === 0 ? "Add" : "Save", undefined, 'false'))
     document.getElementById("certificateFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("certificateOk").addEventListener("click", fn)
 

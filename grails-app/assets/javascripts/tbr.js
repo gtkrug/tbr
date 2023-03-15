@@ -41,11 +41,56 @@ let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, c
     }
 }
 
+let renderTableWithoutAddOrMinus = function (tableId, tableMetadata, tableData, offset, fnName, columnNameArray, entityName) {
+    let html = renderPagination(offset, tableData.length, fnName)
+
+    html += `<thead>`
+
+    html += LOGGED_IN && tableMetadata.editable ? `<th scope="col"><span class="bi-plus-lg" style="visibility: hidden"></span></th>` : ``
+
+    html += ``
+    columnNameArray.forEach(columnName => {
+        html += `<th scope="col" style="width: ${100 / (columnNameArray.length + (tableMetadata.includeOrganizationColumn ? 1 : 0))}%">${columnName}</th>`
+    })
+
+    html += tableMetadata.includeOrganizationColumn ? `<th scope="col" style="width: ${100 / (columnNameArray.length + (tableMetadata.includeOrganizationColumn ? 1 : 0))}%">Organization</th>` : ``
+    html += `</tr>`
+    html += `</thead>`
+    html += `<tbody>`
+
+    if (tableData.length === 0) {
+        html += `<tr><td colspan="${columnNameArray.length + (LOGGED_IN && tableMetadata.editable ? 2 : 0) + (tableMetadata.includeOrganizationColumn ? 1 : 0)}">There are no ${entityName}.</td></tr>`
+    } else {
+        tableData.forEach((c, index) => {
+            if (index >= offset && index < offset + MAX_DISPLAY) {
+                html += tableMetadata.fnDraw(tableMetadata, c)
+            }
+        })
+    }
+
+    html += `</tbody>`
+
+    document.getElementById(tableId).innerHTML = html
+}
+
 let drawTr = function (tableMetadata, rowData, inputId, removeClassName, rowDataArray, attributeObject) {
     let html = `<tr>`
 
     html += LOGGED_IN && tableMetadata.editable ? `<td><a href="${tableMetadata.hRef === undefined ? "javascript:getDetails" : tableMetadata.hRef}(${rowData.id})"><span class="bi bi-pencil"></span></a></td>` : ``
     html += LOGGED_IN && tableMetadata.editable ? `<td><input id="${inputId}" class="${removeClassName} form-check-input" type="checkbox" value="${rowData.id}" ${Object.keys(attributeObject).map(attributeName => `${attributeName}="${attributeObject[attributeName]}"`).join(" ")}></td>` : ``
+
+    rowDataArray.forEach(rowData => html += `<td>${rowData}</td>`)
+
+    html += tableMetadata.includeOrganizationColumn ? `<td><a href="${ORGANIZATION_VIEW + rowData.organization.id}">${rowData.organization.name}</a></td>` : ``
+    html += `</tr>`
+
+    return html
+}
+
+let drawTrWithoutTrash = function (tableMetadata, rowData, inputId, removeClassName, rowDataArray, attributeObject) {
+    let html = `<tr>`
+
+    html += LOGGED_IN && tableMetadata.editable ? `<td><a href="${tableMetadata.hRef === undefined ? "javascript:getDetails" : tableMetadata.hRef}(${rowData.id})"><span class="bi bi-pencil"></span></a></td>` : ``
 
     rowDataArray.forEach(rowData => html += `<td>${rowData}</td>`)
 
@@ -118,7 +163,7 @@ let toggleIt = function (target) {
     return false;
 }
 
-let decorateForm = function (title, aId, cardBodyContent, buttonId, buttonText, hide, status) {
+let decorateForm = function (title, aId, cardBodyContent, buttonId, buttonText, hide, readOnly, status) {
     let html = ``
 
     html += `<div class="border rounded card">`
@@ -134,19 +179,21 @@ let decorateForm = function (title, aId, cardBodyContent, buttonId, buttonText, 
     html += cardBodyContent
     html += `</div>`
 
-    if (buttonId !== undefined) {
-        html += `<div class="card-footer text-start">`
-        html += `<div class="row">`
-        html += `<div class="col-3"></div>`
-        html += `<div class="col-9"><button id="${buttonId}" type="button" class="btn btn-primary">${buttonText}</button>`
+    if (readOnly !== undefined && readOnly === 'false') {
+        if (buttonId !== undefined) {
+            html += `<div class="card-footer text-start">`
+            html += `<div class="row">`
+            html += `<div class="col-3"></div>`
+            html += `<div class="col-9"><button id="${buttonId}" type="button" class="btn btn-primary">${buttonText}</button>`
 
-        // render status near button
-        if (status !== undefined) {
-            html += status
+            // render status near button
+            if (status !== undefined) {
+                html += status
+            }
+            html += `</div>`
+            html += `</div>`
+            html += `</div>`
         }
-        html += `</div>`
-        html += `</div>`
-        html += `</div>`
     }
 
     html += `</div>`
@@ -185,7 +232,7 @@ let renderInputHelper = function (inputId, labelRequired, labelContent, placehol
 
     html += `<div class="row pb-2">`
     html += `<label for="${inputId}" class="col-3 col-form-label ${labelRequired ? "label-required" : ""}">${labelContent}</label>`
-    html += `<div class="col-9"><input id="${inputId}" type="text" class="form-control" placeholder="${placeholderText}" value="${inputValue === undefined ? "" : inputValue}" ${readonly ? "readonly" : ""}/></div>`
+    html += `<div class="col-9"><input id="${inputId}" type="text" class="form-control" placeholder="${placeholderText}" value="${inputValue === undefined ? "" : inputValue}" ${readonly === 'true' ? "readonly" : ""}/></div>`
     html += `</div>`
 
     return html

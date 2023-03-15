@@ -29,22 +29,23 @@ let drawTrustmarkTr = function (tableMetadata, rowData) {
         {})
 }
 
+let curriedTrustmark = curryFour(renderTrustmarkTable);
+
 let trustmarkResults = function (pId) {
     return function (results) {
-        renderTrustmarkTable(
-            "trustmarks-list",
-            {
-                editable: false,
-                fnAdd: function () {
-                },
-                fnRemove: function () {
-                },
-                fnDraw: drawTrustmarkTr,
-                hRef: "",
-                includeOrganizationColumn: false
+        renderTrustmarkOffset = curriedTrustmark('trustmarks-list')
+        ({
+            editable: false,
+            fnAdd: function () {
             },
-            results,
-            0)
+            fnRemove: function () {
+            },
+            fnDraw: drawTrustmarkTr,
+            hRef: "",
+            includeOrganizationColumn: false
+        })
+        (results);
+        renderTrustmarkOffset(0);
     }
 }
 

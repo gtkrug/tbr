@@ -55,7 +55,7 @@ let renderConformanceTargetTipForm = function (target, preFn, fn, conformanceTar
     let html = ``
     html += renderInputHelper("conformanceTargetTipIdentifier", true, "Identifier", "Enter Conformance Target TIP Identifier")
 
-    renderDialogForm(target, decorateForm("Partner Organization Trust Interoperability Profile", "conformanceTargetTipFormId", html, "conformanceTargetTipOk", conformanceTargetTip.id === 0 ? "Add" : "Save"))
+    renderDialogForm(target, decorateForm("Conformance Target Trust Interoperability Profile", "conformanceTargetTipFormId", html, "conformanceTargetTipOk", conformanceTargetTip.id === 0 ? "Add" : "Save", undefined, 'false'))
 
     document.getElementById("conformanceTargetTipFormId").addEventListener("click", () => hideIt(target))
     document.getElementById("conformanceTargetTipOk").addEventListener("click", fn)

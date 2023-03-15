@@ -5,7 +5,12 @@ import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import edu.gatech.gtri.trustmark.v1_0.io.TrustInteroperabilityProfileResolver
 import edu.gatech.gtri.trustmark.v1_0.model.TrustInteroperabilityProfile
 import grails.gorm.transactions.Transactional
+import org.gtri.fj.data.Option
+import org.springframework.security.authentication.AnonymousAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.json.JSONObject
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
 import javax.servlet.ServletException
 import java.time.LocalDateTime
@@ -13,8 +18,6 @@ import tm.binding.registry.util.UrlUtilities
 
 @Transactional
 class AdministrationService {
-    def springSecurityService
-    def registrantService
 
     def serviceMethod(String... args) {
         log.info("serviceMethod -> ${args[0]}")
@@ -127,10 +130,16 @@ class AdministrationService {
         String tpatBaseUrl = UrlUtilities.artifactBaseUrl(tipUri)
 
         if (UrlUtilities.checkTPATStatusUrl(tpatBaseUrl)) {
-            TrustPolicyAuthoringToolUri tpatUri = new TrustPolicyAuthoringToolUri(uri: tpatBaseUrl,
-                    statusSuccessTimestamp: LocalDateTime.now())
 
-            tpatUri.save(true)
+            TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = TrustPolicyAuthoringToolUri.findByUri(tpatBaseUrl)
+
+            // Only add the TPAT URI iff it does not already exists
+            if (!trustPolicyAuthoringToolUri) {
+                TrustPolicyAuthoringToolUri tpatUri = new TrustPolicyAuthoringToolUri(uri: tpatBaseUrl,
+                        statusSuccessTimestamp: LocalDateTime.now())
+
+                tpatUri.save(true)
+            }
         }
     }
 
@@ -316,16 +325,90 @@ class AdministrationService {
         return contacts
     }
 
+    boolean isAdmin() {
+        boolean isAuthenticated = isLoggedIn()
+
+        if (isAuthenticated) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            return userOption.isSome() && userOption.some().isAdmin()
+        }
+        return false
+    }
+
+    boolean isOrgAdmin() {
+        boolean isAuthenticated = isLoggedIn()
+
+        if (isAuthenticated) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            return userOption.isSome() && userOption.some().isOrgAdmin()
+        }
+        return false
+    }
+
+    boolean loggedInUserHasNoTbrRoles() {
+
+        if (isLoggedIn()) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            if (userOption.isSome()) {
+                return userOption.some().hasNoTbrRoles()
+            }
+        }
+
+        return false
+    }
+    
     boolean isReadOnly(Long orgId) {
-        if (!springSecurityService.isLoggedIn()) {
+        boolean isAuthenticated = isLoggedIn()
+
+        if (!isAuthenticated) {
             return true
         } else {
-            User user = springSecurityService.currentUser
-            Registrant registrant = registrantService.findByUser(user)
-            if (user.isOrgAdmin() && registrant.organizationId != orgId ) {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+             if (userOption.isSome()) {
+                boolean hasNoRoles = loggedInUserHasNoTbrRoles()
+
+                boolean isOrgAdmin = isOrgAdmin()
+
+                boolean hasContact = userOption.some().contact != null
+                boolean hasOrganization = userOption.some().contact.organization != null
+                boolean orgIdsDiffer = hasOrganization && userOption.some().contact.organization.id != orgId
+
+                boolean userOrgDiffers = isOrgAdmin && hasContact && hasOrganization && orgIdsDiffer
+                boolean orgAdminNoOrganization = isOrgAdmin && !hasOrganization
+
+                if (hasNoRoles || (isOrgAdmin && userOrgDiffers) || orgAdminNoOrganization) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    boolean isReadOnly() {
+        boolean isAuthenticated = isLoggedIn()
+
+        if (!isAuthenticated) {
+            return true
+        } else {
+            Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+            if (userOption.isSome() && (userOption.some().hasNoTbrRoles() || isOrgAdmin())) {
                 return true
             }
         }
         return false
+    }
+
+    boolean isLoggedIn() {
+        return SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
+                &&
+                //when Anonymous Authentication is enabled
+                !(SecurityContextHolder.getContext().getAuthentication()
+                        instanceof AnonymousAuthenticationToken)
     }
 }

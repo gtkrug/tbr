@@ -2,10 +2,12 @@ package tm.binding.registry
 
 import grails.converters.JSON
 import grails.converters.XML
-import grails.plugin.springsecurity.annotation.Secured
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
 import org.apache.commons.lang.StringUtils
+import org.gtri.fj.data.Option
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.web.multipart.MultipartFile
 
 import javax.servlet.ServletException
@@ -15,10 +17,8 @@ import javax.servlet.ServletException
  * <br/><br/>
  * Created by brad on 9/8/14.
  */
-//@Secured("ROLE_USER")
 class BinaryController {
 
-    def springSecurityService;
     def fileService;
 
     def list() {
@@ -61,7 +61,7 @@ class BinaryController {
      *   <b>file</b> - The multipart file being uploaded.
      */
     def upload() {
-        User user = springSecurityService.getCurrentUser();
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
 
         log.info("Handling file upload...");
         MultipartFile file = request.getFile("file");
@@ -120,7 +120,7 @@ class BinaryController {
                 fileOutputStream.close();
             }
 
-            BinaryObject binaryObject = fileService.createBinaryObject(user, params, file, reconstructedFile);
+            BinaryObject binaryObject = fileService.createBinaryObject(userOption.some(), params, file, reconstructedFile);
             log.debug("Successfully created binary: ${binaryObject.id}")
             binaryId = binaryObject.id;
             statusMessage = "File [${binaryObject.originalFilename}, size: ${binaryObject.fileSize}] stored successfully.  MD5 SUM: ${binaryObject.md5sum}"

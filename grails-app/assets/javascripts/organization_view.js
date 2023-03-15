@@ -3,7 +3,7 @@ $(document).ready(function () {
     listProvider(ORGANIZATION_ID)
 
     if (LOGGED_IN) {
-        getOrganization(ORGANIZATION_ID, false)
+        getOrganization(ORGANIZATION_ID, false, IS_READ_ONLY)
         listAssessmentToolUrl(ORGANIZATION_ID)
         listTrustmarkRecipientIdentifier(ORGANIZATION_ID)
         listPartnerOrganizationTip(ORGANIZATION_ID)

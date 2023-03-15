@@ -1,6 +1,9 @@
 package tm.binding.registry
 
 import org.apache.commons.lang.StringUtils
+import org.gtri.fj.data.Option
+
+import static org.gtri.fj.data.Option.fromNull
 
 class Contact {
 
@@ -29,6 +32,10 @@ class Contact {
         email column: 'email'
         phone column: 'phone'
         type column: 'type'
+    }
+
+    static final Option<Contact> findByEmailHelper(final String email) {
+        fromNull(findByEmail(email))
     }
 
     Map toJsonMap(boolean shallow = true) {

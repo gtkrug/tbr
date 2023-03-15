@@ -11,4 +11,11 @@ databaseChangeLog = {
     include file: 'add-oidc-metadata-unique-id.groovy'
     include file: 'add-remote-artifacts-uri-data-model.groovy'
     include file: 'remove-orphan-records-from-provider_contact.groovy'
+    include file: 'ensure-tat-and-tpat-uris-end-with-backslash.groovy'
+    include file: 'remove-roles-and-shared-views-unused-tables.groovy'
+    include file: 'increase-roles-array-text-size.groovy'
+    include file: 'allow-nullable-contacts.groovy'
+    include file: 'remove-registrant-reference-from-organization.groovy'
+    include file: 'add-client-registration-model.groovy'
+    include file: 'incorrect-blob-type-correction.groovy'
 }

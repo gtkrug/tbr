@@ -1,5 +1,6 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.grails.email.service.EmailService
 import edu.gatech.gtri.trustmark.v1_0.FactoryLoader;
 import edu.gatech.gtri.trustmark.v1_0.impl.io.IOUtils
 import edu.gatech.gtri.trustmark.v1_0.impl.io.json.TrustInteroperabilityProfileJsonDeserializer
@@ -23,13 +24,11 @@ import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkDefinition;
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkDefinitionRequirement
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusReport;
 import edu.gatech.gtri.trustmark.v1_0.service.RemoteException
-import grails.gorm.transactions.Transactional
 import grails.gsp.PageRenderer
 import org.dom4j.Element
 import org.dom4j.tree.DefaultElement
 import org.springframework.security.crypto.codec.Hex
 import org.springframework.web.multipart.MultipartFile
-import shared.views.EmailService
 import tm.binding.registry.util.TBRProperties;
 import tm.binding.registry.util.UrlEncodingUtil
 import org.json.JSONArray;
@@ -40,7 +39,6 @@ import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import tm.binding.registry.util.UrlUtilities
-
 
 public abstract class TrustmarkBinder {
     private static final Logger log = LoggerFactory.getLogger(TrustmarkBinder.class);
@@ -103,7 +101,7 @@ public abstract class TrustmarkBinder {
         return tdSet;
     }
 
-    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> collectTrustmarksForAllRecipientIdentifiers(
+    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> collectTrustmarksForAllRecipientIdentifiers(TrustmarkDefinitionUriFilter tdFilter,
             Set<AssessmentRepository> assessmentToolUrls,
             Set<TrustmarkRecipientIdentifier> recipientIdentifiers,
             Boolean monitoringProgress) {
@@ -147,7 +145,7 @@ public abstract class TrustmarkBinder {
 
                     // process each trustmark and the transfer to main collection
 
-                    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarksFromJson = resolveTrustmarks(
+                    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarksFromJson = resolveTrustmarks(tdFilter,
                             trustmarksJson.getJSONArray("trustmarks"), assessmentToolUrl, recipientIdentifier)
 
                     trustmarks.addAll(trustmarksFromJson);
@@ -187,12 +185,12 @@ public abstract class TrustmarkBinder {
             mostRecentlyCachedTrustmarkUris.add(trustmarkUri)
         })
 
-        TrustmarkResolver resolver = FactoryLoader.getInstance(TrustmarkResolver.class);
+        TrustmarkJsonDeserializer deserializer = new TrustmarkJsonDeserializer()
 
         mostRecentlyCachedTrustmarkUris.forEach(tmUri -> {
 
-            Trustmark trustmark = resolveTrustmark(resolver, tmUri.uri, assessmentToolUrl,
-                    recipientIdentifier)
+            // create TM from content
+            Trustmark trustmark = deserializer.deserialize(tmUri.content)
 
             trustmarks.add(trustmark)
         })
@@ -200,20 +198,31 @@ public abstract class TrustmarkBinder {
         return trustmarks
     }
 
-    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> resolveTrustmarks(JSONArray trustmarksJsonArray,
+    List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> resolveTrustmarks(TrustmarkDefinitionUriFilter tdFilter, JSONArray trustmarksJsonArray,
             AssessmentRepository assessmentRepository, TrustmarkRecipientIdentifier trustmarkRecipientIdentifier) {
         log.info("resolveTrustmarks trustmarksJsonArray size: ${trustmarksJsonArray.length()}...");
 
         final List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = new ArrayList<>();
 
-        TrustmarkResolver trustmarkpResolver = FactoryLoader.getInstance(TrustmarkResolver.class);
+        TrustmarkResolver trustmarkResolver = FactoryLoader.getInstance(TrustmarkResolver.class);
 
         trustmarksJsonArray.forEach(tm -> {
             JSONObject json = (JSONObject)tm
-            String trustmarkIdentifier = json.get("identifierURL")
-            Trustmark trustmark = resolveTrustmark(trustmarkpResolver, trustmarkIdentifier, assessmentRepository, trustmarkRecipientIdentifier)
 
-            trustmarks.add(trustmark)
+            String trustmarkDefinitionUrl = json.get("trustmarkDefinitionURL")
+
+            // add if trustmark definition is present in current TD set
+            if (tdFilter.filter(trustmarkDefinitionUrl)) {
+                String trustmarkIdentifier = json.get("identifierURL")
+
+                // Resolve TM
+                Trustmark trustmark = resolveTrustmark(trustmarkResolver, trustmarkIdentifier, assessmentRepository, trustmarkRecipientIdentifier)
+
+                // Resolve TSR
+                TrustmarkStatusReport tsr = resolveTrustmarkStatusReport(trustmark)
+
+                trustmarks.add(trustmark)
+            }
         })
 
         return trustmarks;
@@ -230,7 +239,7 @@ public abstract class TrustmarkBinder {
         final Trustmark trustmark = resolver.resolve(
                 uri,
                 (tmUri, tm) -> {
-                    log.info("Repo Online, trustmark OK: ${tm.name}...");
+                    log.info("Repo Online, trustmark OK: ${tm.identifier.toString()}...");
 
                     Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
 
@@ -240,8 +249,13 @@ public abstract class TrustmarkBinder {
                     char[] enc2 = Hex.encode(enc);
                     String hash = new String(enc2);
 
-                    TrustmarkUri trustmarkUri = TrustmarkUri.findByUri(tmUri.toString(),
+                    List<TrustmarkUri> trustmarkUris = TrustmarkUri.findAllByUri(tmUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustmarkUri trustmarkUri = null
+                    if (trustmarkUris && trustmarkUris.size() > 0) {
+                        trustmarkUri = trustmarkUris.get(0)
+                    }
 
                     if (!trustmarkUri || !trustmarkUri.hash.equals(hash)) {
                         // TM changed, save new tm uri
@@ -258,8 +272,13 @@ public abstract class TrustmarkBinder {
                 (tmUri, tmException, serverUri) -> {
                     log.info("TM ${tmUri.toString()} deleted, error: ${tmException.toString()}, server OK: ${serverUri.toString()}...")
 
-                    TrustmarkUri trustmarkUri = TrustmarkUri.findByUri(tmUri.toString(),
+                    List<TrustmarkUri> trustmarkUris = TrustmarkUri.findAllByUri(tmUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustmarkUri trustmarkUri = null
+                    if (trustmarkUris && trustmarkUris.size() > 0) {
+                        trustmarkUri = trustmarkUris.get(0)
+                    }
 
                     if (trustmarkUri) {
                         // create TM from content
@@ -288,8 +307,14 @@ public abstract class TrustmarkBinder {
                     // of a server. The test should be removed if and when tmf-api implements context-path handling
                     String tatUrl = UrlUtilities.artifactBaseUrl(tmUri.toString());
                     if (!UrlUtilities.checkTATStatusUrl(tatUrl)) {
-                        TrustmarkAssessmentToolUri trustmarkAssessmentToolUri = TrustmarkAssessmentToolUri.findByUri(tatUrl,
-                                [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        List<TrustmarkAssessmentToolUri> trustmarkAssessmentToolUris = TrustmarkAssessmentToolUri.findAllByUri(
+                                tatUrl, [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        TrustmarkAssessmentToolUri trustmarkAssessmentToolUri = null
+                        if (trustmarkAssessmentToolUris && trustmarkAssessmentToolUris.size() > 0) {
+                            trustmarkAssessmentToolUri = trustmarkAssessmentToolUris.get(0)
+                        }
 
                         if (trustmarkAssessmentToolUri) {
                             // check for server staleness
@@ -302,8 +327,13 @@ public abstract class TrustmarkBinder {
                         }
                     }
 
-                    TrustmarkUri trustmarkUri = TrustmarkUri.findByUri(tmUri.toString(),
+                    List<TrustmarkUri> trustmarkUris = TrustmarkUri.findAllByUri(tmUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustmarkUri trustmarkUri = null
+                    if (trustmarkUris && trustmarkUris.size() > 0) {
+                        trustmarkUri = trustmarkUris.get(0)
+                    }
 
                     if (trustmarkUri) {
                         // create trustmark from content
@@ -493,8 +523,13 @@ public abstract class TrustmarkBinder {
                     char[] enc2 = Hex.encode(enc);
                     String hash = new String(enc2);
 
-                    TrustInteropProfileUri trustInteropProfileUri = TrustInteropProfileUri.findByUri(tipUri.toString(),
+                    List<TrustInteropProfileUri> trustInteropProfileUris = TrustInteropProfileUri.findAllByUri(tipUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustInteropProfileUri trustInteropProfileUri = null
+                    if (trustInteropProfileUris && trustInteropProfileUris.size() > 0) {
+                        trustInteropProfileUri = trustInteropProfileUris.get(0)
+                    }
 
                     if (!trustInteropProfileUri || !trustInteropProfileUri.hash.equals(hash)) {
                         // Tip changed, save new tip uri
@@ -512,8 +547,13 @@ public abstract class TrustmarkBinder {
 
                     log.info("TIP ${tipUri.toString()} deleted, error: ${tipException.toString()}, server OK: ${serverUri.toString()}...")
 
-                    TrustInteropProfileUri trustInteropProfileUri = TrustInteropProfileUri.findByUri(tipUri.toString(),
+                    List<TrustInteropProfileUri> trustInteropProfileUris = TrustInteropProfileUri.findAllByUri(tipUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustInteropProfileUri trustInteropProfileUri = null
+                    if (trustInteropProfileUris && trustInteropProfileUris.size() > 0) {
+                        trustInteropProfileUri = trustInteropProfileUris.get(0)
+                    }
 
                     if (trustInteropProfileUri) {
 
@@ -544,8 +584,14 @@ public abstract class TrustmarkBinder {
                     // Note: The TPAT url test is done because the tf-api is not currently handling the context-path
                     // of a server. The test should be removed if and when tmf-api implements context-path handling
                     if (!UrlUtilities.checkTPATStatusUrl(tpatUrl)) {
-                        TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = TrustPolicyAuthoringToolUri.findByUri(tpatUrl,
+
+                        List<TrustPolicyAuthoringToolUri> trustPolicyAuthoringToolUris = TrustPolicyAuthoringToolUri.findAllByUri(tpatUrl.toString(),
                                 [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = null
+                        if (trustPolicyAuthoringToolUris && trustPolicyAuthoringToolUris.size() > 0) {
+                            trustPolicyAuthoringToolUri = trustPolicyAuthoringToolUris.get(0)
+                        }
 
                         if (trustPolicyAuthoringToolUri) {
                             // check for server staleness
@@ -558,8 +604,13 @@ public abstract class TrustmarkBinder {
                         }
                     }
 
-                    TrustInteropProfileUri trustInteropProfileUri = TrustInteropProfileUri.findByUri(tipUri.toString(),
+                    List<TrustInteropProfileUri> trustInteropProfileUris = TrustInteropProfileUri.findAllByUri(tipUri.toString(),
                             [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+
+                    TrustInteropProfileUri trustInteropProfileUri = null
+                    if (trustInteropProfileUris && trustInteropProfileUris.size() > 0) {
+                        trustInteropProfileUri = trustInteropProfileUris.get(0)
+                    }
 
                     if (trustInteropProfileUri) {
                         // create TIP from content
@@ -604,17 +655,29 @@ public abstract class TrustmarkBinder {
                     char[] enc2 = Hex.encode(enc);
                     String hash = new String(enc2);
 
-                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString())
 
                     if (!trustmarkDefinitionUri || !trustmarkDefinitionUri.hash.equals(hash)) {
-                        // TD changed, save new td uri
-                        log.info("TD has changed, caching new TD...")
+                        // TD changed, update td uri
+                        log.info("TD has changed, updating cached TD...")
 
-                        TrustmarkDefinitionUri newCachedTdUri =  createTrustmarkDefinitionUri(td, tdUri.toString(),
-                                jsonSerializer, hasher, LocalDateTime.now())
+                        if (trustmarkDefinitionUri) {
+                            // Serialize (use json)
+                            StringWriter jsonWriter = new StringWriter();
+                            jsonSerializer.serialize(td, jsonWriter);
+                            String content = jsonWriter.toString();
 
-                        newCachedTdUri.save(failOnError: true, flush: true)
+                            trustmarkDefinitionUri.hash = hash
+                            trustmarkDefinitionUri.content = content
+                            trustmarkDefinitionUri.retrievalTimestamp = LocalDateTime.now()
+                            trustmarkDefinitionUri.save(failOnError: true, flush: true)
+                        } else {
+
+                            TrustmarkDefinitionUri newCachedTdUri =  createTrustmarkDefinitionUri(td, tdUri.toString(),
+                                    jsonSerializer, hasher, LocalDateTime.now())
+
+                            newCachedTdUri.save(failOnError: true, flush: true)
+                        }
                     }
 
                     return td;
@@ -623,10 +686,9 @@ public abstract class TrustmarkBinder {
 
                     log.info("TD ${tdUri.toString()} deleted, error: ${tdException.toString()}, server OK: ${serverUri.toString()}...")
 
-                    // tip deleted, check if there is a cached version, email staled
+                    // td deleted, check if there is a cached version, email staled
 
-                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString())
 
                     if (trustmarkDefinitionUri) {
                         // create TD from content
@@ -654,8 +716,14 @@ public abstract class TrustmarkBinder {
                     // of a server. The test should be removed if and when tmf-api implements context-path handling
                     String tpatUrl = UrlUtilities.artifactBaseUrl(tdUri.toString());
                     if (!UrlUtilities.checkTPATStatusUrl(tpatUrl)) {
-                        TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = TrustPolicyAuthoringToolUri.findByUri(tpatUrl,
+
+                        List<TrustPolicyAuthoringToolUri> trustPolicyAuthoringToolUris = TrustPolicyAuthoringToolUri.findAllByUri(tpatUrl.toString(),
                                 [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        TrustPolicyAuthoringToolUri trustPolicyAuthoringToolUri = null
+                        if (trustPolicyAuthoringToolUris && trustPolicyAuthoringToolUris.size() > 0) {
+                            trustPolicyAuthoringToolUri = trustPolicyAuthoringToolUris.get(0)
+                        }
 
                         if (trustPolicyAuthoringToolUri) {
                             // check for server staleness
@@ -668,8 +736,7 @@ public abstract class TrustmarkBinder {
                         }
                     }
 
-                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+                    TrustmarkDefinitionUri trustmarkDefinitionUri = TrustmarkDefinitionUri.findByUri(tdUri.toString())
 
                     if (trustmarkDefinitionUri) {
 
@@ -757,16 +824,14 @@ public abstract class TrustmarkBinder {
         return tmUri;
     }
 
-    private TrustmarkStatusReportUri createTrustmarkStatusReportUri(TrustmarkStatusReport tsr, String uri, Serializer jsonSerializer,
-                                                                    HashFactory hasher, LocalDateTime now) throws ResolveException, IOException {
+    private TrustmarkStatusReportUri createTrustmarkStatusReportUri(TrustmarkStatusReport tsr, String uri, 
+                                                                    String hash, LocalDateTime now) throws ResolveException, IOException {
 
+        Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
         // Serialize (use json)
         StringWriter jsonWriter = new StringWriter();
         jsonSerializer.serialize(tsr, jsonWriter);
         String content = jsonWriter.toString();
-
-        // compute hash
-        String hash = new String(Hex.encode(hasher.hash(tsr)));
 
         // Create TSR URI
         TrustmarkStatusReportUri tsrUri = new TrustmarkStatusReportUri(uri: uri, hash: hash,
@@ -790,25 +855,36 @@ public abstract class TrustmarkBinder {
 
                     log.info("TSR ${statusUrl.toString()} OK...")
 
-                    Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
+                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString())
 
                     // compute hash
                     HashFactory hasher = FactoryLoader.getInstance(HashFactory.class);
-                    byte[] enc = hasher.hash(tsr);
-                    char[] enc2 = Hex.encode(enc);
-                    String hash = new String(enc2);
+                    String hash = new String(Hex.encode(hasher.hash(tsr)));
 
-                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
-
-                    if (!trustmarkStatusReportUri || !trustmarkStatusReportUri.hash.equals(hash)) {
-                        // TSR changed, save new tsr uri
-                        log.info("TSR has changed, caching new TSR...")
+                    if (!trustmarkStatusReportUri) {
 
                         TrustmarkStatusReportUri newCachedTsrUri =  createTrustmarkStatusReportUri(tsr, statusUrl.toString(),
-                                jsonSerializer, hasher, LocalDateTime.now())
+                                hash, LocalDateTime.now())
 
                         newCachedTsrUri.save(failOnError: true, flush: true)
+
+                    } else {
+
+                        if (!trustmarkStatusReportUri.hash.equals(hash)) {
+
+                            // TSR changed, save new tsr uri
+
+                            Serializer jsonSerializer = FactoryLoader.getInstance(SerializerFactory.class).getJsonSerializer();
+                            StringWriter jsonWriter = new StringWriter();
+                            jsonSerializer.serialize(tsr, jsonWriter);
+                            String content = jsonWriter.toString();
+
+                            trustmarkStatusReportUri.hash = hash
+                            trustmarkStatusReportUri.content = content
+                            trustmarkStatusReportUri.retrievalTimestamp = LocalDateTime.now()
+
+                            trustmarkStatusReportUri.save(failOnError: true, flush: true)
+                        }
                     }
 
                     return tsr;
@@ -817,8 +893,7 @@ public abstract class TrustmarkBinder {
 
                     log.info("TSR ${statusUrl.toString()} deleted, error: ${tsrException.toString()}, server OK: ${serverUri.toString()}...")
 
-                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString())
 
                     if (trustmarkStatusReportUri) {
                         // create TM from content
@@ -846,8 +921,14 @@ public abstract class TrustmarkBinder {
                     // of a server. The test should be removed if and when tmf-api implements context-path handling
                     String tatUrl = UrlUtilities.artifactBaseUrl(statusUrl.toString());
                     if (!UrlUtilities.checkTATStatusUrl(tatUrl)) {
-                        TrustmarkAssessmentToolUri trustmarkAssessmentToolUri = TrustmarkAssessmentToolUri.findByUri(tatUrl,
-                                [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        List<TrustmarkAssessmentToolUri> trustmarkAssessmentToolUris = TrustmarkAssessmentToolUri.findAllByUri(
+                                tatUrl, [max: 1, sort: "statusSuccessTimestamp", order: "desc", offset: 0])
+
+                        TrustmarkAssessmentToolUri trustmarkAssessmentToolUri = null
+                        if (trustmarkAssessmentToolUris && trustmarkAssessmentToolUris.size() > 0) {
+                            trustmarkAssessmentToolUri = trustmarkAssessmentToolUris.get(0)
+                        }
 
                         if (trustmarkAssessmentToolUri) {
                             // check for server staleness
@@ -860,8 +941,7 @@ public abstract class TrustmarkBinder {
                         }
                     }
 
-                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString(),
-                            [max: 1, sort: "retrievalTimestamp", order: "desc", offset: 0])
+                    TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(statusUrl.toString())
 
                     if (trustmarkStatusReportUri) {
                         // create TSR from content
@@ -885,6 +965,8 @@ public abstract class TrustmarkBinder {
 
                     return null;
                 });
+
+
 
         return trustmarkStatusReport
     }
@@ -927,31 +1009,35 @@ public abstract class TrustmarkBinder {
         return extensionValue;
     }
 
-    void sendRemoteArtivactStalenessEmail(List<RemoteArtifactStalenessMessage> remoteArtifactStalenessMessages,
+    void sendRemoteArtifactStalenessEmail(List<RemoteArtifactStalenessMessage> remoteArtifactStalenessMessages,
                                           List<RemoteArtifactStalenessMessage> remoteServerStalenessMessages) {
-//        log.info("sendRemoteArtivactStalenessEmail remoteArtifactStalenessMessages.size() => ${remoteArtifactStalenessMessages.size()}")
 
-        Map model = [:]
+        if (emailService.mailEnabled()) {
 
-        // admin
-        String adminEmail = TBRProperties.getAdminEmail()
+            Map model = [:]
 
-        // TBR name and url
-        String tbrName = TBRProperties.getTbrName()
-        String tbrUrl = TBRProperties.getBaseUrl()
+            // admin
+            String adminEmail = TBRProperties.getAdminEmail()
 
-        model.put("adminEmail", adminEmail)
-        model.put("serverRecords", remoteServerStalenessMessages)
-        model.put("artifactRecords", remoteArtifactStalenessMessages)
-        model.put("tbrName", tbrName)
-        model.put("tbrUrl", tbrUrl)
+            // TBR name and url
+            String tbrName = TBRProperties.getTbrName()
+            String tbrUrl = TBRProperties.getBaseUrl()
 
-        String contentTemplate = "/templates/remoteArtifactsStalenessEmail"
-        String subject = "Remote artifacts problems found during latest trustmark binding."
+            model.put("adminEmail", adminEmail)
+            model.put("serverRecords", remoteServerStalenessMessages)
+            model.put("artifactRecords", remoteArtifactStalenessMessages)
+            model.put("tbrName", tbrName)
+            model.put("tbrUrl", tbrUrl)
 
-        String content = groovyPageRenderer.render(template: contentTemplate, model: model).toString()
+            String contentTemplate = "/templates/remoteArtifactsStalenessEmail"
+            String subject = "Remote artifacts problems found during latest trustmark binding."
 
-        emailService.sendEmailWithContent(new ArrayList<MultipartFile>(), adminEmail, subject, content)
+            String content = groovyPageRenderer.render(template: contentTemplate, model: model).toString()
+
+            emailService.sendEmailWithContent(new ArrayList<MultipartFile>(), adminEmail, subject, content)
+        } else {
+            log.info("Email is disabled. Enable email in the properties file")
+        }
     }
 
 }

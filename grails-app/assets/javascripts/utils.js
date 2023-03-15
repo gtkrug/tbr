@@ -20,7 +20,7 @@ let getCheckedIds = function (str, fn) {
  *  render organizations in a select control
  */
 let renderSelectOrganizations = function (selectParentId, optionSelectId, optionArray) {
-    renderSelect(selectParentId, "orgs", "-- Select an Organization --", optionArray.map(option => {
+    renderSelect(selectParentId, "orgs", "-- Select an Organization --", optionArray.records.map(option => {
         return {
             value: option.id,
             text: option.name

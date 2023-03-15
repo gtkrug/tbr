@@ -1,11 +1,14 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.annotation.Secured
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
 import java.nio.charset.StandardCharsets
 
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 class OrganizationController {
 
     OrganizationService organizationService
@@ -13,8 +16,6 @@ class OrganizationController {
     DeserializeService deserializeService
 
     AdministrationService administrationService
-
-    def springSecurityService
 
     def index() { }
     
@@ -24,7 +25,7 @@ class OrganizationController {
 
     def manage() { }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def view() {
         log.info(params.id)
         Organization organization = organizationService.get(params.id)
@@ -41,11 +42,12 @@ class OrganizationController {
             deserializeService.deserialize(xmlString, organization)
         }
         boolean isReadOnly = administrationService.isReadOnly(organization.id)
+        boolean isLoggedIn = administrationService.isLoggedIn()
 
-        [organization: organization, isLoggedIn: springSecurityService.isLoggedIn(), isReadOnly: isReadOnly]
+        [organization: organization, isLoggedIn: isLoggedIn, isReadOnly: isReadOnly]
     }
 
-    def add()  {
+     def add()  {
         log.debug("add -> ${params.name}")
 
         Organization organization = organizationService.add(params.name
@@ -61,6 +63,7 @@ class OrganizationController {
         }
     }
 
+    @PreAuthorize('permitAll()')
     def get()  {
         log.info("get -> ${params.id}")
 
@@ -97,19 +100,26 @@ class OrganizationController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list()  {
         log.debug("list -> ${params.name}")
 
         def organizations = organizationService.list(params.name)
 
+        Map results = [:]
+
+        results.put("editable", !administrationService.isReadOnly())
+
+        results.put("records", organizations)
+
         withFormat  {
             json {
-                render organizations as JSON
+                render results as JSON
             }
         }
     }
 
+    @PreAuthorize('permitAll()')
     def repos()  {
         log.debug("repos -> ${params.oid}")
 
@@ -156,8 +166,6 @@ class OrganizationController {
     }
 
     def updateRepo()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
 
         AssessmentRepository assessmentRepository = organizationService.updateRepo(params.id, params.repoUrl, params.organizationId)
 
@@ -180,6 +188,7 @@ class OrganizationController {
         }
     }
 
+    @PreAuthorize('permitAll()')
     def trustmarkRecipientIdentifiers()  {
         log.debug("trustmarkRecipientIdentifiers -> ${params.oid}")
 
@@ -237,8 +246,9 @@ class OrganizationController {
     }
 
     def updateTrustmarkRecipientIdentifier()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         TrustmarkRecipientIdentifier trid = organizationService.updateTrustmarkRecipientIdentifier(params.id, params.trustmarkRecipientIdentifier, params.organizationId)
 
@@ -250,6 +260,7 @@ class OrganizationController {
     }
 
     // Partner systems tips
+    @PreAuthorize('permitAll()')
     def partnerSystemsTips()  {
         log.debug("partnerSystemsTips -> ${params.oid}")
 
@@ -268,8 +279,6 @@ class OrganizationController {
     }
 
     def addPartnerSystemsTip()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
 
         log.info("add partner systems tip identifier -> ${params.identifier}")
 
@@ -330,14 +339,9 @@ class OrganizationController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def trustmarks() {
         log.info("listbyOrganization for organization id: " + params.id)
-
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
 
         def trustmarks = administrationService.listTrustmarksByOrganization(params.id)
 
@@ -354,7 +358,7 @@ class OrganizationController {
     }
 
     def bindTrustmarks() {
-        User user = springSecurityService.currentUser
+
         log.info("bindTrustmarks...")
 
         final Integer organizationId = Integer.parseInt(params.id)
@@ -372,7 +376,6 @@ class OrganizationController {
     }
 
     def updateTrustmarkBindingDetails() {
-        User user = springSecurityService.currentUser
 
         Integer organizationId = Integer.parseInt(params.id)
 

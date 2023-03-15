@@ -5,9 +5,9 @@ let listOrganization = function () {
             renderOrganizationTable(
                 "organization-table",
                 {
-                    editable: true,
+                    editable: organizationList.editable,
                     fnAdd: function () {
-                        addOrganization({id: 0}, true)
+                        addOrganization({id: 0}, true, !organizationList.editable)
                     },
                     fnRemove: removeOrganization,
                     fnDraw: drawOrganizationTr,
@@ -28,7 +28,7 @@ let renderOrganizationTable = function (tableId, tableMetadata, tableData, offse
     renderTable(
         tableId,
         tableMetadata,
-        tableData,
+        tableData.records,
         offset,
         "renderOrganizationOffset",
         ["Name", "URL", "System Count"],
@@ -51,19 +51,22 @@ let drawOrganizationTr = function (obj, entry) {
 }
 
 // render form
-let renderOrganizationForm = function (target, preFn, fn, organization, hide) {
+let renderOrganizationForm = function (target, preFn, fn, organization, hide, readOnly) {
     let html = ``
-    html += hide ? renderInputHelper("org_name", true, "Full Name", "Enter Organization Full Name") : renderHiddenHelper("org_name")
-    html += renderInputHelper("org_display", true, "Abbreviation", "Enter Organization Abbreviation or Acronym")
-    html += renderInputHelper("org_url", true, "URL", "Enter Organization URL")
-    html += renderInputHelper("org_desc", true, "Description", "Enter Organization Description")
+    html += hide ? renderInputHelper("org_name", true, "Full Name", "Enter Organization Full Name", undefined, readOnly) : renderHiddenHelper("org_name")
+    html += renderInputHelper("org_display", true, "Abbreviation", "Enter Organization Abbreviation or Acronym", undefined, readOnly)
+    html += renderInputHelper("org_url", true, "URL", "Enter Organization URL", undefined, readOnly)
+    html += renderInputHelper("org_desc", true, "Description", "Enter Organization Description", undefined, readOnly)
 
-    renderDialogForm(target, decorateForm("Basic Organization Information", "organizationFormId", html, "organizationOk", organization.id === 0 ? "Add" : "Save", hide))
+    renderDialogForm(target, decorateForm("Basic Organization Information", "organizationFormId", html, "organizationOk", organization.id === 0 ? "Add" : "Save", hide, readOnly.toString()))
 
     if (hide) {
         document.getElementById("organizationFormId").addEventListener("click", () => hideIt(target))
     }
-    document.getElementById("organizationOk").addEventListener("click", fn)
+
+    if (readOnly === false) {
+        document.getElementById("organizationOk").addEventListener("click", fn)
+    }
 
     preFn(organization)
 }
@@ -80,16 +83,16 @@ let populateOrganizationForm = function (organization) {
 }
 
 // get details
-let getOrganization = function (id, hide) {
+let getOrganization = function (id, hide, isReadOnly) {
     if(hide) {
         resetStatus("organization-message")
     }
 
-    get(ORGANIZATION_GET, (organization) => addOrganization(organization, hide === undefined ? true : hide), {id: id})
+    get(ORGANIZATION_GET, (organization) => addOrganization(organization, hide === undefined ? true : hide, isReadOnly), {id: id})
 }
 
 // add
-let addOrganization = function (organization, hide) {
+let addOrganization = function (organization, hide, readOnly) {
     if(hide) {
         resetStatus("organization-message")
     }
@@ -104,10 +107,12 @@ let addOrganization = function (organization, hide) {
                 document.getElementById("org_display").value,
                 document.getElementById("org_url").value,
                 document.getElementById("org_desc").value,
-                hide)
+                hide,
+                readOnly)
         },
         organization,
-        hide)
+        hide,
+        readOnly)
 }
 
 // remove
@@ -125,7 +130,7 @@ let removeOrganization = function () {
 }
 
 // update
-let updateOrganization = function (id, name, display, siteUrl, desc, hide) {
+let updateOrganization = function (id, name, display, siteUrl, desc, hide, readOnly) {
     resetStatus("organization-message")
 
     let checkOrganization = function (name, display, siteUrl, desc) {
@@ -203,7 +208,7 @@ let updateOrganization = function (id, name, display, siteUrl, desc, hide) {
                 update(
                     ORGANIZATION_UPDATE,
                     function () {
-                        getOrganization(id, hide)
+                        getOrganization(id, hide, readOnly)
                     },
                     {
                         id: id,

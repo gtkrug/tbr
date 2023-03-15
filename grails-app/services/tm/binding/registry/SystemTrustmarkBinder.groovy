@@ -1,18 +1,18 @@
 package tm.binding.registry
 
+import edu.gatech.gtri.trustmark.grails.email.service.EmailService
+import edu.gatech.gtri.trustmark.v1_0.impl.io.json.TrustmarkStatusReportJsonDeserializer
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusCode
 import edu.gatech.gtri.trustmark.v1_0.model.TrustmarkStatusReport
 import grails.gsp.PageRenderer
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import shared.views.EmailService
 
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
 
-
-public class SystemTrustmarkBinder extends TrustmarkBinder{
+public class SystemTrustmarkBinder extends TrustmarkBinder {
     private static final Logger log = LoggerFactory.getLogger(SystemTrustmarkBinder.class);
 
     private static final int NUMBER_OF_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors();
@@ -70,7 +70,11 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
                     providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_STATUS_VAR, "RUNNING");
                 }
 
-                List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(assessmentToolUrls, recipientIdentifiers, monitoringProgress);
+                // Filter out trustmarks not in current TD set
+                SystemTrustmarkDefinitionUriFilter tdFilter = new SystemTrustmarkDefinitionUriFilter(tdSet);
+
+                List<edu.gatech.gtri.trustmark.v1_0.model.Trustmark> trustmarks = collectTrustmarksForAllRecipientIdentifiers(
+                        tdFilter, assessmentToolUrls, recipientIdentifiers, monitoringProgress);
 
                 log.info("##### trustmarks TOTAL size: ${trustmarks.size()}")
 
@@ -89,7 +93,7 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
             } // end if (conformanceTargetTips.size() > 0)
         }
         catch (Throwable t) {
-            log.info("Error encountered during the trustmark binding process: " + t.getMessage());
+            log.error("Error encountered during the trustmark binding process for systems: ${t.getMessage()}", t);
         }
 
         long overallStopTime = System.currentTimeMillis();
@@ -104,7 +108,7 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
             Runnable remoteArtifactsStaleness = new Runnable() {
                 @Override
                 void run() {
-                    sendRemoteArtivactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
+                    sendRemoteArtifactStalenessEmail(remoteArtifactStalenessMessageList, remoteServerStalenessMessageList)
                 }
             };
             executor.execute(remoteArtifactsStaleness);
@@ -123,13 +127,17 @@ public class SystemTrustmarkBinder extends TrustmarkBinder{
         Integer currentTrustmarkIndex = 0;
         Integer totalToBeBoundTrustmarks = bindingTrustmarks.size();
 
+        TrustmarkStatusReportJsonDeserializer deserializer = new TrustmarkStatusReportJsonDeserializer()
         bindingTrustmarks.forEach(trustmark -> {
 
             if (monitoringProgress) {
                 providerService.setAttribute(ProviderService.BIND_TRUSTMARKS_MESSAGE_VAR, "Resolving trustmark status report...");
             }
 
-            TrustmarkStatusReport tsr = resolveTrustmarkStatusReport(trustmark)
+            // retrieve TSR
+            TrustmarkStatusReportUri trustmarkStatusReportUri = TrustmarkStatusReportUri.findByUri(trustmark.statusURL.toString())
+
+            TrustmarkStatusReport tsr = deserializer.deserialize(trustmarkStatusReportUri.content)
 
             if (tsr.status == TrustmarkStatusCode.ACTIVE) {
                 if (monitoringProgress) {

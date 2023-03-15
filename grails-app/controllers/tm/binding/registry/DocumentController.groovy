@@ -1,16 +1,14 @@
 package tm.binding.registry
 
 import grails.converters.JSON
-import grails.plugin.springsecurity.SpringSecurityUtils
-import grails.plugin.springsecurity.annotation.Secured
 import grails.web.mapping.LinkGenerator
+import org.gtri.fj.data.Option
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 
-import javax.servlet.ServletException
-
-@Secured(["ROLE_ADMIN","ROLE_ORG_ADMIN"])
+@PreAuthorize('hasAnyAuthority("tbr-admin", "tbr-org-admin")')
 class DocumentController {
-
-    def springSecurityService
 
     DocumentService documentService
 
@@ -19,16 +17,18 @@ class DocumentController {
     def index() { }
 
     def administer() {
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
 
         // redirect to public view if org admin role
-        if (springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ORG_ADMIN")) {
+        if (userOption.isSome() && SecurityContextHolder.getContext().getAuthentication().authenticated && userOption.some().isOrgAdmin()) {
             return redirect(controller:'publicApi', action:'documents')
         }
     }
 
     def add()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Document document = documentService.add(params.filename
                 , params.description
@@ -45,8 +45,9 @@ class DocumentController {
     }
 
     def get()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Document document = documentService.get(params.id)
 
@@ -58,8 +59,9 @@ class DocumentController {
     }
 
     def delete()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Document document = documentService.delete(params.ids)
 
@@ -71,8 +73,9 @@ class DocumentController {
     }
 
     def update()  {
-        User user = springSecurityService.currentUser
-        log.info("user -> ${user.name}")
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
+
+        log.info("user -> ${userOption.some().name}")
 
         Document document = documentService.update(params.id
                 , params.filename
@@ -87,15 +90,14 @@ class DocumentController {
         }
     }
 
-    @Secured(['IS_AUTHENTICATED_ANONYMOUSLY'])
+    @PreAuthorize('permitAll()')
     def list()  {
-        if (springSecurityService.isLoggedIn()) {
-            User user = springSecurityService.currentUser
-            log.info("user -> ${user.name}")
-        }
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
 
         Map results = [:]
-        results.put("editable", springSecurityService.isLoggedIn() && SpringSecurityUtils.ifAllGranted("ROLE_ADMIN"))
+        results.put("editable", userOption.isSome() &&
+                SecurityContextHolder.getContext().getAuthentication().authenticated &&
+                userOption.some().isAdmin())
 
         // get binary url
         def binaryUrl = grailsLinkGenerator.link(controller: 'binary', action: 'upload')
@@ -114,6 +116,7 @@ class DocumentController {
     }
 
     def pdf() {
+        Option<User> userOption = User.findByUsernameHelper(((OAuth2AuthenticationToken) SecurityContextHolder.getContext().getAuthentication()).getName())
         log.info("Viewing PDF document: ${params.id}...")
 
         // get the document associated to the binary id
@@ -129,7 +132,7 @@ class DocumentController {
             return redirect(controller:'error', action:'notFound404')
         }
 
-        boolean  isAdmin = SpringSecurityUtils.ifAllGranted("ROLE_ADMIN")
+        boolean  isAdmin = userOption.isSome() && userOption.some().isAdmin()
         boolean isPublic = doc.publicDocument
 
         if (isAdmin || isPublic) {

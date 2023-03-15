@@ -32,7 +32,7 @@ let renderProtocolForm = function (target, protocolMetadata, protocol) {
     }
 
     renderDialogForm(target, decorateForm("Protocol Details", "protocolFormId",
-        html, protocolMetadata.editable ? "protocolOk" : undefined, "Generate", false,
+        html, protocolMetadata.editable ? "protocolOk" : undefined, "Generate", false, 'false',
         "<span id='saml2-metadata-generation_status' style='width:10%; margin-left: 10px;'></span>"))
 
     if(document.getElementById("protocolOk") !== null) {

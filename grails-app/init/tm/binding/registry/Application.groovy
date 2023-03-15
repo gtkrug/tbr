@@ -2,10 +2,12 @@ package tm.binding.registry
 
 import grails.boot.GrailsApp
 import grails.boot.config.GrailsAutoConfiguration
-
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.core.env.Environment
 import org.springframework.core.env.MapPropertySource
 
+@SpringBootApplication
 class Application extends GrailsAutoConfiguration implements org.springframework.context.EnvironmentAware  {
     static void main(String[] args) {
         info("Starting grails application...")
