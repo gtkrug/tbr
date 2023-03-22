@@ -18,4 +18,5 @@ databaseChangeLog = {
     include file: 'remove-registrant-reference-from-organization.groovy'
     include file: 'add-client-registration-model.groovy'
     include file: 'incorrect-blob-type-correction.groovy'
+    include file: 'remove-unused-users.groovy'
 }

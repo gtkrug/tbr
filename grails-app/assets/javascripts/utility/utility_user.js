@@ -35,15 +35,18 @@ let renderUserTable = function (tableId, tableMetadata, tableData, offset) {
 // draw tr
 let drawUserTr = function (tableMetadata, rowData) {
 
-    // TODO: simplify
-    rolesArray = rowData.roles;
-    parsedRolesArray = JSON.parse(rolesArray);
+    let rolesHtml = '';
 
-    let rolesHtml = '<ul>';
-    parsedRolesArray.forEach(function (role) {
-        rolesHtml += '<li>' + role + '</li>';
-    })
-    rolesHtml += '</ul>';
+    if (rowData.roles !== null) {
+        rolesArray = rowData.roles;
+        parsedRolesArray = JSON.parse(rolesArray);
+
+        rolesHtml = '<ul>';
+        parsedRolesArray.forEach(function (role) {
+            rolesHtml += '<li>' + role + '</li>';
+        })
+        rolesHtml += '</ul>';
+    }
 
     return drawTrWithoutTrash(
         tableMetadata,
