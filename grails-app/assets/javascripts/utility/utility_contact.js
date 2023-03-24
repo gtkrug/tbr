@@ -1,22 +1,7 @@
 // list
 let listContact = function () {
     list(CONTACT_LIST,
-        function (contactList) {
-            renderContactTable(
-                "contact-table",
-                {
-                    editable: contactList.editable,
-                    fnAdd: function () {
-                        addContact({id: 0})
-                    },
-                    fnRemove: removeContact,
-                    fnDraw: drawContactTr,
-                    hRef: "javascript:getContact",
-                    includeOrganizationColumn: true
-                },
-                contactList,
-                0)
-        },
+        contactResults(0),
         {id: 0})
 }
 
@@ -50,6 +35,26 @@ let drawContactTr = function (tableMetadata, rowData) {
             rowData.phone != null ? rowData.phone : ""
         ],
         {})
+}
+
+let curriedContact = curryFour(renderContactTable);
+
+let contactResults = function (id) {
+    return function (results) {
+        renderContactOffset = curriedContact('contact-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addContact({id: 0})
+            },
+            fnRemove: removeContact,
+            fnDraw: drawContactTr,
+            hRef: "javascript:getContact",
+            includeOrganizationColumn: true
+        })
+        (results);
+        renderContactOffset(0);
+    }
 }
 
 // render form

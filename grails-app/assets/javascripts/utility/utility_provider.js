@@ -1,21 +1,7 @@
 // list
 let listProvider = function (oid) {
     list(PROVIDER_LIST,
-        function (providerList) {
-            renderProviderTable(
-                "provider-table",
-                {
-                    editable: providerList.editable,
-                    fnAdd: function () {
-                        addProvider({id: 0})
-                    },
-                    fnRemove: removeProvider,
-                    fnDraw: drawProviderTr,
-                    hRef: "javascript:getProvider"
-                },
-                providerList,
-                0)
-        },
+        providerResults(),
         {orgid: oid})
 }
 
@@ -48,6 +34,25 @@ let drawProviderTr = function (tableMetadata, rowData) {
             rowData.providerType
         ],
         {})
+}
+
+let curriedProvider = curryFour(renderProviderTable);
+
+let providerResults = function () {
+    return function (results) {
+        renderProviderOffset = curriedProvider('provider-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addProvider({id: 0})
+            },
+            fnRemove: removeProvider,
+            fnDraw: drawProviderTr,
+            hRef: "javascript:getProvider"
+        })
+        (results);
+        renderProviderOffset(0);
+    }
 }
 
 // render form

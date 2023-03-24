@@ -1,21 +1,7 @@
 // list
 let listOrganization = function () {
     list(ORGANIZATION_LIST,
-        function (organizationList) {
-            renderOrganizationTable(
-                "organization-table",
-                {
-                    editable: organizationList.editable,
-                    fnAdd: function () {
-                        addOrganization({id: 0}, true, !organizationList.editable)
-                    },
-                    fnRemove: removeOrganization,
-                    fnDraw: drawOrganizationTr,
-                    hRef: "javascript:getOrganization"
-                },
-                organizationList,
-                0)
-        },
+        organizationResults(),
         {name: "ALL"})
 }
 
@@ -48,6 +34,25 @@ let drawOrganizationTr = function (obj, entry) {
             entry.providers.length
         ],
         {})
+}
+
+let curriedOrganization = curryFour(renderOrganizationTable);
+
+let organizationResults = function () {
+    return function (results) {
+        renderOrganizationOffset = curriedOrganization('organization-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addOrganization({id: 0}, true, !results.editable)
+            },
+            fnRemove: removeOrganization,
+            fnDraw: drawOrganizationTr,
+            hRef: "javascript:getOrganization"
+        })
+        (results);
+        renderOrganizationOffset(0);
+    }
 }
 
 // render form

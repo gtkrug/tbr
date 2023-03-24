@@ -1,23 +1,7 @@
 // list
 let listPartnerOrganizationTip = function (oid) {
     list(ORGANIZATION_PARTNER_SYSTEMS_TIPS,
-        function (organizationList) {
-            renderPartnerOrganizationTipTable(
-                "partner-organization-tip-table",
-                {
-                    editable: organizationList.editable,
-                    fnAdd: function () {
-                        addPartnerOrganizationTip({id: 0})
-                    },
-                    fnRemove: function () {
-                        removePartnerOrganizationTip(ORGANIZATION_ID)
-                    },
-                    fnDraw: drawPartnerOrganizationTr,
-                    titleTooltip: "This list of trust interoperability profiles (TIPs) represents the requirements of this organization for potential partner organizations that will engage in trusted information exchanges."
-                },
-                organizationList,
-                0)
-        },
+        partnerOrganizationTipResults(),
         {oid: oid})
 }
 
@@ -48,6 +32,27 @@ let drawPartnerOrganizationTr = function (tableMetadata, rowData) {
             `<a href="${rowData.partnerSystemsTipIdentifier}" target="_blank">${rowData.name}</a>`
         ],
         {})
+}
+
+let curriedPartnerOrganizationTip = curryFour(renderPartnerOrganizationTipTable);
+
+let partnerOrganizationTipResults = function () {
+    return function (results) {
+        renderPartnerOrganizationTipOffset = curriedPartnerOrganizationTip('partner-organization-tip-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addPartnerOrganizationTip({id: 0})
+            },
+            fnRemove: function () {
+                removePartnerOrganizationTip(ORGANIZATION_ID)
+            },
+            fnDraw: drawPartnerOrganizationTr,
+            titleTooltip: "This list of trust interoperability profiles (TIPs) represents the requirements of this organization for potential partner organizations that will engage in trusted information exchanges."
+        })
+        (results);
+        renderPartnerOrganizationTipOffset(0);
+    }
 }
 
 // render form

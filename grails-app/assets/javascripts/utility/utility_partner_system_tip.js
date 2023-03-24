@@ -1,23 +1,7 @@
 // list
 let listPartnerSystemTip = function (pid) {
     list(PROVIDER_PARTNER_SYSTEMS_TIPS,
-        function (results) {
-            renderPartnerSystemTipTable(
-                "partner-system-tip-table",
-                {
-                    editable: results.editable,
-                    fnAdd: function () {
-                        addPartnerSystemTip({id: 0})
-                    },
-                    fnRemove: function () {
-                        removePartnerSystemTip(PROVIDER_ID)
-                    },
-                    fnDraw: drawPartnerSystemTipTr,
-                    titleTooltip: "This list of trust interoperability profiles (TIPs) represents the requirements of this system for potential partner systems that will engage in trusted information exchanges."
-                },
-                results,
-                0)
-        },
+        partnerSystemTipResults(),
         {pid: pid})
 }
 
@@ -48,6 +32,27 @@ let drawPartnerSystemTipTr = function (tableMetadata, rowData) {
             `<a href="${rowData.partnerSystemsTipIdentifier}" target="_blank">${rowData.name}</a>`
         ],
         {})
+}
+
+let curriedPartnerSystemTip = curryFour(renderPartnerSystemTipTable);
+
+let partnerSystemTipResults = function () {
+    return function (results) {
+        renderPartnerSystemTipOffset = curriedPartnerSystemTip('partner-system-tip-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addPartnerSystemTip({id: 0})
+            },
+            fnRemove: function () {
+                removePartnerSystemTip(PROVIDER_ID)
+            },
+            fnDraw: drawPartnerSystemTipTr,
+            titleTooltip: "This list of trust interoperability profiles (TIPs) represents the requirements of this system for potential partner systems that will engage in trusted information exchanges."
+        })
+        (results);
+        renderPartnerSystemTipOffset(0);
+    }
 }
 
 // render form

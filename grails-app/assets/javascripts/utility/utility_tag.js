@@ -1,24 +1,10 @@
 // list
 let listTag = function (pid) {
     list(TAG_LIST,
-        function (tagList) {
-            renderTagTable(
-                "tag-table",
-                {
-                    editable: tagList.editable,
-                    fnAdd: function () {
-                        addTag({id: 0})
-                    },
-                    fnRemove: function () {
-                        removeTag(PROVIDER_ID)
-                    },
-                    fnDraw: drawTagTr
-                },
-                tagList,
-                0)
-        },
+        tagResults(),
         {id: pid})
 }
+
 
 // render offset
 let renderTagOffset = function () {
@@ -49,6 +35,26 @@ let drawTagTr = function (tableMetadata, rowData) {
             rowData
         ],
         {})
+}
+
+let curriedTag = curryFour(renderTagTable);
+
+let tagResults = function () {
+    return function (results) {
+        renderTagOffset = curriedTag('tag-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addTag({id: 0})
+            },
+            fnRemove: function () {
+                removeTag(PROVIDER_ID)
+            },
+            fnDraw: drawTagTr
+        })
+        (results);
+        renderTagOffset(0);
+    }
 }
 
 // render form

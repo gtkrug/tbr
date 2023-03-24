@@ -1,23 +1,7 @@
 // list
 let listConformanceTargetTip = function (pid) {
     list(CONFORMANCE_TARGET_TIP_LIST,
-        function (results) {
-            renderConformanceTargetTipTable(
-                "conformance-target-tip-table",
-                {
-                    editable: results.editable,
-                    fnAdd: function () {
-                        addConformanceTargetTip({id: 0})
-                    },
-                    fnRemove: function () {
-                        removeConformanceTargetTip(PROVIDER_ID)
-                    },
-                    fnDraw: drawConformanceTargetTipTr,
-                    titleTooltip: "Conformance Target TIPs are trust interoperability profiles that this system aspires to fully earn, and frequently has earned most or all of the required trustmarks."
-                },
-                results,
-                0)
-        },
+        conformanceTargetTipResults(),
         {id: pid})
 }
 
@@ -48,6 +32,27 @@ let drawConformanceTargetTipTr = function (tableMetadata, rowData) {
             `<a href="${rowData.conformanceTargetTipIdentifier}" target="_blank">${rowData.name}</a>`
         ],
         {})
+}
+
+let curriedConformanceTargetTip = curryFour(renderConformanceTargetTipTable);
+
+let conformanceTargetTipResults = function () {
+    return function (results) {
+        renderConformanceTargetTipOffset = curriedConformanceTargetTip('conformance-target-tip-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addConformanceTargetTip({id: 0})
+            },
+            fnRemove: function () {
+                removeConformanceTargetTip(PROVIDER_ID)
+            },
+            fnDraw: drawConformanceTargetTipTr,
+            titleTooltip: "Conformance Target TIPs are trust interoperability profiles that this system aspires to fully earn, and frequently has earned most or all of the required trustmarks."
+        })
+        (results);
+        renderConformanceTargetTipOffset(0);
+    }
 }
 
 // render form

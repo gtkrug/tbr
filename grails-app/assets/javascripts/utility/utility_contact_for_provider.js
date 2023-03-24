@@ -1,24 +1,10 @@
 // list
 let listContact = function () {
     list(PROVIDER_LIST_CONTACTS,
-        function (contactList) {
-            renderContactTable(
-                "contact-table",
-                {
-                    editable: contactList.editable,
-                    fnAdd: function () {
-                        addContact({id: 0})
-                    },
-                    fnRemove: removeContact,
-                    fnDraw: drawContactTr,
-                    hRef: "javascript:getContact",
-                    includeOrganizationColumn: false
-                },
-                contactList,
-                0)
-        },
-        {id: PROVIDER_ORGANIZATION_ID, pid: PROVIDER_ID})
+        contactResults(0),
+        {id: 0})
 }
+
 
 // render offset
 let renderContactOffset = function () {
@@ -28,7 +14,12 @@ let renderContactOffset = function () {
 let renderContactTable = function (tableId, tableMetadata, tableData, offset) {
     const columnNameArray = ["Last Name", "First Name", "Email", "Phone"]
 
-    let html = renderPagination(offset, tableData.length, "renderContactOffset")
+    numOfColumns = columnNameArray.length
+    if (LOGGED_IN && tableMetadata.editable) {
+        numOfColumns++
+    }
+
+    let html = renderPagination(offset, tableData.records.length, "renderContactOffset", numOfColumns)
 
     html += `<thead>`
     html += `<tr>`
@@ -70,6 +61,26 @@ let drawContactTr = function (tableMetadata, rowData) {
     html += `</tr>`
 
     return html
+}
+
+let curriedContact = curryFour(renderContactTable);
+
+let contactResults = function (id) {
+    return function (results) {
+        renderContactOffset = curriedContact('contact-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addContact({id: 0})
+            },
+            fnRemove: removeContact,
+            fnDraw: drawContactTr,
+            hRef: "javascript:getContact",
+            includeOrganizationColumn: false
+        })
+        (results);
+        renderContactOffset(0);
+    }
 }
 
 // render form

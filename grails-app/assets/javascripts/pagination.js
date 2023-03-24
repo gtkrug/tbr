@@ -1,4 +1,4 @@
-let MAX_DISPLAY = 15;
+let MAX_DISPLAY = 20;
 /**
  * wrapper of general purpose paging mechanism
  * @param offset
@@ -13,6 +13,7 @@ function buildPagination(offset, max, total, callbackFunction){
 
 /**
  * general purpose paging code for paging lists
+ * @param numOfColumns
  * @param offset
  * @param max
  * @param total
@@ -20,14 +21,25 @@ function buildPagination(offset, max, total, callbackFunction){
  * @param displayCounts
  * @returns {string}
  */
-function buildPagination(offset, max, total, callbackFunction, displayCounts){
+function buildPagination(offset, max, total, callbackFunction, numOfColumns, displayCounts){
     var html = '';
 
     // Current design includes pagination inside a table. Need to wrap the pagination div inside a table row and header element
     // to avoid undefined behavior.
-    html += '<tr><th colspan="3">';
 
-    var pageCount = Math.floor(total / max) + 1;
+    if (numOfColumns) {
+        html += '<tr><th colspan="' + numOfColumns + '">';
+    } else {
+        html += '<tr><th colspan="' + 3 + '">';
+    }
+
+    var numOfPages = total / max;
+    if (numOfPages > Math.floor(numOfPages)) {
+        numOfPages = Math.floor(numOfPages) + 1;
+    }
+    var pageCount = numOfPages;
+
+
     var curPage = getCurrentPage(offset, max);
     console.log("Displaying page "+curPage+" of "+pageCount+" pages.");
 

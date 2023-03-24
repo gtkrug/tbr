@@ -1,28 +1,13 @@
 // list
 let listTrustmarkRecipientIdentifier = function (pid) {
     list(PROVIDER_TRUSTMARK_RECIPIENT_IDENTIFIERS,
-        function (trustmarkRecipientIdentifierList) {
-            renderTrustmarkRecipientIdentifierTable(
-                "trustmark-recipient-identifier-table",
-                {
-                    editable: trustmarkRecipientIdentifierList.editable,
-                    fnAdd: function () {
-                        addTrustmarkRecipientIdentifierForAdd({id: 0})
-                    },
-                    fnRemove: function () {
-                        removeTrustmarkRecipientIdentifier(PROVIDER_ID)
-                    },
-                    fnDraw: drawTrustmarkRecipientIdentifierTr,
-                    hRef: "javascript:getTrustmarkRecipientIdentifier"
-                },
-                trustmarkRecipientIdentifierList,
-                0)
-        },
+        trustmarkRecipientIdentifierResults(),
         {pid: pid})
 }
 
+
 // render offset
-let renderTrustmarkRecipientIdentifierOffset = function () {
+let renderTrustmarkRecipientIdentifiersOffset = function () {
 }
 
 // render table
@@ -48,6 +33,27 @@ let drawTrustmarkRecipientIdentifierTr = function (obj, entry) {
             entry.trustmarkRecipientIdentifierUrl
         ],
         {})
+}
+
+let curriedTrustmarkRecipientIdentifier = curryFour(renderTrustmarkRecipientIdentifierTable);
+
+let trustmarkRecipientIdentifierResults = function () {
+    return function (results) {
+        renderTrustmarkRecipientIdentifiersOffset = curriedTrustmarkRecipientIdentifier('trustmark-recipient-identifier-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addTrustmarkRecipientIdentifierForAdd({id: 0})
+            },
+            fnRemove: function () {
+                removeTrustmarkRecipientIdentifier(PROVIDER_ID)
+            },
+            fnDraw: drawTrustmarkRecipientIdentifierTr,
+            hRef: "javascript:getTrustmarkRecipientIdentifier"
+        })
+        (results);
+        renderTrustmarkRecipientIdentifiersOffset(0);
+    }
 }
 
 // render form

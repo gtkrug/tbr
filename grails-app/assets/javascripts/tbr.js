@@ -1,12 +1,21 @@
-let renderPagination = function (offset, totalCount, fnName) {
+let renderPagination = function (offset, totalCount, fnName, numOfColumns) {
     if (totalCount > MAX_DISPLAY) {
-        return buildPagination(offset, MAX_DISPLAY, totalCount, fnName)
+        return buildPagination(offset, MAX_DISPLAY, totalCount, fnName, numOfColumns)
     }
     return ""
 }
 
 let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, columnNameArray, entityName) {
-    let html = renderPagination(offset, tableData.length, fnName)
+    numOfColumns = columnNameArray.length
+    if (LOGGED_IN && tableMetadata.editable) {
+        numOfColumns += 2
+    }
+
+    if (tableMetadata.includeOrganizationColumn) {
+        numOfColumns++
+    }
+
+    let html = renderPagination(offset, tableData.length, fnName, numOfColumns)
 
     html += `<thead>`
     html += `<tr>`

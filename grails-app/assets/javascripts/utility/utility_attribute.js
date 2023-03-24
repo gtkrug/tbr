@@ -1,22 +1,7 @@
 // list
 let listAttribute = function (pid) {
     list(ATTRIBUTE_LIST,
-        function (attributeList) {
-            renderAttributeTable(
-                "attribute-table",
-                {
-                    editable: attributeList.editable,
-                    fnAdd: function () {
-                        addAttribute({id: 0})
-                    },
-                    fnRemove: function () {
-                        removeAttribute(PROVIDER_ID)
-                    },
-                    fnDraw: drawAttributeTr
-                },
-                attributeList,
-                0)
-        },
+        attributeResults(),
         {id: pid})
 }
 
@@ -48,6 +33,26 @@ let drawAttributeTr = function (tableMetadata, rowData) {
             rowData.value
         ],
         {})
+}
+
+let curriedAttribute = curryFour(renderAttributeTable);
+
+let attributeResults = function () {
+    return function (results) {
+        renderAttributeOffset = curriedAttribute('attribute-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addAttribute({id: 0})
+            },
+            fnRemove: function () {
+                removeAttribute(PROVIDER_ID)
+            },
+            fnDraw: drawAttributeTr
+        })
+        (results);
+        renderAttributeOffset(0);
+    }
 }
 
 // render form

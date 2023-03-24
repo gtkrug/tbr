@@ -374,8 +374,13 @@ class AdministrationService {
                 boolean isOrgAdmin = isOrgAdmin()
 
                 boolean hasContact = userOption.some().contact != null
-                boolean hasOrganization = userOption.some().contact.organization != null
-                boolean orgIdsDiffer = hasOrganization && userOption.some().contact.organization.id != orgId
+                boolean hasOrganization = false
+                boolean orgIdsDiffer = false
+
+                if (hasContact) {
+                    hasOrganization = userOption.some().contact.organization != null
+                    orgIdsDiffer = hasOrganization && userOption.some().contact.organization.id != orgId
+                }
 
                 boolean userOrgDiffers = isOrgAdmin && hasContact && hasOrganization && orgIdsDiffer
                 boolean orgAdminNoOrganization = isOrgAdmin && !hasOrganization

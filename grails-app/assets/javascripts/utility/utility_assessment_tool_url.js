@@ -1,23 +1,7 @@
 // list
 let listAssessmentToolUrl = function (oid) {
     list(ORGANIZATION_REPOS,
-        function (assessmentToolUrlList) {
-            renderAssessmentToolUrlTable(
-                "assessment-tool-url-table",
-                {
-                    editable: assessmentToolUrlList.editable,
-                    fnAdd: function () {
-                        addAssessmentToolUrlForAdd({id: 0})
-                    },
-                    fnRemove: function () {
-                        removeAssessmentToolUrl(ORGANIZATION_ID)
-                    },
-                    fnDraw: drawAssessmentToolUrlTr,
-                    hRef: "javascript:getAssessmentToolUrl"
-                },
-                assessmentToolUrlList,
-                0)
-        },
+        assessmentToolUrlResults(),
         {oid: oid})
 }
 
@@ -48,6 +32,27 @@ let drawAssessmentToolUrlTr = function (tableMetadata, rowData) {
             rowData.repoUrl
         ],
         {})
+}
+
+let curriedAssessmentToolUrl = curryFour(renderAssessmentToolUrlTable);
+
+let assessmentToolUrlResults = function () {
+    return function (results) {
+        renderAssessmentToolUrlOffset = curriedAssessmentToolUrl('assessment-tool-url-table')
+        ({
+            editable: results.editable,
+            fnAdd: function () {
+                addAssessmentToolUrlForAdd({id: 0})
+            },
+            fnRemove: function () {
+                removeAssessmentToolUrl(ORGANIZATION_ID)
+            },
+            fnDraw: drawAssessmentToolUrlTr,
+            hRef: "javascript:getAssessmentToolUrl"
+        })
+        (results);
+        renderAssessmentToolUrlOffset(0);
+    }
 }
 
 // render form
