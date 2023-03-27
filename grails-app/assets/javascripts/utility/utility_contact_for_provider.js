@@ -2,7 +2,7 @@
 let listContact = function () {
     list(PROVIDER_LIST_CONTACTS,
         contactResults(0),
-        {id: 0})
+        {id: PROVIDER_ORGANIZATION_ID, pid: PROVIDER_ID})
 }
 
 

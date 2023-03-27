@@ -2,7 +2,7 @@
 let listContact = function () {
     list(CONTACT_LIST,
         contactResults(0),
-        {id: 0})
+        {id: ORGANIZATION_ID})
 }
 
 // render offset
