@@ -1,6 +1,6 @@
 # Trustmark Binding Registry (TBR)
 
-More detail coming soon.
+Details on how to use a TBR can be found in the [TBR Wiki](https://github.com/Trustmark-Initiative/tbr/wiki).
 
 
 
