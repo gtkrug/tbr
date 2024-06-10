@@ -75,7 +75,8 @@ class SigningCertificatesController {
 
         log.debug("add -> ${params.commonName}")
 
-        SigningCertificate signingCertificate = signingCertificateService.add(params.commonName // 0
+        SigningCertificate signingCertificate = signingCertificateService.add(
+                 params.commonName // 0
                 , params.localityName // 1
                 , params.stateName // 2
                 , params.countryName // 3

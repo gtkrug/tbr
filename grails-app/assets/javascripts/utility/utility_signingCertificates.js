@@ -1,22 +1,9 @@
+let SIGNING_CERT_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // list
 let listSigningCertificate = function () {
     list(SIGNING_CERTIFICATES_LIST,
-        function (signingCertificateList) {
-            renderSigningCertificateTable(
-                "signing-certificate-table",
-                {
-                    editable: true,
-                    fnAdd: function () {
-                        addSigningCertificate({id: 0})
-                    },
-                    fnRemove: removeSigningCertificate,
-                    fnDraw: drawSigningCertificateTr,
-                    hRef: "javascript:getSigningCertificate",
-                    includeOrganizationColumn: false
-                },
-                signingCertificateList,
-                0)
-        },
+        signingCertificateResults(),
         {name: "ALL"})
 }
 
@@ -26,7 +13,7 @@ let renderSigningCertificateOffset = function () {
 
 // render table
 let renderSigningCertificateTable = function (tableId, tableMetadata, tableData, offset) {
-    let html = renderPagination(offset, tableData.length, "renderSigningCertificateOffset")
+    let html = renderPagination(tableId, SIGNING_CERT_TABLE_ITEMS_PER_PAGE, offset, tableData.length, "renderSigningCertificateOffset", 5)
 
     html += `<thead>`
     html += `<tr>`
@@ -45,7 +32,7 @@ let renderSigningCertificateTable = function (tableId, tableMetadata, tableData,
     } else {
         let idx = 0
         tableData.forEach(o => {
-            if (idx >= offset && idx < offset + MAX_DISPLAY) {
+            if (idx >= offset && idx < offset + SIGNING_CERT_TABLE_ITEMS_PER_PAGE) {
                 html += tableMetadata.fnDraw(tableMetadata, o)
             }
             ++idx
@@ -57,6 +44,23 @@ let renderSigningCertificateTable = function (tableId, tableMetadata, tableData,
     if (tableMetadata.editable) {
         document.getElementById(`plus-${tableId}`).onclick = tableMetadata.fnAdd
     }
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = SIGNING_CERT_TABLE_ITEMS_PER_PAGE;
+    }
+
+    signingCertItemsPerPageTableEventHandler(tableId, renderSigningCertificateOffset);
+}
+
+let signingCertItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        SIGNING_CERT_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr
@@ -101,6 +105,26 @@ let drawSigningCertificateTr = function (tableMetadata, rowData) {
     html += `</tr>`
 
     return html
+}
+
+let curriedSigningCertificate = curryFour(renderSigningCertificateTable);
+
+let signingCertificateResults = function () {
+    return function (results) {
+        renderSigningCertificateOffset = curriedSigningCertificate('signing-certificate-table')
+        ({
+            editable: true,
+            fnAdd: function () {
+                addSigningCertificate({id: 0})
+            },
+            fnRemove: removeSigningCertificate,
+            fnDraw: drawSigningCertificateTr,
+            hRef: "javascript:getSigningCertificate",
+            includeOrganizationColumn: false
+        })
+        (results);
+        renderSigningCertificateOffset(0);
+    }
 }
 
 // render form

@@ -26,6 +26,9 @@
             const ORGANIZATION_ADD = "${createLink(controller:'organization', action: 'add')}"
             const ORGANIZATION_UPDATE = "${createLink(controller:'organization', action: 'update')}"
             const ORGANIZATION_DELETE = "${createLink(controller:'organization', action: 'delete')}"
+
+            const TABLE_INLINE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.inline_table_default_items_per_page}")
+            const TABLE_FULL_PAGE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.full_page_table_default_items_per_page}")
         </script>
         <asset:javascript src="utility/utility_organization.js"/>
         <asset:javascript src="index_index.js"/>

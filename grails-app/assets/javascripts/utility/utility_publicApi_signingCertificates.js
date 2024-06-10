@@ -1,4 +1,6 @@
 MAX_DISPLAY = 10
+let PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 let publicSigningCertificates = {}
 
 function performSearch(queryString, maxResults) {
@@ -32,10 +34,12 @@ function performSearch(queryString, maxResults) {
 }
 
 function renderPublicSigningCertificates(offset) {
+    const tableId = "certificate-table"
+
     let html = ``
 
-    if (publicSigningCertificates.length > MAX_DISPLAY) {
-        html += buildPagination(offset, MAX_DISPLAY, publicSigningCertificates.length, "renderPublicSigningCertificates")
+    if (publicSigningCertificates.length > PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE) {
+        html += buildPagination(tableId, offset, PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE, publicSigningCertificates.length, "renderPublicSigningCertificates")
     }
 
     html += `<thead>`
@@ -46,11 +50,11 @@ function renderPublicSigningCertificates(offset) {
     html += `</thead>`
     html += `<tbody>`
 
-    if (publicSigningCertificates.length == 0) {
+    if (publicSigningCertificates.length === 0) {
         html += `<tr><td colspan="2">There are no signing certificates.</td></tr>`
     } else {
         publicSigningCertificates.forEach((signingCertificate, i) => {
-            if (i >= offset && i < MAX_DISPLAY + offset) {
+            if (i >= offset && i < PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE + offset) {
                 html += `<tr>`
                 html += `<td><a href="${signingCertificate.url}">${signingCertificate.url}</span></a></td>`
                 html += `<td class="text-center">`
@@ -64,7 +68,24 @@ function renderPublicSigningCertificates(offset) {
     }
     html += `</tbody>`
 
-    document.getElementById("certificate-table").innerHTML = html
+    document.getElementById(tableId).innerHTML = html
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE;
+    }
+
+    publicSigningCertItemsPerPageTableEventHandler(tableId, renderPublicSigningCertificates, offset);
+}
+
+let publicSigningCertItemsPerPageTableEventHandler = function (tableId, func, offset) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        PUBLIC_SIGNING_CERT_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 function setResultsDiv(count, qstr) {

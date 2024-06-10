@@ -40,10 +40,17 @@
             const ORGANIZATION_BIND_TRUSTMARKS = "${createLink(controller: 'organization', action: 'bindTrustmarks')}"
             const ORGANIZATION_UPDATE_TRUSTMARK_BINDING_DETAILS = "${createLink(controller: 'organization', action: 'updateTrustmarkBindingDetails')}"
 
+            const FULL_PAGE_DEFAULT_ITEMS_PER_PAGE = "${createLink(controller: 'organization', action: 'getFullPageDefaultItemsPerPage')}"
+
             const PROVIDER_ADD = "${createLink(controller: 'provider', action: 'add')}"
             const PROVIDER_DELETE = "${createLink(controller: 'provider', action: 'delete')}"
             const PROVIDER_LIST = "${createLink(controller: 'provider', action: 'list')}"
             const PROVIDER_TYPES = "${createLink(controller: 'provider', action: 'types')}"
+
+            const TABLE_INLINE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.inline_table_default_items_per_page}")
+            const TABLE_FULL_PAGE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.full_page_table_default_items_per_page}")
+
+            // updateItemsPerPage(TABLE_FULL_PAGE_ITEMS_PER_PAGE);
         </script>
         <asset:javascript src="utility/utility_organization.js"/>
         <asset:javascript src="utility/utility_contact_for_organization.js"/>

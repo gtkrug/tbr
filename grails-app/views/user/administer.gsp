@@ -14,6 +14,9 @@
             const USER_GET = "${createLink(controller:'user', action: 'get')}"
             const USER_LIST = "${createLink(controller:'user', action: 'list')}"
             const USER_UPDATE = "${createLink(controller:'user', action: 'update')}"
+
+            const TABLE_INLINE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.inline_table_default_items_per_page}");
+            const TABLE_FULL_PAGE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.full_page_table_default_items_per_page}");
         </script>
         <asset:javascript src="utility/utility_user.js"/>
         <asset:javascript src="user_administer.js"/>

@@ -1,3 +1,5 @@
+let ATTRIB_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listAttribute = function (pid) {
     list(ATTRIBUTE_LIST,
@@ -15,10 +17,24 @@ let renderAttributeTable = function (tableId, tableMetadata, tableData, offset) 
         tableId,
         tableMetadata,
         tableData.records,
+        ATTRIB_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderAttributeOffset",
         ["Name", "Value"],
         "attributes")
+
+    attribItemsPerPageTableEventHandler(tableId, renderAttributeOffset);
+}
+
+let attribItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        ATTRIB_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

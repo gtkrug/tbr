@@ -3,7 +3,7 @@ package tm.binding.registry
 import grails.core.GrailsApplication
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import sun.security.x509.X500Name
+import tm.binding.registry.util.X500PrincipalWrapper
 
 import javax.servlet.ServletContext
 import tm.binding.registry.util.TBRProperties
@@ -118,7 +118,7 @@ class BootStrap {
 
             BigInteger sn = new BigInteger(serialNumber)
 
-            X500Name x500Name = new X500Name(distinguishedName)
+            X500PrincipalWrapper x500Name = new X500PrincipalWrapper(distinguishedName)
 
             X509CertificateService x509CertificateService = new X509CertificateService()
 

@@ -1,3 +1,5 @@
+let CONTACT_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // list
 let listContact = function () {
     list(CONTACT_LIST,
@@ -15,10 +17,24 @@ let renderContactTable = function (tableId, tableMetadata, tableData, offset) {
         tableId,
         tableMetadata,
         tableData.records,
+        CONTACT_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderContactOffset",
         ["Last Name", "First Name", "Email", "Phone"],
         "points of contact")
+
+    contactItemsPerPageTableEventHandler(tableId, renderContactOffset);
+}
+
+let contactItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        CONTACT_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

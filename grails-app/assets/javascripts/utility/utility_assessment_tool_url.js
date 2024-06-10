@@ -1,3 +1,5 @@
+let REPO_URL_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listAssessmentToolUrl = function (oid) {
     list(ORGANIZATION_REPOS,
@@ -15,10 +17,24 @@ let renderAssessmentToolUrlTable = function (tableId, tableMetadata, tableData, 
         tableId,
         tableMetadata,
         tableData.records,
+        REPO_URL_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderAssessmentToolUrlOffset",
         ["Assessment Tool URL"],
         "Assessment Tool URLs")
+
+    repoUrlItemsPerPageTableEventHandler(tableId, renderAssessmentToolUrlOffset);
+}
+
+let repoUrlItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        REPO_URL_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

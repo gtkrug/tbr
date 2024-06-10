@@ -4,8 +4,9 @@ import grails.converters.JSON
 import grails.converters.XML
 import grails.gorm.transactions.Transactional
 import org.apache.commons.lang.StringUtils
-import sun.security.x509.X500Name
+import tm.binding.registry.util.X500PrincipalWrapper
 import tm.binding.registry.util.TBRProperties
+
 
 import javax.servlet.ServletException
 import java.security.KeyPair
@@ -22,6 +23,17 @@ class SigningCertificateService {
         log.info("service -> ${args[0]}")
     }
 
+    // args:
+    //   commonName // 0
+    //   localityName // 1
+    //   stateName // 2
+    //   countryName // 3
+    //   emailAddress // 4
+    //   organizationName // 5
+    //   organizationUnitName // 6
+    //   validPeriod // 7
+    //   keyLength // 8
+
     def add(String... args) {
         log.info("add -> ${args[0]}")
 
@@ -34,7 +46,7 @@ class SigningCertificateService {
         KeyPair keyPair = keyPairGenerator.generateKeyPair()
 
         // distinguished name
-        X500Name x500Name = new X500Name(args[0], args[6], args[5],
+        X500PrincipalWrapper x500Name = new X500PrincipalWrapper(args[0], args[6], args[5],
                 args[1], args[2], args[3])
 
         String distinguishedName = x500Name.getName()

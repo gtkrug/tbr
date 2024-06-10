@@ -1,3 +1,5 @@
+let TAG_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listTag = function (pid) {
     list(TAG_LIST,
@@ -16,10 +18,24 @@ let renderTagTable = function (tableId, tableMetadata, tableData, offset) {
         tableId,
         tableMetadata,
         tableData.records,
+        TAG_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderTagOffset",
         ["Keyword Tag"],
         "keyword tags")
+
+    tagItemsPerPageTableEventHandler(tableId, renderTagOffset);
+}
+
+let tagItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        TAG_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

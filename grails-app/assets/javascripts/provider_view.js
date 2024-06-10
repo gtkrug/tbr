@@ -15,7 +15,7 @@ $(document).ready(function () {
             getCertificateDetail(PROVIDER_ID)
         }
 
-        if ((IS_OIDC_OP || IS_OIDC_RP) && LOGGED_IN) {
+        if ((IS_OIDC_OP || IS_OIDC_RP)) {
             getOidcDetail(PROVIDER_ID)
         }
 

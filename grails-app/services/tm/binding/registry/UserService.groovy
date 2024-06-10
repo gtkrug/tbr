@@ -87,30 +87,4 @@ class UserService {
         }
         return user
     }
-
-    // TODO: Change public void to def?
-    public void insertOrUpdateHelper(
-            final String username,
-            final String nameFamily,
-            final String nameGiven,
-            final String contactEmail,
-            final List<String> roleList) {
-
-        User.withTransaction {
-
-            User user = User.findByUsernameHelper(username).orSome(new User());
-            user.setUsername(username);
-            user.setNameFamily(nameFamily);
-            user.setNameGiven(nameGiven);
-            user.setName(nameGiven + ", " + nameFamily)
-            user.setContactEmail(contactEmail);
-
-            // filter duplicate roles
-            java.util.List<String> roleListNoDuplicates = new ArrayList<>(new HashSet<>(roleList.toList()))
-
-            user.setRoleArrayJson(new JSONArray(roleListNoDuplicates).toString());
-
-            user.saveAndFlushHelper();
-        };
-    }
 }

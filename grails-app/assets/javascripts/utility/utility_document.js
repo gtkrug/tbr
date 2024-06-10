@@ -1,25 +1,9 @@
+let DOC_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // list
 let listDocument = function () {
     list(DOCUMENT_LIST,
-        function (docList) {
-            renderDocumentTable(
-                "document-table",
-                {
-                    editable: docList.editable,
-                    binaryUrl: docList.binaryUrl,
-                    fnAdd: function () {
-                        addDocument({
-                            id: 0,
-                            binaryUrl: docList.binaryUrl
-                        })
-                    },
-                    fnRemove: removeDocument,
-                    fnDraw: drawDocumentTr,
-                    hRef: "javascript:getDocument"
-                },
-                docList,
-                0)
-        },
+        documentResults(),
         {id: 0})
 }
 
@@ -33,10 +17,24 @@ let renderDocumentTable = function (tableId, tableMetadata, tableData, offset) {
         tableId,
         tableMetadata,
         tableData.records,
+        DOC_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderDocumentOffset",
         ["Document Name", "URL", "Description", "Public"],
         "documents")
+
+    docItemsPerPageTableEventHandler(tableId, renderDocumentOffset);
+}
+
+let docItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        DOC_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr
@@ -53,6 +51,29 @@ let drawDocumentTr = function (tableMetadata, rowData) {
             rowData.publicDocument ? `<span class="bi bi-check-lg"></span>` : `<span class="bi bi-x-lg"></span>`
         ],
         {binaryUrl: tableMetadata.binaryUrl})
+}
+
+let curriedDocument = curryFour(renderDocumentTable);
+
+let documentResults = function () {
+    return function (results) {
+        renderDocumentOffset = curriedDocument('document-table')
+        ({
+            editable: results.editable,
+            binaryUrl: results.binaryUrl,
+            fnAdd: function () {
+                addDocument({
+                    id: 0,
+                    binaryUrl: results.binaryUrl
+                })
+            },
+            fnRemove: removeDocument,
+            fnDraw: drawDocumentTr,
+            hRef: "javascript:getDocument"
+        })
+        (results);
+        renderDocumentOffset(0);
+    }
 }
 
 // render form

@@ -1,11 +1,12 @@
-let renderPagination = function (offset, totalCount, fnName, numOfColumns) {
-    if (totalCount > MAX_DISPLAY) {
-        return buildPagination(offset, MAX_DISPLAY, totalCount, fnName, numOfColumns)
+let renderPagination = function (tableId, max, offset, totalCount, fnName, numOfColumns) {
+    if (totalCount > max) {
+        return buildPagination(tableId, offset, max, totalCount, fnName, numOfColumns, true)
     }
+
     return ""
 }
 
-let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, columnNameArray, entityName) {
+let renderTable = function (tableId, tableMetadata, tableData, max, offset, fnName, columnNameArray, entityName) {
     numOfColumns = columnNameArray.length
     if (LOGGED_IN && tableMetadata.editable) {
         numOfColumns += 2
@@ -15,7 +16,7 @@ let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, c
         numOfColumns++
     }
 
-    let html = renderPagination(offset, tableData.length, fnName, numOfColumns)
+    let html = renderPagination(tableId, max, offset, tableData.length, fnName, numOfColumns)
 
     html += `<thead>`
     html += `<tr>`
@@ -34,7 +35,7 @@ let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, c
         html += `<tr><td colspan="${columnNameArray.length + (LOGGED_IN && tableMetadata.editable ? 2 : 0) + (tableMetadata.includeOrganizationColumn ? 1 : 0)}">There are no ${entityName}.</td></tr>`
     } else {
         tableData.forEach((c, index) => {
-            if (index >= offset && index < offset + MAX_DISPLAY) {
+            if (index >= offset && index < offset + max) {
                 html += tableMetadata.fnDraw(tableMetadata, c)
             }
         })
@@ -48,10 +49,23 @@ let renderTable = function (tableId, tableMetadata, tableData, offset, fnName, c
         document.getElementById(`plus-${tableId}`).onclick = tableMetadata.fnAdd
         document.getElementById(`minus-${tableId}`).onclick = tableMetadata.fnRemove
     }
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = max;
+    }
 }
 
-let renderTableWithoutAddOrMinus = function (tableId, tableMetadata, tableData, offset, fnName, columnNameArray, entityName) {
-    let html = renderPagination(offset, tableData.length, fnName)
+let renderTableWithoutAddOrMinus = function (tableId, tableMetadata, tableData, max, offset, fnName, columnNameArray, entityName) {
+    numOfColumns = columnNameArray.length
+    if (LOGGED_IN && tableMetadata.editable) {
+        numOfColumns += 2
+    }
+
+    if (tableMetadata.includeOrganizationColumn) {
+        numOfColumns++
+    }
+
+    let html = renderPagination(tableId, max, offset, tableData.length, fnName, numOfColumns)
 
     html += `<thead>`
 
@@ -71,7 +85,7 @@ let renderTableWithoutAddOrMinus = function (tableId, tableMetadata, tableData, 
         html += `<tr><td colspan="${columnNameArray.length + (LOGGED_IN && tableMetadata.editable ? 2 : 0) + (tableMetadata.includeOrganizationColumn ? 1 : 0)}">There are no ${entityName}.</td></tr>`
     } else {
         tableData.forEach((c, index) => {
-            if (index >= offset && index < offset + MAX_DISPLAY) {
+            if (index >= offset && index < offset + max) {
                 html += tableMetadata.fnDraw(tableMetadata, c)
             }
         })
@@ -80,6 +94,10 @@ let renderTableWithoutAddOrMinus = function (tableId, tableMetadata, tableData, 
     html += `</tbody>`
 
     document.getElementById(tableId).innerHTML = html
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = max;
+    }
 }
 
 let drawTr = function (tableMetadata, rowData, inputId, removeClassName, rowDataArray, attributeObject) {

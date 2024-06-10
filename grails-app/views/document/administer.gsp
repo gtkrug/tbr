@@ -16,6 +16,9 @@
             const MOXIE_XAP = "${asset.assetPath([src: '/javascripts/plupload-2.1.1/js/Moxie.xap'])}"
 
             const CONTEXT = "${context}"
+
+            const TABLE_INLINE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.inline_table_default_items_per_page}");
+            const TABLE_FULL_PAGE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.full_page_table_default_items_per_page}");
         </script>
         <asset:javascript src="utility/utility_document.js"/>
         <asset:javascript src="document_administer.js"/>

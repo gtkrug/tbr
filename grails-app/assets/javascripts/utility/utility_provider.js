@@ -1,3 +1,5 @@
+let SYSTEM_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listProvider = function (oid) {
     list(PROVIDER_LIST,
@@ -16,10 +18,25 @@ let renderProviderTable = function (tableId, tabeMetadata, tableData, offset) {
         tableId,
         tabeMetadata,
         tableData.records,
+        SYSTEM_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderProviderOffset",
         ["Name", "Type"],
         "provider systems")
+
+    systemIemsPerPageTableEventHandler(tableId, renderProviderOffset);
+}
+
+let systemIemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        SYSTEM_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

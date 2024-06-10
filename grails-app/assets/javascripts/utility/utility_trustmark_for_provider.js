@@ -1,3 +1,5 @@
+let SYS_TRUSTMARK_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // render offset
 let renderTrustmarkOffset = function () {
 }
@@ -8,10 +10,24 @@ let renderTrustmarkTable = function (tableId, tableMetadata, tableData, offset) 
         tableId,
         tableMetadata,
         tableData,
+        SYS_TRUSTMARK_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderTrustmarkOffset",
         ["Name", "Provisional", "Status"],
         "trustmarks")
+
+    sysTrustmarkItemsPerPageTableEventHandler(tableId, renderTrustmarkOffset);
+}
+
+let sysTrustmarkItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        SYS_TRUSTMARK_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

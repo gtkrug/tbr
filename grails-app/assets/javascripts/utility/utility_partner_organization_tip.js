@@ -1,3 +1,5 @@
+let POTIP_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listPartnerOrganizationTip = function (oid) {
     list(ORGANIZATION_PARTNER_SYSTEMS_TIPS,
@@ -15,10 +17,24 @@ let renderPartnerOrganizationTipTable = function (tableId, tableMetadata, tableD
         tableId,
         tableMetadata,
         tableData.records,
+        POTIP_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderPartnerOrganizationTipOffset",
         ["Partner Organization TIP Identifier"],
         "Partner Organization TIP Identifiers")
+
+    potipItemsPerPageTableEventHandler(tableId, renderPartnerOrganizationTipOffset);
+}
+
+let potipItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        POTIP_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

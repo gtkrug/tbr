@@ -63,6 +63,9 @@
             const PROVIDER_ID = "${provider.id}"
             const PROVIDER_ORGANIZATION_ID = "${provider.organization.id}"
 
+            const TABLE_INLINE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.inline_table_default_items_per_page}");
+            const TABLE_FULL_PAGE_ITEMS_PER_PAGE = parseInt("${grailsApplication.config.full_page_table_default_items_per_page}");
+
             const IS_SAML_IDP =
             ${provider.providerType == tm.binding.registry.ProviderType.SAML_IDP}
             const IS_SAML_SP =

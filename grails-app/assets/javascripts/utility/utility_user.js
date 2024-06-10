@@ -1,18 +1,9 @@
+let USER_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // list
 let listUsers = function () {
     list(USER_LIST,
-        function (userList) {
-            renderUserTable(
-                "user-table",
-                {
-                    editable: userList.editable,
-                    fnDraw: drawUserTr,
-                    hRef: "javascript:getUser",
-                    includeOrganizationColumn: false
-                },
-                userList.records,
-                0)
-        },
+        userResults(),
         {id: 0})
 }
 
@@ -25,11 +16,25 @@ let renderUserTable = function (tableId, tableMetadata, tableData, offset) {
     renderTableWithoutAddOrMinus(
         tableId,
         tableMetadata,
-        tableData,
+        tableData.records,
+        USER_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderUserOffset",
         ["Name", "Email", "Role(s)", "Organization"],
         "users")
+
+    userItemsPerPageTableEventHandler(tableId, renderUserOffset);
+}
+
+let userItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        USER_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr
@@ -62,6 +67,22 @@ let drawUserTr = function (tableMetadata, rowData) {
                 ORGANIZATION_VIEW + '-1'}">${rowData.contact != null ? rowData.contact.organization.name : ""}</a>`
         ],
         {})
+}
+
+let curriedUser = curryFour(renderUserTable);
+
+let userResults = function () {
+    return function (results) {
+        renderUserOffset = curriedUser('user-table')
+        ({
+            editable: results.editable,
+            fnDraw: drawUserTr,
+            hRef: "javascript:getUser",
+            includeOrganizationColumn: false
+        })
+        (results);
+        renderUserOffset(0);
+    }
 }
 
 // render form

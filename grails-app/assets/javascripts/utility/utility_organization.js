@@ -1,3 +1,5 @@
+let ORG_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // list
 let listOrganization = function () {
     list(ORGANIZATION_LIST,
@@ -15,11 +17,26 @@ let renderOrganizationTable = function (tableId, tableMetadata, tableData, offse
         tableId,
         tableMetadata,
         tableData.records,
+        ORG_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderOrganizationOffset",
         ["Name", "URL", "System Count"],
         "organizations")
+
+    orgItemsPerPageTableEventHandler(tableId, renderOrganizationOffset);
 }
+
+let orgItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        ORG_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
+}
+
 
 // draw tr
 let drawOrganizationTr = function (obj, entry) {

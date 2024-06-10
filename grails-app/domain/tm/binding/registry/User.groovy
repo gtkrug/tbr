@@ -2,6 +2,7 @@ package tm.binding.registry
 
 import org.apache.commons.lang.StringUtils
 import org.gtri.fj.data.Option
+import org.gtri.fj.function.Effect0
 import org.json.JSONArray
 import java.util.stream.Collectors
 
@@ -40,6 +41,10 @@ class User {
         User.withTransaction {
             save(flush: true, failOnError: true)
         }
+    }
+
+    static final void withTransactionHelper(final Effect0 effect0) {
+        withTransaction({ return effect0.f() })
     }
 
     Boolean isAdmin() {

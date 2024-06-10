@@ -1,7 +1,8 @@
 package tm.binding.registry;
 
+import edu.gatech.gtri.trustmark.grails.OidcLoginCustomizer;
 import edu.gatech.gtri.trustmark.grails.oidc.service.WebClientConfigurer;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -13,27 +14,26 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2UserAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.gtri.fj.data.List;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.reactive.function.client.WebClient;
 import tm.binding.registry.util.TBRProperties;
+
+import static org.gtri.fj.data.Option.somes;
 
 
 @Configuration
@@ -41,12 +41,39 @@ import tm.binding.registry.util.TBRProperties;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
-    @Autowired
-    private ClientRegistrationRepository clientRegistrationRepository;
+    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri}")
+    private String issuerUri;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.redirect-uri}")
+    private String redirectUri;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.scope}")
+    private String scope;
 
     @Bean
-    UserService userService() {
-        return new UserService();
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        ClientRegistration clientRegistration = ClientRegistration.withRegistrationId("keycloak")
+                .clientId(clientId)
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .redirectUri(redirectUri)
+                .scope(scope)
+                .authorizationUri(issuerUri + "/protocol/openid-connect/auth")
+                .tokenUri(issuerUri + "/protocol/openid-connect/token")
+                .userInfoUri(issuerUri + "/protocol/openid-connect/userinfo")
+                .userNameAttributeName("preferred_username")
+                .jwkSetUri(issuerUri + "/protocol/openid-connect/certs")
+                .clientName("Keycloak")
+                .build();
+
+        return new InMemoryClientRegistrationRepository(clientRegistration);
+    }
+
+    @Bean
+    UserServiceHelper userServiceHelper() {
+        return new UserServiceHelper();
     }
 
     private static final String ROLES_CLAIM = "roles";
@@ -56,8 +83,6 @@ public class SecurityConfig {
     SecurityFilterChain oidcFilterChain(
             final HttpSecurity httpSecurity)
             throws Exception {
-
-        final OAuth2UserService oauth2UserService = new DefaultOAuth2UserService();
 
         httpSecurity
                 .csrf().disable();
@@ -93,44 +118,23 @@ public class SecurityConfig {
         }
 
         httpSecurity
-            .oauth2Login(oauth2 -> oauth2
-                    .userInfoEndpoint( userInfo -> userInfo
-                            .userAuthoritiesMapper(this.userAuthoritiesMapper())
-                            .userService( oauth2UserRequest -> {
-
-                                final OAuth2User oAuth2User = oauth2UserService.loadUser(oauth2UserRequest);
-
-                                java.util.List rolesList = oAuth2User.getAttribute(ROLES_CLAIM);
-
-                                List roles = List.iterableList(rolesList);
-
-                                final java.util.List<GrantedAuthority> grantedAuthorityJavaList = new ArrayList<>(oAuth2User.getAuthorities());
-                                final List<GrantedAuthority> grantedAuthorityList = List.list(new ArrayList<>(grantedAuthorityJavaList));
-
-                                final DefaultOAuth2User defaultOAuth2User = new DefaultOAuth2User(
-                                        grantedAuthorityList.toJavaList(),
-                                        oAuth2User.getAttributes(),
-                                        "preferred_username");
-
-                                userService().insertOrUpdateHelper(
-                                        defaultOAuth2User.getName(),
-                                        (String) defaultOAuth2User.getAttributes().get("family_name"),
-                                        (String) defaultOAuth2User.getAttributes().get("given_name"),
-                                        (String) defaultOAuth2User.getAttributes().get("email"),
-                                        roles
-                                );
-
-                                return defaultOAuth2User;
-                            })
-
-                    )
-                    .loginPage("/") // landing page
-                    .authorizationEndpoint(authorization -> authorization
-                    .baseUri("/oauth2/authorize-client"))
-                    )
-                    .logout(logout -> logout
-                            .logoutSuccessHandler(oidcLogoutSuccessHandler())
-                    );
+            .oauth2Login(new OidcLoginCustomizer(defaultOAuth2User -> {
+                userServiceHelper().insertOrUpdateHelper(
+                        defaultOAuth2User.getName(),
+                        (String)defaultOAuth2User.getAttributes().get("family_name"),
+                        (String)defaultOAuth2User.getAttributes().get("given_name"),
+                        (String)defaultOAuth2User.getAttributes().get("email"),
+                        somes(org.gtri.fj.data.List.iterableList(
+                                defaultOAuth2User.getAuthorities()).map(
+                                GrantedAuthority::getAuthority).map(
+                                Role::fromValueOption)));
+            }, "/", "/oauth2/authorize-client"))
+            .logout()
+            .logoutUrl("/logout")
+            .logoutSuccessHandler(oidcLogoutSuccessHandler())
+            .invalidateHttpSession(true)
+            .clearAuthentication(true)
+            .deleteCookies("JSESSIONID");
 
         return httpSecurity.build();
     }
@@ -169,11 +173,11 @@ public class SecurityConfig {
 
         OidcClientInitiatedLogoutSuccessHandler oidcLogoutSuccessHandler =
                 new OidcClientInitiatedLogoutSuccessHandler(
-                        this.clientRegistrationRepository);
+                        this.clientRegistrationRepository());
 
         String redirectUrl = TBRProperties.getBaseUrl();
 
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create(redirectUrl));
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri(redirectUrl);
 
         return oidcLogoutSuccessHandler;
     }

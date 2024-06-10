@@ -1,4 +1,6 @@
 MAX_DISPLAY = 10
+let PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 let publicDocuments = {}
 
 function performSearch(queryString, maxResults) {
@@ -32,10 +34,12 @@ function performSearch(queryString, maxResults) {
 }
 
 function renderPublicDocuments(offset) {
+    const tableId = "document-table"
+
     let html = ``
 
-    if (publicDocuments.length > MAX_DISPLAY) {
-        html += buildPagination(offset, MAX_DISPLAY, publicDocuments.length, "renderPublicDocuments")
+    if (publicDocuments.length > PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE) {
+        html += buildPagination(tableId, offset, PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE, publicDocuments.length, "renderPublicDocuments")
     }
 
     html += `<thead>`
@@ -51,7 +55,7 @@ function renderPublicDocuments(offset) {
         html += `<tr><td colspan="3">There are no documents.</td></tr>`
     } else {
         publicDocuments.forEach((document, i) => {
-            if (i >= offset && i < MAX_DISPLAY + offset) {
+            if (i >= offset && i < PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE + offset) {
                 html += `<tr><td><a href="${document.url}" target="_blank">${document.filename}</span></a></td>`
                 html += `<td>${document.dateCreated.split("T")[0]} ${document.dateCreated.split("T")[1].split(":")[0]}:${document.dateCreated.split("T")[1].split(":")[1]}</td>`
                 html += `<td>${document.description}</td>`
@@ -60,7 +64,24 @@ function renderPublicDocuments(offset) {
     }
     html += `</tbody>`
 
-    document.getElementById("document-table").innerHTML = html
+    document.getElementById(tableId).innerHTML = html
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE;
+    }
+
+    publicDocumentItemsPerPageTableEventHandler(tableId, renderPublicDocuments, offset);
+}
+
+let publicDocumentItemsPerPageTableEventHandler = function (tableId, func, offset) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        PUBLIC_DOCUMENT_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 function setResultsDiv(count, qstr) {

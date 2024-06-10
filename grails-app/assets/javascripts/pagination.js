@@ -1,27 +1,29 @@
 let MAX_DISPLAY = 20;
 /**
  * wrapper of general purpose paging mechanism
+ * @param tableId
  * @param offset
  * @param max
  * @param total
  * @param callbackFunction
  * @returns {string}
  */
-function buildPagination(offset, max, total, callbackFunction){
-    return buildPagination(offset, max, total, callbackFunction, true);
+function buildPagination(tableId, offset, max, total, callbackFunction){
+    return buildPagination(tableId, offset, max, total, callbackFunction, 3, true);
 }
 
 /**
  * general purpose paging code for paging lists
- * @param numOfColumns
+ * @param tableId
  * @param offset
  * @param max
  * @param total
  * @param callbackFunction
+ * @param numOfColumns
  * @param displayCounts
  * @returns {string}
  */
-function buildPagination(offset, max, total, callbackFunction, numOfColumns, displayCounts){
+function buildPagination(tableId, offset, max, total, callbackFunction, numOfColumns, displayCounts){
     var html = '';
 
     // Current design includes pagination inside a table. Need to wrap the pagination div inside a table row and header element
@@ -41,7 +43,6 @@ function buildPagination(offset, max, total, callbackFunction, numOfColumns, dis
 
 
     var curPage = getCurrentPage(offset, max);
-    console.log("Displaying page "+curPage+" of "+pageCount+" pages.");
 
     var pagesToDisplay = new Array();
     if( pageCount < 11 ){
@@ -70,7 +71,7 @@ function buildPagination(offset, max, total, callbackFunction, numOfColumns, dis
 
     var paginationHtml = '';
     paginationHtml += '<nav aria-label="Page navigation">\n';
-     paginationHtml += '<ul class="pagination">';
+    paginationHtml += '<ul class="pagination">';
     if( curPage === 1 ){
         paginationHtml += '<li class="page-item disabled"><a class="page-link" href="#" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>';
     }else{
@@ -102,26 +103,46 @@ function buildPagination(offset, max, total, callbackFunction, numOfColumns, dis
     paginationHtml += '</ul>';
     paginationHtml += '</nav>\n';
 
+    html += '<div class="row">';
+
+    let itemsPerPageSelectHtml = ''
+
+    itemsPerPageSelectHtml += `             <label for="items-per-page-${tableId}">Items Per Page: </label>`
+    itemsPerPageSelectHtml += `             <select class="form-control form-select" id="items-per-page-${tableId}" style="width: auto;">`
+    itemsPerPageSelectHtml += '                 <option value="5">5</option>'
+    itemsPerPageSelectHtml += '                 <option value="10">10</option>'
+    itemsPerPageSelectHtml += '                 <option value="25">25</option>'
+    itemsPerPageSelectHtml += '                 <option value="50">50</option>'
+    itemsPerPageSelectHtml += '                 <option value="100">100</option>'
+    itemsPerPageSelectHtml += '             </select>'
+
     if( displayCounts ){
-        html += '<div class="row">';
-        html += '<div class="col-md-6 d-flex justify-content-end text-muted"><em>\n';
+        html += '<div class="col-md-4 d-flex align-items-center justify-content-end">';
+        html += itemsPerPageSelectHtml;
+        html += '</div>'
+
+        html += '<div class="col-md-4 d-flex align-items-center justify-content-end text-muted text-muted"><em>\n';
         if( offset + max > total ){
-            html += ' Displaying at '+(offset+1)+'-'+total+" of " + total + " items.";
+            html += ' Displaying '+(offset+1)+'-'+total+" of " + total + " items.";
         }else{
-            html += ' Displaying at '+(offset+1)+'-'+(offset+max)+" of " + total + " items.";
+            html += ' Displaying '+(offset+1)+'-'+(offset+max)+" of " + total + " items.";
         }
         html += '</em></div>\n';
+        html += '<div class="col-md-4 d-flex justify-content-end">\n';
+        html += paginationHtml;
+        html += '</div>\n';
+    }else{
+
+        html += '<div class="col-md-6 d-flex align-items-center justify-content-end">';
+        html += itemsPerPageSelectHtml;
+        html += '</div>'
+
         html += '<div class="col-md-6 d-flex justify-content-end">\n';
         html += paginationHtml;
         html += '</div>\n';
-        html += '</div>\n';
-    }else{
-        html += '<div class="row">';
-        html += '<div class="col-md-12 d-flex justify-content-end">\n';
-        html += paginationHtml;
-        html += '</div>\n';
-        html += '</div>\n';
     }
+
+    html += '</div>\n'; // row
 
     html += '</th></tr>';
 

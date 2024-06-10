@@ -10,8 +10,8 @@ import org.gtri.fj.data.Option
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
-import sun.security.x509.X500Name
 import tm.binding.registry.util.TBRProperties
+import tm.binding.registry.util.X500PrincipalWrapper
 
 import java.nio.charset.StandardCharsets
 import java.security.cert.X509Certificate
@@ -230,7 +230,7 @@ class ProviderController {
                 // filename: commonName-thumbprint.pem
                 X509Certificate x509Certificate = x509CertificateService.convertFromPem(pemString)
 
-                X500Name x500Name = new X500Name(x509Certificate.getSubjectX500Principal().getName())
+                X500PrincipalWrapper x500Name = new X500PrincipalWrapper(x509Certificate.getSubjectX500Principal().getName())
                 String thumbprint = x509CertificateService.getThumbPrint(x509Certificate)
 
                 // remove spaces from common name before creating filename
@@ -354,6 +354,7 @@ class ProviderController {
         render jsonResponse as JSON
     }
 
+    @PreAuthorize('permitAll()')
     def oidcDetails() {
         log.debug("oidcDetails -> ${params.id}")
 

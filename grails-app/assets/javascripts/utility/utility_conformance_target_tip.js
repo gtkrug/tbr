@@ -1,3 +1,5 @@
+let CTTIP_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listConformanceTargetTip = function (pid) {
     list(CONFORMANCE_TARGET_TIP_LIST,
@@ -15,10 +17,24 @@ let renderConformanceTargetTipTable = function (tableId, tableMetadata, tableDat
         tableId,
         tableMetadata,
         tableData.records,
+        CTTIP_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderConformanceTargetTipOffset",
         ["Conformance Target TIP"],
         "Conformance Target TIPs")
+
+    cttipItemsPerPageTableEventHandler(tableId, renderConformanceTargetTipOffset);
+}
+
+let cttipItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        CTTIP_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

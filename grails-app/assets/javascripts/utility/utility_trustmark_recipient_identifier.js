@@ -1,3 +1,5 @@
+let TRID_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listTrustmarkRecipientIdentifier = function (oid) {
     list(ORGANIZATION_TRUSTMARK_RECIPIENT_IDENTIFIERS,
@@ -15,10 +17,24 @@ let renderTrustmarkRecipientIdentifierTable = function (tableId, tableMetadata, 
         tableId,
         tableMetadata,
         tableData.records,
+        TRID_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderTrustmarkRecipientIdentifiersOffset",
         ["Trustmark Recipient Identifier"],
         "Trustmark Recipient Identifiers")
+
+    tridItemsPerPageTableEventHandler(tableId, renderTrustmarkRecipientIdentifiersOffset);
+}
+
+let tridItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        TRID_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

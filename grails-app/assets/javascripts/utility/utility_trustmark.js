@@ -1,3 +1,5 @@
+let TRUSTMARK_TABLE_ITEMS_PER_PAGE = TABLE_FULL_PAGE_ITEMS_PER_PAGE;
+
 // render offset
 let renderTrustmarkOffset = function () {
 }
@@ -8,10 +10,25 @@ let renderTrustmarkTable = function (tableId, tableMetadata, tableData, offset) 
         tableId,
         tableMetadata,
         tableData,
+        TRUSTMARK_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderTrustmarkOffset",
         ["Name", "Provisional", "Status"],
         "trustmarks")
+
+     trustmarkItemsPerPageTableEventHandler(tableId, renderTrustmarkOffset);
+}
+
+
+let trustmarkItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        TRUSTMARK_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr
@@ -31,7 +48,7 @@ let drawTrustmarkTr = function (tableMetadata, rowData) {
 
 let curriedTrustmark = curryFour(renderTrustmarkTable);
 
-let trustmarkResults = function (pId) {
+let trustmarkResults = function () {
     return function (results) {
         renderTrustmarkOffset = curriedTrustmark('trustmarks-list')
         ({

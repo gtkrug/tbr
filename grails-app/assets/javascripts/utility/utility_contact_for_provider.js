@@ -1,3 +1,5 @@
+let SYS_CONTACT_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listContact = function () {
     list(PROVIDER_LIST_CONTACTS,
@@ -19,7 +21,7 @@ let renderContactTable = function (tableId, tableMetadata, tableData, offset) {
         numOfColumns++
     }
 
-    let html = renderPagination(offset, tableData.records.length, "renderContactOffset", numOfColumns)
+    let html = renderPagination(tableId, SYS_CONTACT_TABLE_ITEMS_PER_PAGE, offset, tableData.records.length, "renderContactOffset", numOfColumns)
 
     html += `<thead>`
     html += `<tr>`
@@ -38,7 +40,7 @@ let renderContactTable = function (tableId, tableMetadata, tableData, offset) {
         html += `<tr><td colspan="${columnNameArray.length + (LOGGED_IN && tableMetadata.editable ? 1 : 0) + (tableMetadata.includeOrganizationColumn ? 1 : 0)}">There are no points of contact.</td></tr>`
     } else {
         tableData.records.forEach((c, index) => {
-            if (index >= offset && index < offset + MAX_DISPLAY) {
+            if (index >= offset && index < offset + SYS_CONTACT_TABLE_ITEMS_PER_PAGE) {
                 html += tableMetadata.fnDraw(tableMetadata, c)
             }
         })
@@ -47,6 +49,23 @@ let renderContactTable = function (tableId, tableMetadata, tableData, offset) {
     html += `</tbody>`
 
     document.getElementById(tableId).innerHTML = html
+
+    if (document.getElementById(`items-per-page-${tableId}`) != null) {
+        document.getElementById(`items-per-page-${tableId}`).value = SYS_CONTACT_TABLE_ITEMS_PER_PAGE;
+    }
+
+    sysContactItemsPerPageTableEventHandler(tableId, renderContactOffset);
+}
+
+let sysContactItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        SYS_CONTACT_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr

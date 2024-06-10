@@ -1,3 +1,5 @@
+let PSTIP_TABLE_ITEMS_PER_PAGE = TABLE_INLINE_ITEMS_PER_PAGE;
+
 // list
 let listPartnerSystemTip = function (pid) {
     list(PROVIDER_PARTNER_SYSTEMS_TIPS,
@@ -15,10 +17,24 @@ let renderPartnerSystemTipTable = function (tableId, tableMetadata, tableData, o
         tableId,
         tableMetadata,
         tableData.records,
+        PSTIP_TABLE_ITEMS_PER_PAGE,
         offset,
         "renderPartnerSystemTipOffset",
         ["Partner System TIP"],
         "Partner System TIPs")
+
+    pstipItemsPerPageTableEventHandler(tableId, renderPartnerSystemTipOffset);
+}
+
+let pstipItemsPerPageTableEventHandler = function (tableId, func) {
+
+    $(`#items-per-page-${tableId}`).on('change', function() {
+        const ipp = parseInt(document.getElementById(`items-per-page-${tableId}`).value);
+
+        PSTIP_TABLE_ITEMS_PER_PAGE = ipp
+
+        func(0);
+    });
 }
 
 // draw tr
